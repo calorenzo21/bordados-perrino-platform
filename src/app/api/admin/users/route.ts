@@ -1,4 +1,6 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
+
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 // Generar contraseña aleatoria
@@ -15,9 +17,11 @@ function generatePassword(length: number = 12): string {
 export async function GET() {
   try {
     const supabase = await createClient();
-    
+
     // Verificar que el usuario actual es admin
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -44,10 +48,7 @@ export async function GET() {
     return NextResponse.json({ admins });
   } catch (error) {
     console.error('Error al obtener administradores:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener administradores' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error al obtener administradores' }, { status: 500 });
   }
 }
 
@@ -56,9 +57,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminClient = await createAdminClient();
-    
+
     // Verificar que el usuario actual es admin
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -88,10 +91,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingProfile) {
-      return NextResponse.json(
-        { error: 'Ya existe un usuario con este correo' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Ya existe un usuario con este correo' }, { status: 400 });
     }
 
     // Generar contraseña por defecto
@@ -118,18 +118,19 @@ export async function POST(request: NextRequest) {
 
     // Usar UPSERT para manejar el caso donde el trigger crea el perfil y donde no
     // El trigger handle_new_user puede o no crear el perfil, así que usamos upsert
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .upsert({
+    const { error: profileError } = await adminClient.from('profiles').upsert(
+      {
         id: authData.user.id,
         email,
         first_name: firstName || 'Admin',
         last_name: lastName || '',
         role: 'ADMIN',
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: 'id',
-      });
+      }
+    );
 
     if (profileError) {
       console.error('Error al crear/actualizar perfil:', profileError);
@@ -140,6 +141,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Revalidar páginas de configuración
+    revalidatePath('/admin/settings');
 
     return NextResponse.json({
       success: true,
@@ -154,10 +158,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error al crear administrador:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
 
@@ -166,9 +167,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminClient = await createAdminClient();
-    
+
     // Verificar que el usuario actual es admin
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -192,17 +195,11 @@ export async function DELETE(request: NextRequest) {
 
     // No permitir eliminarse a sí mismo
     if (userId === user.id) {
-      return NextResponse.json(
-        { error: 'No puedes eliminar tu propia cuenta' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 });
     }
 
     // Eliminar perfil
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
+    const { error: profileError } = await adminClient.from('profiles').delete().eq('id', userId);
 
     if (profileError) {
       console.error('Error al eliminar perfil:', profileError);
@@ -213,11 +210,11 @@ export async function DELETE(request: NextRequest) {
 
     if (authError) {
       console.error('Error al eliminar usuario:', authError);
-      return NextResponse.json(
-        { error: 'Error al eliminar administrador' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Error al eliminar administrador' }, { status: 500 });
     }
+
+    // Revalidar páginas de configuración
+    revalidatePath('/admin/settings');
 
     return NextResponse.json({
       success: true,
@@ -225,9 +222,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error al eliminar administrador:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

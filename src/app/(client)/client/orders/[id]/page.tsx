@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -21,15 +21,14 @@ import {
   Truck,
   Wallet,
   XCircle,
-  ZoomIn,
 } from 'lucide-react';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
 // Tipos
 interface StatusHistoryItem {
@@ -145,9 +144,7 @@ const mockClientOrders: Record<string, Order> = {
         time: '14:30:00',
         method: 'transferencia',
         notes: 'Segundo abono',
-        photos: [
-          'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=400&fit=crop',
-        ],
+        photos: ['https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=400&fit=crop'],
         user: 'Admin',
       },
     ],
@@ -256,36 +253,25 @@ const statusColors = {
   },
 };
 
-const segmentColors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-purple-500', 'bg-sky-500'];
+const segmentColors = [
+  'bg-blue-500',
+  'bg-amber-500',
+  'bg-emerald-500',
+  'bg-purple-500',
+  'bg-sky-500',
+];
 
 export default function ClientOrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Obtener orden según el ID de la URL (useMemo para evitar re-renders innecesarios)
+  const order = useMemo(() => mockClientOrders[orderId] || null, [orderId]);
 
   // Calcular totales de pagos
   const totalPaid = order?.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
   const remainingBalance = order ? order.total - totalPaid : 0;
   const paymentProgress = order ? (totalPaid / order.total) * 100 : 0;
-
-  // Cargar orden según el ID de la URL
-  useEffect(() => {
-    const foundOrder = mockClientOrders[orderId];
-    if (foundOrder) {
-      setOrder(foundOrder);
-    }
-    setLoading(false);
-  }, [orderId]);
-
-  if (loading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-      </div>
-    );
-  }
 
   if (!order) {
     return (
@@ -314,7 +300,7 @@ export default function ClientOrderDetailPage() {
 
   const dynamicStatusFlow: OrderStatusType[] = showPartialDeliveryInTimeline
     ? statusFlow
-    : statusFlow.filter(s => s !== OrderStatus.PARCIALMENTE_ENTREGADO);
+    : statusFlow.filter((s) => s !== OrderStatus.PARCIALMENTE_ENTREGADO);
 
   const dynamicSegmentColors = showPartialDeliveryInTimeline
     ? segmentColors
@@ -328,11 +314,7 @@ export default function ClientOrderDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/client/panel">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -364,11 +346,7 @@ export default function ClientOrderDetailPage() {
                 const isCompleted = index < currentStatusIndex;
 
                 return (
-                  <div
-                    key={index}
-                    className="relative"
-                    style={{ width: `${segmentWidth}%` }}
-                  >
+                  <div key={index} className="relative" style={{ width: `${segmentWidth}%` }}>
                     {isCompleted && (
                       <div
                         className={`absolute inset-0 rounded-full transition-all duration-700 ${dynamicSegmentColors[index]}`}
@@ -393,19 +371,18 @@ export default function ClientOrderDetailPage() {
                 return (
                   <div key={status} className="flex flex-col items-center">
                     <div
-                      className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${showAsCompleted
+                      className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                        showAsCompleted
                           ? `bg-linear-to-br ${colors.gradient} shadow-lg`
                           : isCurrent
                             ? `${colors.bgLight} border-2 ${colors.border}`
                             : 'border-2 border-slate-200 bg-white'
-                        }`}
+                      }`}
                     >
                       {showAsCompleted ? (
                         <Check className="h-5 w-5 text-white" />
                       ) : (
-                        <Icon
-                          className={`h-5 w-5 ${isCurrent ? colors.text : 'text-slate-300'}`}
-                        />
+                        <Icon className={`h-5 w-5 ${isCurrent ? colors.text : 'text-slate-300'}`} />
                       )}
 
                       {/* Efecto de pulso */}
@@ -419,8 +396,9 @@ export default function ClientOrderDetailPage() {
                     {/* Etiqueta y fecha */}
                     <div className="mt-3 text-center">
                       <p
-                        className={`text-sm font-medium ${isCompleted || isCurrent ? 'text-slate-900' : 'text-slate-400'
-                          }`}
+                        className={`text-sm font-medium ${
+                          isCompleted || isCurrent ? 'text-slate-900' : 'text-slate-400'
+                        }`}
                       >
                         {OrderStatusLabels[status]}
                       </p>
@@ -457,17 +435,23 @@ export default function ClientOrderDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-slate-400 uppercase">Servicio</p>
-                  <Badge variant="outline" className="mt-1">{order.serviceType}</Badge>
+                  <Badge variant="outline" className="mt-1">
+                    {order.serviceType}
+                  </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 uppercase">Cantidad</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-700">{order.quantity} unidades</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-700">
+                    {order.quantity} unidades
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-slate-400 uppercase">Total</p>
-                  <p className="mt-1 text-lg font-bold text-emerald-600">${order.total.toLocaleString()}</p>
+                  <p className="mt-1 text-lg font-bold text-emerald-600">
+                    ${order.total.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 uppercase">Fecha Entrega</p>
@@ -534,7 +518,9 @@ export default function ClientOrderDetailPage() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-slate-500">Progreso de pago</span>
-                      <span className="font-semibold text-emerald-600">{paymentProgress.toFixed(0)}%</span>
+                      <span className="font-semibold text-emerald-600">
+                        {paymentProgress.toFixed(0)}%
+                      </span>
                     </div>
                     <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
                       <div
@@ -551,7 +537,9 @@ export default function ClientOrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-slate-500">Total del Pedido</p>
-                          <p className="mt-2 text-3xl font-bold text-slate-900">${order.total.toLocaleString()}</p>
+                          <p className="mt-2 text-3xl font-bold text-slate-900">
+                            ${order.total.toLocaleString()}
+                          </p>
                         </div>
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                           <Package className="h-7 w-7 text-slate-600" />
@@ -564,7 +552,9 @@ export default function ClientOrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-emerald-100">Total Abonado</p>
-                          <p className="mt-2 text-3xl font-bold text-white">${totalPaid.toLocaleString()}</p>
+                          <p className="mt-2 text-3xl font-bold text-white">
+                            ${totalPaid.toLocaleString()}
+                          </p>
                         </div>
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
                           <CheckCircle2 className="h-7 w-7 text-white" />
@@ -573,13 +563,18 @@ export default function ClientOrderDetailPage() {
                     </div>
 
                     {/* Saldo Restante */}
-                    <div className={`rounded-2xl p-5 shadow-lg ${remainingBalance > 0
-                        ? 'bg-linear-to-br from-amber-400 to-amber-500 shadow-amber-200'
-                        : 'bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-200'
-                      }`}>
+                    <div
+                      className={`rounded-2xl p-5 shadow-lg ${
+                        remainingBalance > 0
+                          ? 'bg-linear-to-br from-amber-400 to-amber-500 shadow-amber-200'
+                          : 'bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-200'
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className={`text-sm font-medium ${remainingBalance > 0 ? 'text-amber-100' : 'text-emerald-100'}`}>
+                          <p
+                            className={`text-sm font-medium ${remainingBalance > 0 ? 'text-amber-100' : 'text-emerald-100'}`}
+                          >
                             Saldo Restante
                           </p>
                           <p className="mt-2 text-3xl font-bold text-white">
@@ -601,13 +596,16 @@ export default function ClientOrderDetailPage() {
                   {remainingBalance <= 0 ? (
                     <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-100 p-3">
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      <span className="font-medium text-emerald-700">Tu pedido está pagado en su totalidad</span>
+                      <span className="font-medium text-emerald-700">
+                        Tu pedido está pagado en su totalidad
+                      </span>
                     </div>
                   ) : (
                     <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-amber-100 p-3">
                       <DollarSign className="h-5 w-5 text-amber-600" />
                       <span className="text-sm text-amber-700">
-                        Tienes un saldo pendiente de <strong>${remainingBalance.toLocaleString()}</strong>
+                        Tienes un saldo pendiente de{' '}
+                        <strong>${remainingBalance.toLocaleString()}</strong>
                       </span>
                     </div>
                   )}
@@ -628,8 +626,12 @@ export default function ClientOrderDetailPage() {
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
                         <Banknote className="h-8 w-8 text-slate-400" />
                       </div>
-                      <p className="mt-4 text-sm font-medium text-slate-900">Aún no hay abonos registrados</p>
-                      <p className="mt-1 text-sm text-slate-500">Los abonos aparecerán aquí cuando se registren</p>
+                      <p className="mt-4 text-sm font-medium text-slate-900">
+                        Aún no hay abonos registrados
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Los abonos aparecerán aquí cuando se registren
+                      </p>
                     </div>
                   ) : (
                     <div className="relative">
@@ -641,7 +643,9 @@ export default function ClientOrderDetailPage() {
                           .slice()
                           .reverse()
                           .map((payment, index) => {
-                            const PaymentIcon = paymentMethods.find(m => m.id === payment.method)?.icon || DollarSign;
+                            const PaymentIcon =
+                              paymentMethods.find((m) => m.id === payment.method)?.icon ||
+                              DollarSign;
 
                             return (
                               <div
@@ -663,7 +667,8 @@ export default function ClientOrderDetailPage() {
                                         ${payment.amount.toLocaleString()}
                                       </span>
                                       <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
-                                        {paymentMethods.find(m => m.id === payment.method)?.label || 'Otro'}
+                                        {paymentMethods.find((m) => m.id === payment.method)
+                                          ?.label || 'Otro'}
                                       </Badge>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -678,7 +683,9 @@ export default function ClientOrderDetailPage() {
                                   {/* Notas */}
                                   {payment.notes && (
                                     <div className="mt-3">
-                                      <p className="text-xs font-medium uppercase text-slate-400">Concepto</p>
+                                      <p className="text-xs font-medium uppercase text-slate-400">
+                                        Concepto
+                                      </p>
                                       <p className="mt-1 text-sm text-slate-700">{payment.notes}</p>
                                     </div>
                                   )}
@@ -695,6 +702,7 @@ export default function ClientOrderDetailPage() {
                                             key={photoIndex}
                                             className="relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100"
                                           >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                               src={photo}
                                               alt={`Comprobante ${photoIndex + 1}`}

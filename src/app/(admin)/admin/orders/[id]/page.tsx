@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/browser';
-import { uploadMultipleImages, fileToBase64, formatFileSize } from '@/lib/utils/image-upload';
-
+import { useOrder } from '@/hooks/use-orders';
 import {
   AlertCircle,
   AlertTriangle,
@@ -43,6 +40,11 @@ import {
   ZoomIn,
 } from 'lucide-react';
 
+import { revalidateOrder } from '@/lib/actions/revalidate';
+import { createClient } from '@/lib/supabase/browser';
+import { fileToBase64, formatFileSize, uploadMultipleImages } from '@/lib/utils/image-upload';
+import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,8 +67,6 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
-import { useOrder } from '@/hooks/use-orders';
 
 // Tipos
 interface StatusHistoryItem {
@@ -90,7 +90,7 @@ interface Payment {
   user: string;
 }
 
-interface Order {
+interface _Order {
   id: string;
   client: {
     id: string;
@@ -222,16 +222,21 @@ const statusColors = {
 };
 
 // Colores para cada segmento del timeline
-const segmentColors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-purple-500', 'bg-sky-500'];
+const segmentColors = [
+  'bg-blue-500',
+  'bg-amber-500',
+  'bg-emerald-500',
+  'bg-purple-500',
+  'bg-sky-500',
+];
 
 export default function OrderDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const orderId = params.id as string;
   const supabase = createClient();
 
   // Usar el hook para obtener datos de Supabase
-  const { order, setOrder, isLoading: loading, refetch } = useOrder(orderId);
+  const { order, setOrder, isLoading: loading, refetch: _refetch } = useOrder(orderId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -328,7 +333,9 @@ export default function OrderDetailPage() {
 
     try {
       // 0. Obtener el usuario actual y su nombre
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
 
       let userName = 'Admin';
       if (currentUser?.id) {
@@ -339,7 +346,8 @@ export default function OrderDetailPage() {
           .single();
 
         if (profileData) {
-          userName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
+          userName =
+            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
         }
       }
 
@@ -352,7 +360,7 @@ export default function OrderDetailPage() {
           `orders/${order.uuid}`,
           { maxSizeKB: 500, quality: 0.8 }
         );
-        uploadedPhotoUrls = uploadResults.map(r => r.url);
+        uploadedPhotoUrls = uploadResults.map((r) => r.url);
       }
 
       // 2. Insertar el pago en Supabase (con received_by)
@@ -375,14 +383,12 @@ export default function OrderDetailPage() {
 
       // 3. Guardar las URLs de las fotos en la tabla payment_photos
       if (uploadedPhotoUrls.length > 0 && paymentData) {
-        const photosToInsert = uploadedPhotoUrls.map(url => ({
+        const photosToInsert = uploadedPhotoUrls.map((url) => ({
           payment_id: paymentData.id,
           photo_url: url,
         }));
 
-        const { error: photosError } = await supabase
-          .from('payment_photos')
-          .insert(photosToInsert);
+        const { error: photosError } = await supabase.from('payment_photos').insert(photosToInsert);
 
         if (photosError) {
           console.error('Error al guardar fotos del pago:', photosError);
@@ -394,7 +400,11 @@ export default function OrderDetailPage() {
         id: paymentData?.id || `PAY-${Date.now()}`,
         amount: finalAmount,
         date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
         method: newPaymentData.method,
         notes: newPaymentData.notes || 'Sin observaciones',
         photos: uploadedPhotoUrls,
@@ -406,12 +416,14 @@ export default function OrderDetailPage() {
         payments: [...order.payments, newPayment],
       });
 
+      // Revalidar caché del servidor
+      await revalidateOrder(order.uuid);
+
       // 5. Resetear el formulario y cerrar
       setNewPaymentData({ amount: '', method: 'efectivo', notes: '', photos: [] });
       setPaymentPhotoFiles([]);
       setPaymentPhotoPreviews([]);
       setIsPaymentDialogOpen(false);
-
     } catch (err) {
       console.error('Error al agregar abono:', err);
       setPaymentError(err instanceof Error ? err.message : 'Error al registrar el abono');
@@ -465,7 +477,7 @@ export default function OrderDetailPage() {
   // Crear el flujo de estados dinámico
   const dynamicStatusFlow: OrderStatusType[] = showPartialDeliveryInTimeline
     ? statusFlow
-    : statusFlow.filter(s => s !== OrderStatus.PARCIALMENTE_ENTREGADO);
+    : statusFlow.filter((s) => s !== OrderStatus.PARCIALMENTE_ENTREGADO);
 
   // Colores dinámicos para los segmentos
   const dynamicSegmentColors = showPartialDeliveryInTimeline
@@ -509,6 +521,9 @@ export default function OrderDetailPage() {
         isUrgent: editData.isUrgent,
       });
 
+      // Revalidar caché del servidor
+      await revalidateOrder(order.uuid);
+
       setIsEditing(false);
     } catch (err) {
       console.error('Error al guardar cambios:', err);
@@ -530,7 +545,9 @@ export default function OrderDetailPage() {
 
     try {
       // 0. Obtener el usuario actual
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
 
       // Obtener el nombre del usuario desde el perfil
       let userName = 'Admin';
@@ -542,7 +559,8 @@ export default function OrderDetailPage() {
           .single();
 
         if (profileData) {
-          userName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
+          userName =
+            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
         }
       }
 
@@ -555,7 +573,7 @@ export default function OrderDetailPage() {
           `orders/${order.uuid}`,
           { maxSizeKB: 500, quality: 0.8 }
         );
-        uploadedPhotoUrls = uploadResults.map(r => r.url);
+        uploadedPhotoUrls = uploadResults.map((r) => r.url);
       }
 
       // 2. Actualizar el estado del pedido en la tabla orders
@@ -588,7 +606,7 @@ export default function OrderDetailPage() {
 
       // 4. Guardar las URLs de las fotos en la tabla order_status_photos
       if (uploadedPhotoUrls.length > 0 && historyData) {
-        const photosToInsert = uploadedPhotoUrls.map(url => ({
+        const photosToInsert = uploadedPhotoUrls.map((url) => ({
           status_history_id: historyData.id,
           photo_url: url,
         }));
@@ -608,7 +626,11 @@ export default function OrderDetailPage() {
         id: historyData?.id || Date.now().toString(),
         status: newStatusData.status,
         date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: new Date().toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
         observations: newStatusData.observations,
         photos: uploadedPhotoUrls,
         user: userName,
@@ -620,12 +642,14 @@ export default function OrderDetailPage() {
         statusHistory: [...order.statusHistory, newHistoryItem],
       });
 
+      // Revalidar caché del servidor
+      await revalidateOrder(order.uuid);
+
       // 6. Limpiar y cerrar
       setNewStatusData({ status: '' as OrderStatusType, observations: '', photos: [] });
       setStatusPhotoFiles([]);
       setStatusPhotoPreviews([]);
       setIsStatusDialogOpen(false);
-
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       alert(err instanceof Error ? err.message : 'Error al cambiar el estado');
@@ -640,11 +664,7 @@ export default function OrderDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/orders">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -726,11 +746,7 @@ export default function OrderDetailPage() {
                 const isPartial = index === currentStatusIndex;
 
                 return (
-                  <div
-                    key={index}
-                    className="relative"
-                    style={{ width: `${segmentWidth}%` }}
-                  >
+                  <div key={index} className="relative" style={{ width: `${segmentWidth}%` }}>
                     {(isCompleted || isPartial) && (
                       <div
                         className={`absolute inset-0 rounded-full transition-all duration-700 ${dynamicSegmentColors[index]}`}
@@ -757,7 +773,7 @@ export default function OrderDetailPage() {
                   const isEntregadoFinal = status === OrderStatus.ENTREGADO && isCurrent;
                   const showAsCompleted = (isCompleted && !isCurrent) || isEntregadoFinal;
 
-                  // Lógica especial para PARCIALMENTE_ENTREGADO: 
+                  // Lógica especial para PARCIALMENTE_ENTREGADO:
                   // - Es clickeable si es futuro (para primera entrega parcial)
                   // - Es clickeable si es el estado actual (para agregar más entregas parciales)
                   const isParcialmenteEntregadoAndCurrent =
@@ -777,25 +793,27 @@ export default function OrderDetailPage() {
                       type="button"
                       onClick={() => isClickable && handleStatusChange(status)}
                       disabled={!isClickable}
-                      className={`group relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${showAsCompleted
-                        ? `bg-linear-to-br ${colors.gradient} shadow-lg`
-                        : isCurrent
-                          ? `${colors.bgLight} border-2 ${colors.borderDark} ${isParcialmenteEntregadoAndCurrent ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : ''}`
-                          : isClickable
-                            ? 'border-2 border-slate-200 bg-white cursor-pointer hover:border-slate-300 hover:bg-slate-50 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50'
-                            : 'border-2 border-slate-200 bg-white'
-                        }`}
+                      className={`group relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                        showAsCompleted
+                          ? `bg-linear-to-br ${colors.gradient} shadow-lg`
+                          : isCurrent
+                            ? `${colors.bgLight} border-2 ${colors.borderDark} ${isParcialmenteEntregadoAndCurrent ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : ''}`
+                            : isClickable
+                              ? 'border-2 border-slate-200 bg-white cursor-pointer hover:border-slate-300 hover:bg-slate-50 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50'
+                              : 'border-2 border-slate-200 bg-white'
+                      }`}
                     >
                       {showAsCompleted ? (
                         <Check className="h-5 w-5 text-white" />
                       ) : (
                         <Icon
-                          className={`h-5 w-5 transition-colors duration-300 ${isCurrent
-                            ? colors.text
-                            : isClickable
-                              ? `text-slate-300 group-hover:${colors.text}`
-                              : 'text-slate-300'
-                            }`}
+                          className={`h-5 w-5 transition-colors duration-300 ${
+                            isCurrent
+                              ? colors.text
+                              : isClickable
+                                ? `text-slate-300 group-hover:${colors.text}`
+                                : 'text-slate-300'
+                          }`}
                         />
                       )}
 
@@ -820,9 +838,7 @@ export default function OrderDetailPage() {
                       {/* Círculo del paso - Interactivo con Tooltip */}
                       {isClickable ? (
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            {StatusButton}
-                          </TooltipTrigger>
+                          <TooltipTrigger asChild>{StatusButton}</TooltipTrigger>
                           <TooltipContent
                             side="top"
                             sideOffset={8}
@@ -841,21 +857,25 @@ export default function OrderDetailPage() {
                       {/* Etiqueta y fecha */}
                       <div className="mt-3 text-center">
                         <p
-                          className={`text-sm font-medium transition-colors duration-300 ${isCompleted || isCurrent
-                            ? 'text-slate-900'
-                            : isClickable
-                              ? 'text-slate-400'
-                              : 'text-slate-400'
-                            }`}
+                          className={`text-sm font-medium transition-colors duration-300 ${
+                            isCompleted || isCurrent
+                              ? 'text-slate-900'
+                              : isClickable
+                                ? 'text-slate-400'
+                                : 'text-slate-400'
+                          }`}
                         >
                           {OrderStatusLabels[status]}
                         </p>
                         {order.statusHistory.find((h) => h.status === status) && (
                           <p className="mt-0.5 text-xs text-slate-400">
                             {order.statusHistory.find((h) => h.status === status)?.date}
-                            {status === OrderStatus.PARCIALMENTE_ENTREGADO && partialDeliveryCount > 1 && (
-                              <span className="ml-1 text-purple-500">({partialDeliveryCount})</span>
-                            )}
+                            {status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                              partialDeliveryCount > 1 && (
+                                <span className="ml-1 text-purple-500">
+                                  ({partialDeliveryCount})
+                                </span>
+                              )}
                           </p>
                         )}
                       </div>
@@ -872,7 +892,9 @@ export default function OrderDetailPage() {
               <PackageCheck className="h-5 w-5 text-purple-600" />
               <div className="text-center">
                 <p className="text-sm font-semibold text-purple-900">
-                  {partialDeliveryCount} entrega{partialDeliveryCount > 1 ? 's' : ''} parcial{partialDeliveryCount > 1 ? 'es' : ''} registrada{partialDeliveryCount > 1 ? 's' : ''}
+                  {partialDeliveryCount} entrega{partialDeliveryCount > 1 ? 's' : ''} parcial
+                  {partialDeliveryCount > 1 ? 'es' : ''} registrada
+                  {partialDeliveryCount > 1 ? 's' : ''}
                 </p>
                 <p className="mt-1 text-xs text-purple-600">
                   Revisa el historial para ver los detalles
@@ -920,7 +942,9 @@ export default function OrderDetailPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Cédula / DNI</p>
-                    <p className="text-sm font-medium text-slate-700">{order.client.cedula || '-'}</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {order.client.cedula || '-'}
+                    </p>
                   </div>
                 </div>
 
@@ -940,7 +964,9 @@ export default function OrderDetailPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Dirección</p>
-                    <p className="text-sm font-medium text-slate-700">{order.client.address || 'Sin dirección registrada'}</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {order.client.address || 'Sin dirección registrada'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1019,7 +1045,11 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-slate-500">Fecha de entrega</p>
-                    <p className={`font-semibold ${order.isDelayed ? 'text-rose-600' : 'text-emerald-600'}`}>{order.dueDate}</p>
+                    <p
+                      className={`font-semibold ${order.isDelayed ? 'text-rose-600' : 'text-emerald-600'}`}
+                    >
+                      {order.dueDate}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -1039,9 +1069,7 @@ export default function OrderDetailPage() {
                     {isEditing ? (
                       <Input
                         value={editData.description}
-                        onChange={(e) =>
-                          setEditData({ ...editData, description: e.target.value })
-                        }
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                         className="h-11 rounded-xl"
                       />
                     ) : (
@@ -1137,9 +1165,7 @@ export default function OrderDetailPage() {
 
                     {/* Fecha de entrega (Editable) */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-500">
-                        Fecha de Entrega
-                      </label>
+                      <label className="text-sm font-medium text-slate-500">Fecha de Entrega</label>
                       {isEditing ? (
                         <div className="relative">
                           <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -1160,35 +1186,50 @@ export default function OrderDetailPage() {
                   </div>
 
                   {/* Toggle Urgente */}
-                  <div className={`mt-5 flex items-center justify-between rounded-xl border-2 p-4 transition-all ${isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <div
+                    className={`mt-5 flex items-center justify-between rounded-xl border-2 p-4 transition-all ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'bg-rose-100' : 'bg-slate-200'}`}>
-                        <AlertTriangle className={`h-5 w-5 ${isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'text-rose-600' : 'text-slate-400'}`} />
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'bg-rose-100' : 'bg-slate-200'}`}
+                      >
+                        <AlertTriangle
+                          className={`h-5 w-5 ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-600' : 'text-slate-400'}`}
+                        />
                       </div>
                       <div>
-                        <p className={`font-medium ${isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'text-rose-900' : 'text-slate-700'}`}>
+                        <p
+                          className={`font-medium ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-900' : 'text-slate-700'}`}
+                        >
                           Pedido Urgente
                         </p>
-                        <p className={`text-xs ${isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'text-rose-600' : 'text-slate-500'}`}>
-                          {isEditing && editData.isUrgent || !isEditing && order.isUrgent ? 'Este pedido tiene prioridad alta' : 'Marcar si requiere atención prioritaria'}
+                        <p
+                          className={`text-xs ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-600' : 'text-slate-500'}`}
+                        >
+                          {(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent)
+                            ? 'Este pedido tiene prioridad alta'
+                            : 'Marcar si requiere atención prioritaria'}
                         </p>
                       </div>
                     </div>
                     {isEditing ? (
                       <Switch
                         checked={editData.isUrgent}
-                        onCheckedChange={(checked) => setEditData({ ...editData, isUrgent: checked })}
+                        onCheckedChange={(checked) =>
+                          setEditData({ ...editData, isUrgent: checked })
+                        }
                         className="data-[state=checked]:bg-rose-500"
                       />
                     ) : (
-                      <span className={`rounded-full px-3 py-1 text-sm font-medium ${order.isUrgent ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-500'}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-sm font-medium ${order.isUrgent ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-500'}`}
+                      >
                         {order.isUrgent ? 'Sí' : 'No'}
                       </span>
                     )}
                   </div>
                 </CardContent>
               </Card>
-
             </TabsContent>
 
             {/* Tab: Abonos */}
@@ -1216,7 +1257,9 @@ export default function OrderDetailPage() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-slate-500">Progreso de pago</span>
-                      <span className="font-semibold text-emerald-600">{paymentProgress.toFixed(0)}%</span>
+                      <span className="font-semibold text-emerald-600">
+                        {paymentProgress.toFixed(0)}%
+                      </span>
                     </div>
                     <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
                       <div
@@ -1233,7 +1276,9 @@ export default function OrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-slate-500">Total del Pedido</p>
-                          <p className="mt-2 text-3xl font-bold text-slate-900">${order.total.toLocaleString()}</p>
+                          <p className="mt-2 text-3xl font-bold text-slate-900">
+                            ${order.total.toLocaleString()}
+                          </p>
                         </div>
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                           <Package className="h-7 w-7 text-slate-600" />
@@ -1246,7 +1291,9 @@ export default function OrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-emerald-100">Total Abonado</p>
-                          <p className="mt-2 text-3xl font-bold text-white">${totalPaid.toLocaleString()}</p>
+                          <p className="mt-2 text-3xl font-bold text-white">
+                            ${totalPaid.toLocaleString()}
+                          </p>
                         </div>
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
                           <CheckCircle2 className="h-7 w-7 text-white" />
@@ -1255,20 +1302,27 @@ export default function OrderDetailPage() {
                     </div>
 
                     {/* Saldo Restante */}
-                    <div className={`rounded-2xl p-5 shadow-lg ${remainingBalance > 0
-                      ? 'bg-linear-to-br from-amber-400 to-amber-500 shadow-amber-200'
-                      : 'bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-200'
-                      }`}>
+                    <div
+                      className={`rounded-2xl p-5 shadow-lg ${
+                        remainingBalance > 0
+                          ? 'bg-linear-to-br from-amber-400 to-amber-500 shadow-amber-200'
+                          : 'bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-200'
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className={`text-sm font-medium ${remainingBalance > 0 ? 'text-amber-100' : 'text-emerald-100'}`}>
+                          <p
+                            className={`text-sm font-medium ${remainingBalance > 0 ? 'text-amber-100' : 'text-emerald-100'}`}
+                          >
                             Saldo Restante
                           </p>
                           <p className="mt-2 text-3xl font-bold text-white">
                             ${remainingBalance.toLocaleString()}
                           </p>
                         </div>
-                        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20`}>
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20`}
+                        >
                           {remainingBalance > 0 ? (
                             <DollarSign className="h-7 w-7 text-white" />
                           ) : (
@@ -1283,7 +1337,9 @@ export default function OrderDetailPage() {
                   {remainingBalance <= 0 && (
                     <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-100 p-3">
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      <span className="font-medium text-emerald-700">Pedido pagado en su totalidad</span>
+                      <span className="font-medium text-emerald-700">
+                        Pedido pagado en su totalidad
+                      </span>
                     </div>
                   )}
                 </CardContent>
@@ -1303,8 +1359,12 @@ export default function OrderDetailPage() {
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
                         <Banknote className="h-8 w-8 text-slate-400" />
                       </div>
-                      <p className="mt-4 text-sm font-medium text-slate-900">No hay abonos registrados</p>
-                      <p className="mt-1 text-sm text-slate-500">Agrega el primer abono para este pedido</p>
+                      <p className="mt-4 text-sm font-medium text-slate-900">
+                        No hay abonos registrados
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Agrega el primer abono para este pedido
+                      </p>
                       <Button
                         onClick={() => setIsPaymentDialogOpen(true)}
                         className="mt-4 gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600"
@@ -1323,7 +1383,9 @@ export default function OrderDetailPage() {
                           .slice()
                           .reverse()
                           .map((payment, index) => {
-                            const PaymentIcon = paymentMethods.find(m => m.id === payment.method)?.icon || DollarSign;
+                            const PaymentIcon =
+                              paymentMethods.find((m) => m.id === payment.method)?.icon ||
+                              DollarSign;
 
                             return (
                               <div
@@ -1345,7 +1407,8 @@ export default function OrderDetailPage() {
                                         ${payment.amount.toLocaleString()}
                                       </span>
                                       <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
-                                        {paymentMethods.find(m => m.id === payment.method)?.label || 'Otro'}
+                                        {paymentMethods.find((m) => m.id === payment.method)
+                                          ?.label || 'Otro'}
                                       </Badge>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -1360,7 +1423,9 @@ export default function OrderDetailPage() {
                                   {/* Notas */}
                                   {payment.notes && (
                                     <div className="mt-3">
-                                      <p className="text-xs font-medium uppercase text-slate-400">Observaciones</p>
+                                      <p className="text-xs font-medium uppercase text-slate-400">
+                                        Observaciones
+                                      </p>
                                       <p className="mt-1 text-sm text-slate-700">{payment.notes}</p>
                                     </div>
                                   )}
@@ -1379,6 +1444,7 @@ export default function OrderDetailPage() {
                                             onClick={() => openGallery(payment.photos, photoIndex)}
                                             className="group relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                                           >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                               src={photo}
                                               alt={`Comprobante ${photoIndex + 1}`}
@@ -1496,6 +1562,7 @@ export default function OrderDetailPage() {
                                           onClick={() => openGallery(item.photos, photoIndex)}
                                           className="group relative h-16 w-16 overflow-hidden rounded-lg bg-slate-100 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                         >
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
                                           <img
                                             src={photo}
                                             alt={`Foto ${photoIndex + 1}`}
@@ -1583,12 +1650,12 @@ export default function OrderDetailPage() {
                   if (files.length === 0) return;
 
                   // Agregar archivos
-                  setStatusPhotoFiles(prev => [...prev, ...files]);
+                  setStatusPhotoFiles((prev) => [...prev, ...files]);
 
                   // Generar previews
                   for (const file of files) {
                     const preview = await fileToBase64(file);
-                    setStatusPhotoPreviews(prev => [...prev, preview]);
+                    setStatusPhotoPreviews((prev) => [...prev, preview]);
                   }
 
                   // Limpiar input
@@ -1611,30 +1678,36 @@ export default function OrderDetailPage() {
                   e.preventDefault();
                   e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
 
-                  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                  const files = Array.from(e.dataTransfer.files).filter((f) =>
+                    f.type.startsWith('image/')
+                  );
                   if (files.length === 0) return;
 
-                  setStatusPhotoFiles(prev => [...prev, ...files]);
+                  setStatusPhotoFiles((prev) => [...prev, ...files]);
 
                   for (const file of files) {
                     const preview = await fileToBase64(file);
-                    setStatusPhotoPreviews(prev => [...prev, preview]);
+                    setStatusPhotoPreviews((prev) => [...prev, preview]);
                   }
                 }}
                 className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 p-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/50"
               >
                 <Upload className="mx-auto h-8 w-8 text-slate-400" />
-                <p className="mt-2 text-sm text-slate-600">
-                  Arrastra fotos o haz clic para subir
+                <p className="mt-2 text-sm text-slate-600">Arrastra fotos o haz clic para subir</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  PNG, JPG hasta 10MB (se comprimirán automáticamente)
                 </p>
-                <p className="mt-1 text-xs text-slate-400">PNG, JPG hasta 10MB (se comprimirán automáticamente)</p>
               </div>
 
               {/* Preview de fotos seleccionadas */}
               {statusPhotoPreviews.length > 0 && (
                 <div className="mt-3 grid grid-cols-4 gap-2">
                   {statusPhotoPreviews.map((preview, index) => (
-                    <div key={index} className="group relative aspect-square overflow-hidden rounded-lg">
+                    <div
+                      key={index}
+                      className="group relative aspect-square overflow-hidden rounded-lg"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
@@ -1645,8 +1718,8 @@ export default function OrderDetailPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setStatusPhotoFiles(prev => prev.filter((_, i) => i !== index));
-                            setStatusPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+                            setStatusPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+                            setStatusPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
                           }}
                           className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
                         >
@@ -1734,6 +1807,7 @@ export default function OrderDetailPage() {
               {/* Imagen */}
               <div className="relative aspect-square w-full max-h-[70vh] overflow-hidden rounded-xl">
                 {galleryPhotos[currentPhotoIndex] && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={galleryPhotos[currentPhotoIndex]}
                     alt={`Foto ${currentPhotoIndex + 1}`}
@@ -1763,11 +1837,13 @@ export default function OrderDetailPage() {
                     key={index}
                     type="button"
                     onClick={() => setCurrentPhotoIndex(index)}
-                    className={`h-14 w-14 overflow-hidden rounded-lg transition-all duration-200 ${index === currentPhotoIndex
-                      ? 'ring-2 ring-white ring-offset-2 ring-offset-black/95 scale-110'
-                      : 'opacity-50 hover:opacity-80'
-                      }`}
+                    className={`h-14 w-14 overflow-hidden rounded-lg transition-all duration-200 ${
+                      index === currentPhotoIndex
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-black/95 scale-110'
+                        : 'opacity-50 hover:opacity-80'
+                    }`}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={photo}
                       alt={`Miniatura ${index + 1}`}
@@ -1782,16 +1858,19 @@ export default function OrderDetailPage() {
       </Dialog>
 
       {/* Dialog para agregar abono */}
-      <Dialog open={isPaymentDialogOpen} onOpenChange={(open) => {
-        if (isSavingPayment) return; // No cerrar mientras se guarda
-        setIsPaymentDialogOpen(open);
-        if (!open) {
-          setPaymentError('');
-          setNewPaymentData({ amount: '', method: 'efectivo', notes: '', photos: [] });
-          setPaymentPhotoFiles([]);
-          setPaymentPhotoPreviews([]);
-        }
-      }}>
+      <Dialog
+        open={isPaymentDialogOpen}
+        onOpenChange={(open) => {
+          if (isSavingPayment) return; // No cerrar mientras se guarda
+          setIsPaymentDialogOpen(open);
+          if (!open) {
+            setPaymentError('');
+            setNewPaymentData({ amount: '', method: 'efectivo', notes: '', photos: [] });
+            setPaymentPhotoFiles([]);
+            setPaymentPhotoPreviews([]);
+          }
+        }}
+      >
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1799,7 +1878,8 @@ export default function OrderDetailPage() {
               Registrar Nuevo Abono
             </DialogTitle>
             <DialogDescription>
-              Ingresa los detalles del abono. El saldo restante es de <strong className="text-amber-600">${remainingBalance.toLocaleString()}</strong>
+              Ingresa los detalles del abono. El saldo restante es de{' '}
+              <strong className="text-amber-600">${remainingBalance.toLocaleString()}</strong>
             </DialogDescription>
           </DialogHeader>
 
@@ -1810,7 +1890,9 @@ export default function OrderDetailPage() {
                 Monto del Abono <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                  $
+                </span>
                 <Input
                   type="number"
                   placeholder="0"
@@ -1843,7 +1925,9 @@ export default function OrderDetailPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setNewPaymentData({ ...newPaymentData, amount: remainingBalance.toString() })}
+                  onClick={() =>
+                    setNewPaymentData({ ...newPaymentData, amount: remainingBalance.toString() })
+                  }
                   className="h-8 rounded-lg text-xs bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
                 >
                   Pagar todo (${remainingBalance.toLocaleString()})
@@ -1863,13 +1947,21 @@ export default function OrderDetailPage() {
                     <button
                       key={method.id}
                       type="button"
-                      onClick={() => setNewPaymentData({ ...newPaymentData, method: method.id as Payment['method'] })}
-                      className={`flex items-center gap-2 rounded-xl border-2 p-3 transition-all ${isSelected
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
+                      onClick={() =>
+                        setNewPaymentData({
+                          ...newPaymentData,
+                          method: method.id as Payment['method'],
+                        })
+                      }
+                      className={`flex items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
                     >
-                      <method.icon className={`h-5 w-5 ${isSelected ? 'text-emerald-500' : 'text-slate-400'}`} />
+                      <method.icon
+                        className={`h-5 w-5 ${isSelected ? 'text-emerald-500' : 'text-slate-400'}`}
+                      />
                       <span className="text-sm font-medium">{method.label}</span>
                       {isSelected && <Check className="ml-auto h-4 w-4 text-emerald-500" />}
                     </button>
@@ -1908,11 +2000,11 @@ export default function OrderDetailPage() {
                   const files = Array.from(e.target.files || []);
                   if (files.length === 0) return;
 
-                  setPaymentPhotoFiles(prev => [...prev, ...files]);
+                  setPaymentPhotoFiles((prev) => [...prev, ...files]);
 
                   for (const file of files) {
                     const preview = await fileToBase64(file);
-                    setPaymentPhotoPreviews(prev => [...prev, preview]);
+                    setPaymentPhotoPreviews((prev) => [...prev, preview]);
                   }
 
                   e.target.value = '';
@@ -1924,6 +2016,7 @@ export default function OrderDetailPage() {
                 <div className="flex flex-wrap gap-2 mb-2">
                   {paymentPhotoPreviews.map((preview, index) => (
                     <div key={index} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={preview}
                         alt={`Comprobante ${index + 1}`}
@@ -1932,8 +2025,8 @@ export default function OrderDetailPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setPaymentPhotoFiles(prev => prev.filter((_, i) => i !== index));
-                          setPaymentPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+                          setPaymentPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+                          setPaymentPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
                         }}
                         className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -1963,14 +2056,16 @@ export default function OrderDetailPage() {
                   e.preventDefault();
                   e.currentTarget.classList.remove('border-emerald-400', 'bg-emerald-50');
 
-                  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                  const files = Array.from(e.dataTransfer.files).filter((f) =>
+                    f.type.startsWith('image/')
+                  );
                   if (files.length === 0) return;
 
-                  setPaymentPhotoFiles(prev => [...prev, ...files]);
+                  setPaymentPhotoFiles((prev) => [...prev, ...files]);
 
                   for (const file of files) {
                     const preview = await fileToBase64(file);
-                    setPaymentPhotoPreviews(prev => [...prev, preview]);
+                    setPaymentPhotoPreviews((prev) => [...prev, preview]);
                   }
                 }}
               >

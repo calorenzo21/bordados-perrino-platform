@@ -1,5 +1,7 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 // Función para generar contraseña por defecto (6 dígitos numéricos)
 function generateDefaultPassword(): string {
@@ -26,7 +28,10 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación del usuario actual
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -40,14 +45,20 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (currentProfile?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Solo los administradores pueden crear clientes' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Solo los administradores pueden crear clientes' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
     const { name, email, phone, cedula, address } = body;
 
     if (!name || !email || !phone) {
-      return NextResponse.json({ error: 'Nombre, email y teléfono son requeridos' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Nombre, email y teléfono son requeridos' },
+        { status: 400 }
+      );
     }
 
     const adminClient = await createAdminClient();
@@ -67,9 +78,12 @@ export async function POST(request: NextRequest) {
 
     if (createAuthError) {
       console.error('Error creating auth user:', createAuthError);
-      return NextResponse.json({
-        error: createAuthError.message || 'Error al crear usuario de autenticación'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: createAuthError.message || 'Error al crear usuario de autenticación',
+        },
+        { status: 400 }
+      );
     }
 
     if (!authData.user) {
@@ -77,9 +91,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Crear o actualizar perfil con rol CLIENT
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .upsert({
+    const { error: profileError } = await adminClient.from('profiles').upsert(
+      {
         id: authData.user.id,
         email,
         first_name: firstName,
@@ -87,9 +100,11 @@ export async function POST(request: NextRequest) {
         phone,
         role: 'CLIENT',
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: 'id',
-      });
+      }
+    );
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
@@ -119,16 +134,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 });
     }
 
+    // Revalidar páginas que muestran clientes
+    revalidatePath('/admin/clients');
+    revalidatePath('/admin/dashboard');
+
     return NextResponse.json({
       success: true,
       client: clientData,
       defaultPassword, // Retornar la contraseña para que el admin pueda comunicarla al cliente
       message: 'Cliente creado exitosamente',
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in POST /api/clients:', error);
-    return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Error interno';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -136,7 +155,10 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -150,7 +172,10 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (currentProfile?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Solo los administradores pueden editar clientes' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Solo los administradores pueden editar clientes' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -174,7 +199,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Actualizar cliente
-    const updateData: any = {
+    const updateData: Record<string, string | undefined> = {
       updated_at: new Date().toISOString(),
     };
 
@@ -196,9 +221,11 @@ export async function PUT(request: NextRequest) {
 
     // Si el cliente tiene un perfil asociado, sincronizar
     if (existingClient?.user_id) {
-      const { firstName, lastName } = name ? splitFullName(name) : { firstName: undefined, lastName: undefined };
+      const { firstName, lastName } = name
+        ? splitFullName(name)
+        : { firstName: undefined, lastName: undefined };
 
-      const profileUpdate: any = {
+      const profileUpdate: Record<string, string | undefined> = {
         updated_at: new Date().toISOString(),
       };
 
@@ -230,13 +257,18 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Revalidar páginas que muestran clientes
+    revalidatePath('/admin/clients');
+    revalidatePath(`/admin/clients/${clientId}`);
+    revalidatePath('/admin/dashboard');
+
     return NextResponse.json({
       success: true,
       message: 'Cliente actualizado exitosamente',
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in PUT /api/clients:', error);
-    return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Error interno';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

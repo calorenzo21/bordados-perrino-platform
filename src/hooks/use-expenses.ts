@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { createClient } from '@/lib/supabase/browser';
 
 // Tipos que coinciden con la interfaz existente
@@ -35,13 +36,15 @@ export function useExpenses() {
 
   const fetchExpenses = useCallback(async () => {
     if (!isMounted.current) return;
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
       // Verificar que hay sesión
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         if (!hasFetched.current) {
           setTimeout(() => {
@@ -63,38 +66,43 @@ export function useExpenses() {
       hasFetched.current = true;
 
       if (isMounted.current) {
-        setExpenseTypes((typesData || []).map(t => ({
-          id: t.id,
-          name: t.name,
-          color: t.color,
-          isCustom: !t.is_system,
-        })));
+        setExpenseTypes(
+          (typesData || []).map((t) => ({
+            id: t.id,
+            name: t.name,
+            color: t.color,
+            isCustom: !t.is_system,
+          }))
+        );
       }
 
       // Obtener gastos
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
-        .select(`
+        .select(
+          `
           *,
           expense_types (name, color)
-        `)
+        `
+        )
         .order('date', { ascending: false });
 
       if (expensesError) throw expensesError;
 
       if (isMounted.current) {
-        setExpenses((expensesData || []).map(e => ({
-          id: e.id,
-          description: e.description,
-          amount: e.amount,
-          typeId: e.expense_type_id,
-          typeName: e.expense_types?.name || '',
-          typeColor: e.expense_types?.color || 'bg-slate-500',
-          date: e.date,
-          createdAt: e.created_at?.split('T')[0] || '',
-        })));
+        setExpenses(
+          (expensesData || []).map((e) => ({
+            id: e.id,
+            description: e.description,
+            amount: e.amount,
+            typeId: e.expense_type_id,
+            typeName: e.expense_types?.name || '',
+            typeColor: e.expense_types?.color || 'bg-slate-500',
+            date: e.date,
+            createdAt: e.created_at?.split('T')[0] || '',
+          }))
+        );
       }
-
     } catch (err) {
       console.error('Error fetching expenses:', err);
       if (isMounted.current) {
@@ -132,13 +140,15 @@ export function useExpense(expenseId: string) {
 
   const fetchExpense = useCallback(async () => {
     if (!expenseId || !isMounted.current) return;
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
       // Verificar sesión
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         if (!hasFetched.current) {
           setTimeout(() => {
@@ -157,21 +167,25 @@ export function useExpense(expenseId: string) {
       hasFetched.current = true;
 
       if (isMounted.current) {
-        setExpenseTypes((typesData || []).map(t => ({
-          id: t.id,
-          name: t.name,
-          color: t.color,
-          isCustom: !t.is_system,
-        })));
+        setExpenseTypes(
+          (typesData || []).map((t) => ({
+            id: t.id,
+            name: t.name,
+            color: t.color,
+            isCustom: !t.is_system,
+          }))
+        );
       }
 
       // Obtener gasto
       const { data: expenseData, error: expenseError } = await supabase
         .from('expenses')
-        .select(`
+        .select(
+          `
           *,
           expense_types (name, color)
-        `)
+        `
+        )
         .eq('id', expenseId)
         .single();
 
@@ -189,7 +203,6 @@ export function useExpense(expenseId: string) {
           createdAt: expenseData.created_at?.split('T')[0] || '',
         });
       }
-
     } catch (err) {
       console.error('Error fetching expense:', err);
       if (isMounted.current) {

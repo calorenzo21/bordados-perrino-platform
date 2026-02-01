@@ -3,6 +3,9 @@
  *
  * Server-side data fetching for the dashboard.
  * Uses the server Supabase client for SSR.
+ *
+ * Note: Page-level caching via `revalidate` handles query optimization.
+ * unstable_cache cannot be used here because createClient() uses cookies().
  */
 import { createClient } from '@/lib/supabase/server';
 import type {
@@ -11,6 +14,7 @@ import type {
   OrdersByMonth,
   OrdersByService,
   OrdersByStatus,
+  ServiceType as _ServiceType,
 } from '@/lib/types/database';
 
 import { DashboardService } from './dashboard.service';
@@ -54,6 +58,8 @@ function getInitials(name: string): string {
 /**
  * Fetch all dashboard data on the server
  * This is called from Server Components
+ *
+ * Caching is handled at the page level via `revalidate = 60`
  */
 export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createClient();

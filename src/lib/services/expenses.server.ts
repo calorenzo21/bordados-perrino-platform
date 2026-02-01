@@ -3,6 +3,9 @@
  *
  * Server-side data fetching for expenses.
  * Uses the server Supabase client for SSR.
+ *
+ * Note: Page-level caching via `revalidate` handles query optimization.
+ * unstable_cache cannot be used here because createClient() uses cookies().
  */
 import { createClient } from '@/lib/supabase/server';
 
@@ -33,6 +36,8 @@ export interface ExpensesData {
 /**
  * Fetch all expenses on the server
  * This is called from Server Components
+ *
+ * Caching is handled at the page level via `revalidate = 60`
  */
 export async function getExpensesData(): Promise<ExpensesData> {
   const supabase = await createClient();

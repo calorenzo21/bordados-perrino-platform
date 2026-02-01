@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { revalidateExpenseTypes, revalidateExpenses } from '@/lib/actions/revalidate';
 import type { Expense, ExpenseType } from '@/lib/services/expenses.server';
 import { createClient } from '@/lib/supabase/browser';
 
@@ -156,9 +157,9 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setCurrentPage(1);
   };
 
-  // Calcular totales
-  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const thisMonthExpenses = expenses
+  // Calcular totales (disponibles para uso futuro)
+  const _totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const _thisMonthExpenses = expenses
     .filter((exp) => {
       const expDate = new Date(exp.date);
       const now = new Date();
@@ -194,9 +195,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setNewTypeName('');
       setNewTypeColor('bg-slate-500');
       refetch();
-    } catch (err: any) {
+      // Revalidar caché del servidor
+      await revalidateExpenseTypes();
+    } catch (err: unknown) {
       console.error('Error adding expense type:', err);
-      setTypeError(err.message || 'Error al agregar tipo de gasto');
+      setTypeError(err instanceof Error ? err.message : 'Error al agregar tipo de gasto');
     } finally {
       setIsAddingType(false);
     }
@@ -236,9 +239,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setEditTypeName('');
       setEditTypeColor('');
       refetch();
-    } catch (err: any) {
+      // Revalidar caché del servidor
+      await revalidateExpenseTypes();
+    } catch (err: unknown) {
       console.error('Error updating expense type:', err);
-      setTypeError(err.message || 'Error al actualizar tipo de gasto');
+      setTypeError(err instanceof Error ? err.message : 'Error al actualizar tipo de gasto');
     } finally {
       setIsSavingType(false);
     }
@@ -262,9 +267,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       if (error) throw error;
 
       refetch();
-    } catch (err: any) {
+      // Revalidar caché del servidor
+      await revalidateExpenseTypes();
+    } catch (err: unknown) {
       console.error('Error deleting expense type:', err);
-      setTypeError(err.message || 'Error al eliminar tipo de gasto');
+      setTypeError(err instanceof Error ? err.message : 'Error al eliminar tipo de gasto');
     } finally {
       setIsDeletingType(null);
     }
@@ -346,9 +353,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       handleCloseExpenseDialog();
       refetch();
-    } catch (err: any) {
+      // Revalidar caché del servidor
+      await revalidateExpenses();
+    } catch (err: unknown) {
       console.error('Error saving expense:', err);
-      setExpenseError(err.message || 'Error al guardar el gasto');
+      setExpenseError(err instanceof Error ? err.message : 'Error al guardar el gasto');
     } finally {
       setIsSavingExpense(false);
     }
@@ -372,7 +381,9 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setIsDeleteExpenseDialogOpen(false);
       setExpenseToDelete(null);
       refetch();
-    } catch (err: any) {
+      // Revalidar caché del servidor
+      await revalidateExpenses();
+    } catch (err: unknown) {
       console.error('Error deleting expense:', err);
     } finally {
       setIsDeletingExpense(false);

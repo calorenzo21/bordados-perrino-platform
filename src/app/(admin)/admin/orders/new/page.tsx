@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { useClients, useServiceTypes } from '@/hooks';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -18,6 +19,9 @@ import {
   User,
   X,
 } from 'lucide-react';
+
+import { revalidateOrders } from '@/lib/actions/revalidate';
+import { createClient } from '@/lib/supabase/browser';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +44,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useClients, useServiceTypes } from '@/hooks';
-import { createClient } from '@/lib/supabase/browser';
 
 interface Client {
   id: string;
@@ -180,7 +182,8 @@ function NewOrderContent() {
     if (!draftLoaded) return;
 
     // Verificar si hay datos para guardar
-    const hasData = selectedClient ||
+    const hasData =
+      selectedClient ||
       formData.description ||
       formData.serviceType ||
       formData.quantity ||
@@ -221,16 +224,14 @@ function NewOrderContent() {
 
   // Generar número de orden
   const generateOrderNumber = async (): Promise<string> => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('order_number');
+    const { data, error } = await supabase.from('orders').select('order_number');
 
     if (error) throw error;
 
     let maxNumber = 0;
     if (data && data.length > 0) {
       // Encontrar el número más alto
-      data.forEach(order => {
+      data.forEach((order) => {
         if (order.order_number) {
           const num = parseInt(order.order_number.replace('ORD-', ''));
           if (!isNaN(num) && num > maxNumber) {
@@ -254,7 +255,9 @@ function NewOrderContent() {
 
     try {
       // Verificar autenticación
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setError('Debes iniciar sesión para crear pedidos');
         setIsSubmitting(false);
@@ -264,11 +267,7 @@ function NewOrderContent() {
       // Generar número de orden
       const orderNumber = await generateOrderNumber();
 
-      console.log('Creando pedido:', {
-        order_number: orderNumber,
-        client_id: selectedClient!.id,
-        service_type: formData.serviceType,
-      });
+      // Debug info: Creating order with order_number, client_id, service_type
 
       // Crear el pedido en Supabase
       const { data: newOrder, error: insertError } = await supabase
@@ -295,13 +294,11 @@ function NewOrderContent() {
 
       // Crear entrada inicial en el historial de estados
       if (newOrder) {
-        const { error: historyError } = await supabase
-          .from('order_status_history')
-          .insert({
-            order_id: newOrder.id,
-            status: 'RECIBIDO',
-            observations: formData.observations.trim() || 'Pedido creado',
-          });
+        const { error: historyError } = await supabase.from('order_status_history').insert({
+          order_id: newOrder.id,
+          status: 'RECIBIDO',
+          observations: formData.observations.trim() || 'Pedido creado',
+        });
 
         if (historyError) {
           console.error('Error al crear historial:', historyError);
@@ -311,11 +308,20 @@ function NewOrderContent() {
       // Limpiar borrador del localStorage
       clearDraft();
 
+      // Revalidar caché del servidor
+      await revalidateOrders();
+
       // Redirigir a la lista de pedidos
       router.push('/admin/orders');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al crear pedido:', err);
-      const errorMessage = err?.message || err?.code || JSON.stringify(err) || 'Error al crear el pedido';
+      let errorMessage = 'Error al crear el pedido';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errObj = err as { message?: string; code?: string };
+        errorMessage = errObj.message || errObj.code || JSON.stringify(err);
+      }
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -416,19 +422,13 @@ function NewOrderContent() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/orders">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Nuevo Pedido</h1>
-            <p className="text-sm text-slate-500">
-              Completa los datos para crear un nuevo pedido
-            </p>
+            <p className="text-sm text-slate-500">Completa los datos para crear un nuevo pedido</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -492,9 +492,7 @@ function NewOrderContent() {
             <CardContent className="space-y-4">
               {/* Selector de cliente */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Seleccionar Cliente
-                </label>
+                <label className="text-sm font-medium text-slate-700">Seleccionar Cliente</label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -724,17 +722,29 @@ function NewOrderContent() {
               </div>
 
               {/* Toggle Urgente */}
-              <div className={`flex items-center justify-between rounded-xl border-2 p-4 transition-all ${formData.isUrgent ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
+              <div
+                className={`flex items-center justify-between rounded-xl border-2 p-4 transition-all ${formData.isUrgent ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${formData.isUrgent ? 'bg-rose-100' : 'bg-slate-200'}`}>
-                    <AlertTriangle className={`h-5 w-5 ${formData.isUrgent ? 'text-rose-600' : 'text-slate-400'}`} />
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${formData.isUrgent ? 'bg-rose-100' : 'bg-slate-200'}`}
+                  >
+                    <AlertTriangle
+                      className={`h-5 w-5 ${formData.isUrgent ? 'text-rose-600' : 'text-slate-400'}`}
+                    />
                   </div>
                   <div>
-                    <p className={`font-medium ${formData.isUrgent ? 'text-rose-900' : 'text-slate-700'}`}>
+                    <p
+                      className={`font-medium ${formData.isUrgent ? 'text-rose-900' : 'text-slate-700'}`}
+                    >
                       Pedido Urgente
                     </p>
-                    <p className={`text-xs ${formData.isUrgent ? 'text-rose-600' : 'text-slate-500'}`}>
-                      {formData.isUrgent ? 'Este pedido tiene prioridad alta' : 'Marcar si requiere atención prioritaria'}
+                    <p
+                      className={`text-xs ${formData.isUrgent ? 'text-rose-600' : 'text-slate-500'}`}
+                    >
+                      {formData.isUrgent
+                        ? 'Este pedido tiene prioridad alta'
+                        : 'Marcar si requiere atención prioritaria'}
                     </p>
                   </div>
                 </div>
@@ -750,12 +760,13 @@ function NewOrderContent() {
       </div>
 
       {/* Modal Crear Cliente (desde Nuevo Pedido) */}
-      <Dialog open={isCreateClientDialogOpen} onOpenChange={(open) => !open && handleCloseCreateClient()}>
+      <Dialog
+        open={isCreateClientDialogOpen}
+        onOpenChange={(open) => !open && handleCloseCreateClient()}
+      >
         <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {createdClientResult ? 'Cliente Creado' : 'Nuevo Cliente'}
-            </DialogTitle>
+            <DialogTitle>{createdClientResult ? 'Cliente Creado' : 'Nuevo Cliente'}</DialogTitle>
             <DialogDescription>
               {createdClientResult
                 ? 'El cliente ha sido creado. Puedes usarlo para este pedido y continuar.'
@@ -784,11 +795,14 @@ function NewOrderContent() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500">Contraseña temporal:</span>
-                  <span className="font-mono font-semibold text-blue-600">{createdClientResult.password}</span>
+                  <span className="font-mono font-semibold text-blue-600">
+                    {createdClientResult.password}
+                  </span>
                 </div>
               </div>
               <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                Comunica las credenciales al cliente de forma segura. Se recomienda que cambie la contraseña en su primer acceso.
+                Comunica las credenciales al cliente de forma segura. Se recomienda que cambie la
+                contraseña en su primer acceso.
               </p>
             </div>
           ) : (
@@ -866,7 +880,12 @@ function NewOrderContent() {
                 </Button>
                 <Button
                   onClick={handleCreateClientSubmit}
-                  disabled={isCreatingClient || !newClientForm.name.trim() || !newClientForm.email.trim() || !newClientForm.phone.trim()}
+                  disabled={
+                    isCreatingClient ||
+                    !newClientForm.name.trim() ||
+                    !newClientForm.email.trim() ||
+                    !newClientForm.phone.trim()
+                  }
                   className="rounded-xl bg-blue-500 hover:bg-blue-600"
                 >
                   {isCreatingClient ? (

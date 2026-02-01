@@ -2,10 +2,11 @@ import Link from 'next/link';
 
 import { Calendar, Clock, DollarSign, Package, TrendingUp } from 'lucide-react';
 
+import { OrderStatus } from '@/lib/utils/status';
+
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OrderStatus } from '@/lib/utils/status';
 
 // Placeholder data
 const recentOrders = [
@@ -75,7 +76,9 @@ export default function ClientPanelPage() {
         {stats.map((stat) => (
           <Card key={stat.title} className="rounded-2xl border-0 shadow-sm">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className={`rounded-xl p-3 ${colorStyles[stat.color as keyof typeof colorStyles]}`}>
+              <div
+                className={`rounded-xl p-3 ${colorStyles[stat.color as keyof typeof colorStyles]}`}
+              >
                 <stat.icon className="h-5 w-5" />
               </div>
               <div>
@@ -93,7 +96,11 @@ export default function ClientPanelPage() {
           <CardTitle className="text-base font-semibold text-slate-900">
             Tus Pedidos Recientes
           </CardTitle>
-          <Button variant="ghost" size="sm" className="rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-600">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-600"
+          >
             Ver todos
           </Button>
         </CardHeader>
@@ -101,7 +108,7 @@ export default function ClientPanelPage() {
           {recentOrders.map((order) => {
             const remaining = order.total - order.paid;
             const progress = (order.paid / order.total) * 100;
-            
+
             return (
               <div
                 key={order.id}
@@ -128,12 +135,16 @@ export default function ClientPanelPage() {
                     </div>
                   </div>
                   <Link href={`/client/orders/${order.id}`}>
-                    <Button variant="ghost" size="sm" className="rounded-lg text-slate-500 hover:bg-white hover:text-slate-700">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-lg text-slate-500 hover:bg-white hover:text-slate-700"
+                    >
                       Ver detalles
                     </Button>
                   </Link>
                 </div>
-                
+
                 {/* Resumen de pago */}
                 <div className="mt-3 pt-3 border-t border-slate-200">
                   <div className="flex items-center justify-between text-xs mb-1.5">
@@ -141,12 +152,14 @@ export default function ClientPanelPage() {
                       <DollarSign className="h-3 w-3" />
                       Pago: ${order.paid.toLocaleString()} / ${order.total.toLocaleString()}
                     </span>
-                    <span className={`font-medium ${remaining > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    <span
+                      className={`font-medium ${remaining > 0 ? 'text-amber-600' : 'text-emerald-600'}`}
+                    >
                       {remaining > 0 ? `Resta: $${remaining.toLocaleString()}` : 'Pagado'}
                     </span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full transition-all ${progress >= 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
                       style={{ width: `${Math.min(progress, 100)}%` }}
                     />
@@ -166,10 +179,16 @@ export default function ClientPanelPage() {
             Contáctanos por WhatsApp o visítanos en nuestro local
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <Button variant="outline" className="rounded-full border-slate-200 text-slate-700 hover:bg-white">
+            <Button
+              variant="outline"
+              className="rounded-full border-slate-200 text-slate-700 hover:bg-white"
+            >
               📞 +54 9 XXX XXX-XXXX
             </Button>
-            <Button variant="outline" className="rounded-full border-slate-200 text-slate-700 hover:bg-white">
+            <Button
+              variant="outline"
+              className="rounded-full border-slate-200 text-slate-700 hover:bg-white"
+            >
               💬 WhatsApp
             </Button>
           </div>
