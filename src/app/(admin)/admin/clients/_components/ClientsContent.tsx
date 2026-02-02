@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import { useClients } from '@/hooks/use-clients';
 import { Calendar, Download, Loader2, Mail, Phone, Plus, Search, User } from 'lucide-react';
 
 import type { Client } from '@/lib/services/clients.server';
@@ -39,11 +39,10 @@ interface ClientsContentProps {
 }
 
 export function ClientsContent({ initialClients }: ClientsContentProps) {
-  // Use the hook for refetching after mutations
-  const { clients: hookClients, refetch } = useClients();
+  const router = useRouter();
 
-  // Use hook clients if available (after refetch), otherwise use initial data
-  const clients = hookClients.length > 0 ? hookClients : initialClients;
+  // Use server data directly - single source of truth
+  const clients = initialClients;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -98,8 +97,8 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
       // Limpiar formulario
       setNewClient({ name: '', email: '', phone: '', cedula: '', address: '' });
 
-      // Refrescar lista de clientes
-      refetch();
+      // Refrescar lista de clientes (trigger server re-render)
+      router.refresh();
     } catch (err: any) {
       console.error('Error creating client:', err);
       setCreateError(err.message || 'Error al crear el cliente');

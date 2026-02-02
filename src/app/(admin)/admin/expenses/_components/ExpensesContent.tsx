@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 
-import { useExpenses } from '@/hooks/use-expenses';
+import { useRouter } from 'next/navigation';
+
 import {
   Calendar,
   Check,
@@ -62,12 +63,11 @@ interface ExpensesContentProps {
 }
 
 export function ExpensesContent({ initialExpenses, initialExpenseTypes }: ExpensesContentProps) {
-  // Use the hook for refetching after mutations
-  const { expenses: hookExpenses, expenseTypes: hookExpenseTypes, refetch } = useExpenses();
+  const router = useRouter();
 
-  // Use hook data if available (after refetch), otherwise use initial data
-  const expenses = hookExpenses.length > 0 ? hookExpenses : initialExpenses;
-  const dbExpenseTypes = hookExpenseTypes.length > 0 ? hookExpenseTypes : initialExpenseTypes;
+  // Use server data directly - single source of truth
+  const expenses = initialExpenses;
+  const dbExpenseTypes = initialExpenseTypes;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -194,9 +194,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       setNewTypeName('');
       setNewTypeColor('bg-slate-500');
-      refetch();
       // Revalidar caché del servidor
       await revalidateExpenseTypes();
+      // Trigger server re-render with fresh data
+      router.refresh();
     } catch (err: unknown) {
       console.error('Error adding expense type:', err);
       setTypeError(err instanceof Error ? err.message : 'Error al agregar tipo de gasto');
@@ -238,9 +239,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setEditingTypeId(null);
       setEditTypeName('');
       setEditTypeColor('');
-      refetch();
       // Revalidar caché del servidor
       await revalidateExpenseTypes();
+      // Trigger server re-render with fresh data
+      router.refresh();
     } catch (err: unknown) {
       console.error('Error updating expense type:', err);
       setTypeError(err instanceof Error ? err.message : 'Error al actualizar tipo de gasto');
@@ -266,9 +268,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       if (error) throw error;
 
-      refetch();
       // Revalidar caché del servidor
       await revalidateExpenseTypes();
+      // Trigger server re-render with fresh data
+      router.refresh();
     } catch (err: unknown) {
       console.error('Error deleting expense type:', err);
       setTypeError(err instanceof Error ? err.message : 'Error al eliminar tipo de gasto');
@@ -352,9 +355,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       }
 
       handleCloseExpenseDialog();
-      refetch();
       // Revalidar caché del servidor
       await revalidateExpenses();
+      // Trigger server re-render with fresh data
+      router.refresh();
     } catch (err: unknown) {
       console.error('Error saving expense:', err);
       setExpenseError(err instanceof Error ? err.message : 'Error al guardar el gasto');
@@ -380,9 +384,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       setIsDeleteExpenseDialogOpen(false);
       setExpenseToDelete(null);
-      refetch();
       // Revalidar caché del servidor
       await revalidateExpenses();
+      // Trigger server re-render with fresh data
+      router.refresh();
     } catch (err: unknown) {
       console.error('Error deleting expense:', err);
     } finally {
