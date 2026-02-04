@@ -735,27 +735,17 @@ export default function OrderDetailPage() {
           {/* Texto explicativo */}
 
           <div className="relative">
-            {/* Línea de fondo gris */}
-            <div className="absolute left-0 top-6 h-1 w-full rounded-full bg-slate-100" />
-
-            {/* Segmentos de progreso con colores sólidos */}
-            <div className="absolute left-0 top-6 flex h-1 w-full">
+            {/* Segmentos de progreso con gaps */}
+            <div className="absolute left-6 right-6 top-6 flex gap-1">
               {dynamicStatusFlow.slice(0, -1).map((_, index) => {
-                const segmentWidth = 100 / (dynamicStatusFlow.length - 1);
                 const isCompleted = index < currentStatusIndex;
-                const isPartial = index === currentStatusIndex;
-
                 return (
-                  <div key={index} className="relative" style={{ width: `${segmentWidth}%` }}>
-                    {(isCompleted || isPartial) && (
-                      <div
-                        className={`absolute inset-0 rounded-full transition-all duration-700 ${dynamicSegmentColors[index]}`}
-                        style={{
-                          width: isCompleted ? '100%' : '0%',
-                        }}
-                      />
-                    )}
-                  </div>
+                  <div
+                    key={index}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                      isCompleted ? dynamicSegmentColors[index] : 'bg-slate-200'
+                    }`}
+                  />
                 );
               })}
             </div>
