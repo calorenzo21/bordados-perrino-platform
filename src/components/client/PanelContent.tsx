@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,17 +12,22 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  ListFilter,
   Package,
+  PackageCheck,
   RefreshCw,
+  Search,
+  Truck,
   XCircle,
 } from 'lucide-react';
 
-import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
+import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
 // Helper to format date
 function formatDate(dateStr: string): string {
@@ -49,9 +56,126 @@ function getDaysIndicator(order: { status: string; isDelayed: boolean; daysRemai
   return { text: `${order.daysRemaining}d restantes`, color: 'text-slate-500' };
 }
 
+// Status filter options with icons and colors
+const statusFilterOptions = [
+  {
+    value: 'all',
+    label: 'Todos',
+    icon: ListFilter,
+    bgColor: 'bg-slate-100',
+    textColor: 'text-slate-600',
+    dotColor: 'bg-slate-400',
+  },
+  {
+    value: OrderStatus.RECIBIDO,
+    label: OrderStatusLabels[OrderStatus.RECIBIDO],
+    icon: Package,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    dotColor: 'bg-blue-500',
+  },
+  {
+    value: OrderStatus.CONFECCION,
+    label: OrderStatusLabels[OrderStatus.CONFECCION],
+    icon: Clock,
+    bgColor: 'bg-amber-50',
+    textColor: 'text-amber-600',
+    dotColor: 'bg-amber-500',
+  },
+  {
+    value: OrderStatus.RETIRO,
+    label: OrderStatusLabels[OrderStatus.RETIRO],
+    icon: Truck,
+    bgColor: 'bg-emerald-50',
+    textColor: 'text-emerald-600',
+    dotColor: 'bg-emerald-500',
+  },
+  {
+    value: OrderStatus.PARCIALMENTE_ENTREGADO,
+    label: OrderStatusLabels[OrderStatus.PARCIALMENTE_ENTREGADO],
+    icon: PackageCheck,
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-600',
+    dotColor: 'bg-purple-500',
+  },
+  {
+    value: OrderStatus.ENTREGADO,
+    label: OrderStatusLabels[OrderStatus.ENTREGADO],
+    icon: CheckCircle2,
+    bgColor: 'bg-sky-50',
+    textColor: 'text-sky-600',
+    dotColor: 'bg-sky-500',
+  },
+  {
+    value: OrderStatus.CANCELADO,
+    label: OrderStatusLabels[OrderStatus.CANCELADO],
+    icon: XCircle,
+    bgColor: 'bg-rose-50',
+    textColor: 'text-rose-600',
+    dotColor: 'bg-rose-500',
+  },
+];
+
 export function PanelContent() {
   const router = useRouter();
   const { data, isLoading, isValidating, error } = useClientPanel();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Get orders from data (or empty array if no data yet)
+  const orders = data?.orders ?? [];
+  const profile = data?.profile;
+
+  // Filter and sort orders - must be called before any early returns
+  const filteredAndSortedOrders = useMemo(() => {
+    let filtered = [...orders];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (order) =>
+          order.description.toLowerCase().includes(query) ||
+          order.orderNumber.toLowerCase().includes(query) ||
+          order.serviceType.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((order) => order.status === statusFilter);
+    }
+
+    // Sort orders: active first (by urgency, then date), then completed
+    return filtered.sort((a, b) => {
+      const activeStatuses: OrderStatusType[] = [
+        OrderStatus.RECIBIDO,
+        OrderStatus.CONFECCION,
+        OrderStatus.RETIRO,
+        OrderStatus.PARCIALMENTE_ENTREGADO,
+      ];
+      const aActive = activeStatuses.includes(a.status as OrderStatusType);
+      const bActive = activeStatuses.includes(b.status as OrderStatusType);
+
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [orders, searchQuery, statusFilter]);
+
+  // Count active orders - must be called before any early returns
+  const activeStatuses: OrderStatusType[] = [
+    OrderStatus.RECIBIDO,
+    OrderStatus.CONFECCION,
+    OrderStatus.RETIRO,
+    OrderStatus.PARCIALMENTE_ENTREGADO,
+  ];
+  const activeOrdersCount = useMemo(
+    () => orders.filter((o) => activeStatuses.includes(o.status as OrderStatusType)).length,
+    [orders]
+  );
 
   // Loading state - only show on first load when no cached data
   if (isLoading && !data) {
@@ -73,66 +197,130 @@ export function PanelContent() {
   }
 
   // Should not happen if we get here, but TypeScript safety
-  if (!data) {
+  if (!data || !profile) {
     return <PanelSkeleton />;
   }
 
-  const { profile, orders } = data;
-
-  // Sort orders: active first (by urgency, then date), then completed
-  const sortedOrders = [...orders].sort((a, b) => {
-    const activeStatuses: OrderStatusType[] = [
-      OrderStatus.RECIBIDO,
-      OrderStatus.CONFECCION,
-      OrderStatus.RETIRO,
-      OrderStatus.PARCIALMENTE_ENTREGADO,
-    ];
-    const aActive = activeStatuses.includes(a.status as OrderStatusType);
-    const bActive = activeStatuses.includes(b.status as OrderStatusType);
-
-    if (aActive && !bActive) return -1;
-    if (!aActive && bActive) return 1;
-    if (a.isUrgent && !b.isUrgent) return -1;
-    if (!a.isUrgent && b.isUrgent) return 1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
   return (
-    <div className="space-y-6">
-      {/* Header compacto */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      {/* Header Card - Blue gradient */}
+      <div className="rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-200/50">
         <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12 border-2 border-slate-100 shadow-md">
-            <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-lg font-semibold text-white">
-              {profile.initials}
-            </AvatarFallback>
-          </Avatar>
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-slate-900">
-                Hola, {profile.name.split(' ')[0]}
-              </h1>
-              {isValidating && <RefreshCw className="h-4 w-4 text-slate-400 animate-spin" />}
+              <h1 className="text-xl font-semibold text-white">Hola, {profile.name}</h1>
+              {isValidating && <RefreshCw className="h-4 w-4 text-white/60 animate-spin" />}
             </div>
-            <p className="text-sm text-slate-500">
-              {orders.length} pedido{orders.length !== 1 ? 's' : ''} en tu cuenta
+            <p className="text-sm text-blue-100 mt-1">
+              {activeOrdersCount > 0
+                ? `${activeOrdersCount} pedido${activeOrdersCount !== 1 ? 's' : ''} en proceso`
+                : 'No tienes pedidos activos'}
             </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-white">{orders.length}</p>
+            <p className="text-xs text-blue-100">pedidos totales</p>
           </div>
         </div>
       </div>
 
+      {/* Search and Filter */}
+      <div className="flex flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10 pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Buscar pedido..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-sm h-10 pl-10 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm focus:border-blue-300 focus:ring-blue-200"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-11 h-10 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm px-0 justify-center [&>svg:last-child]:hidden">
+            {(() => {
+              const selectedOption = statusFilterOptions.find((o) => o.value === statusFilter);
+              const Icon = selectedOption?.icon || ListFilter;
+              const isFiltered = statusFilter !== 'all';
+              return (
+                <div className="relative">
+                  <Icon
+                    className={`h-4 w-4 ${isFiltered ? selectedOption?.textColor : 'text-slate-500'}`}
+                  />
+                  {isFiltered && (
+                    <span
+                      className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${selectedOption?.dotColor}`}
+                    />
+                  )}
+                </div>
+              );
+            })()}
+          </SelectTrigger>
+          <SelectContent className="rounded-xl w-56">
+            {statusFilterOptions.map((option) => {
+              const Icon = option.icon;
+              const isSelected = statusFilter === option.value;
+              return (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="rounded-lg cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex items-center justify-center h-7 w-7 rounded-lg ${option.bgColor}`}
+                    >
+                      <Icon className={`h-4 w-4 ${option.textColor}`} />
+                    </div>
+                    <span className={isSelected ? 'font-medium' : ''}>{option.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Orders count indicator */}
+      {(searchQuery || statusFilter !== 'all') && (
+        <p className="text-sm text-slate-500">
+          Mostrando {filteredAndSortedOrders.length} de {orders.length} pedidos
+        </p>
+      )}
+
       {/* Lista de pedidos - protagonista */}
       <div className="space-y-3">
-        {sortedOrders.length === 0 ? (
+        {filteredAndSortedOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/50 py-16 text-center shadow-sm">
             <div className="rounded-full bg-slate-100 p-4">
               <Package className="h-8 w-8 text-slate-400" />
             </div>
-            <p className="mt-4 text-sm font-medium text-slate-600">No tienes pedidos aún</p>
-            <p className="mt-1 text-sm text-slate-400">Cuando realices un pedido, aparecerá aquí</p>
+            <p className="mt-4 text-sm font-medium text-slate-600">
+              {searchQuery || statusFilter !== 'all'
+                ? 'No se encontraron pedidos'
+                : 'No tienes pedidos aún'}
+            </p>
+            <p className="mt-1 text-sm text-slate-400">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Intenta con otros filtros'
+                : 'Cuando realices un pedido, aparecerá aquí'}
+            </p>
+            {(searchQuery || statusFilter !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         ) : (
-          sortedOrders.map((order) => {
+          filteredAndSortedOrders.map((order) => {
             const progress = order.total > 0 ? (order.totalPaid / order.total) * 100 : 0;
             const isPaid = order.remainingBalance <= 0;
             const isCompleted = order.status === OrderStatus.ENTREGADO;
@@ -142,7 +330,7 @@ export function PanelContent() {
             return (
               <Link key={order.id} href={`/client/orders/${order.orderNumber}`} className="block">
                 <div
-                  className={`group relative rounded-2xl bg-white/80 backdrop-blur-sm border transition-all duration-300 hover:shadow-lg hover:border-blue-200/50 ${
+                  className={`group relative rounded-2xl bg-white/80 backdrop-blur-sm border transition-all duration-200 hover:shadow-lg hover:border-blue-200/50 active:scale-[0.98] active:shadow-md ${
                     isCancelled
                       ? 'border-slate-200/30 opacity-60'
                       : isCompleted
@@ -244,14 +432,26 @@ export function PanelContent() {
 // Skeleton component for loading state
 function PanelSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      {/* Header skeleton */}
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-12 rounded-full bg-slate-200" />
-        <div className="space-y-2">
-          <div className="h-6 w-32 rounded bg-slate-200" />
-          <div className="h-4 w-24 rounded bg-slate-200" />
+    <div className="space-y-5 animate-pulse">
+      {/* Header Card skeleton */}
+      <div className="rounded-2xl bg-blue-500 p-5">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-full bg-white/20" />
+          <div className="flex-1 space-y-2">
+            <div className="h-6 w-32 rounded bg-white/20" />
+            <div className="h-4 w-40 rounded bg-white/20" />
+          </div>
+          <div className="text-right space-y-1">
+            <div className="h-8 w-12 rounded bg-white/20" />
+            <div className="h-3 w-16 rounded bg-white/20" />
+          </div>
         </div>
+      </div>
+
+      {/* Search and Filter skeleton */}
+      <div className="flex flex-row gap-2">
+        <div className="h-10 flex-1 rounded-xl bg-slate-200" />
+        <div className="h-10 w-11 rounded-xl bg-slate-200" />
       </div>
 
       {/* Orders skeleton */}

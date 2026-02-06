@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2, LogOut, Menu, Package, Settings, User, X } from 'lucide-react';
+import { Loader2, LogOut, Menu, Package, User, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -40,6 +40,7 @@ export function ClientShell({ children }: ClientShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { user, profile, isLoading, isAdmin, signOut } = useAuth();
 
   // Protección de ruta del lado del cliente como respaldo
@@ -101,7 +102,14 @@ export function ClientShell({ children }: ClientShellProps) {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      setIsSigningOut(true);
+      await signOut();
+      // La redirección se maneja en el contexto de auth
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -179,26 +187,16 @@ export function ClientShell({ children }: ClientShellProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer rounded-lg"
-                  onClick={() => router.push('/client/profile')}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Mi Perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-lg"
-                  onClick={() => router.push('/client/settings')}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configuración
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
                   className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
                   onClick={handleSignOut}
+                  disabled={isSigningOut}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesión
+                  {isSigningOut ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogOut className="mr-2 h-4 w-4" />
+                  )}
+                  {isSigningOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

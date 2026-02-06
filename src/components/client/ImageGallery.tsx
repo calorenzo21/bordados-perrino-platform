@@ -53,13 +53,16 @@ export function ImageGallery({ photos, thumbnailSize = 'md' }: ImageGalleryProps
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl border-0 bg-black/95 p-0 sm:rounded-2xl">
+        <DialogContent
+          className="max-w-4xl border-0 bg-black/90 p-0 rounded-2xl mx-auto"
+          showCloseButton={false}
+        >
           <DialogTitle className="sr-only">
             Galería de imágenes - Foto {currentIndex + 1} de {photos.length}
           </DialogTitle>
-          <div className="relative flex flex-col p-8">
+          <div className="relative flex flex-col p-3 sm:p-6">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4">
+            <div className="flex items-center justify-between pb-2 sm:pb-4">
               <span className="text-sm font-medium text-white/70">
                 {currentIndex + 1} de {photos.length}
               </span>
@@ -80,13 +83,13 @@ export function ImageGallery({ photos, thumbnailSize = 'md' }: ImageGalleryProps
                   variant="ghost"
                   size="icon"
                   onClick={prevPhoto}
-                  className="absolute left-4 z-10 h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-110"
+                  className="absolute left-1 sm:left-2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white/10 text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-110"
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               )}
 
-              <div className="relative aspect-square w-full max-h-[70vh] overflow-hidden rounded-xl">
+              <div className="relative w-full max-h-[60vh] sm:max-h-[70vh] overflow-hidden rounded-xl">
                 {photos[currentIndex] && (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
@@ -102,24 +105,24 @@ export function ImageGallery({ photos, thumbnailSize = 'md' }: ImageGalleryProps
                   variant="ghost"
                   size="icon"
                   onClick={nextPhoto}
-                  className="absolute right-4 z-10 h-12 w-12 rounded-full bg-white/10 text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-110"
+                  className="absolute right-1 sm:right-2 z-10 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white/10 text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-110"
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               )}
             </div>
 
             {/* Thumbnails */}
             {photos.length > 1 && (
-              <div className="flex justify-center gap-2 pt-4">
+              <div className="flex justify-center gap-2 pt-3 sm:pt-4">
                 {photos.map((photo, index) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setCurrentIndex(index)}
-                    className={`h-14 w-14 overflow-hidden rounded-lg transition-all duration-200 ${
+                    className={`h-10 w-10 sm:h-14 sm:w-14 overflow-hidden rounded-lg transition-all duration-200 ${
                       index === currentIndex
-                        ? 'ring-2 ring-white ring-offset-2 ring-offset-black/95 scale-110'
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-black/90 scale-110'
                         : 'opacity-50 hover:opacity-80'
                     }`}
                   >

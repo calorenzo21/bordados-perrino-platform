@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Banknote,
   Calendar,
-  Check,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -30,7 +29,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Payment methods
 const paymentMethods = [
@@ -215,95 +213,85 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
             )}
             {isValidating && <RefreshCw className="h-4 w-4 text-slate-400 animate-spin" />}
           </div>
-          <p className="text-sm text-slate-500 mt-0.5">{displayOrder.description}</p>
+          <p className="text-md text-slate-500 mt-0.5">{displayOrder.description}</p>
         </div>
       </div>
 
       {/* Timeline */}
       {displayOrder.status !== OrderStatus.CANCELADO && (
         <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/50 p-6 shadow-sm overflow-x-auto">
-          <TooltipProvider delayDuration={100}>
-            <div className="relative min-w-[400px]">
-              {/* Progress segments with gaps */}
-              <div className="absolute top-7 left-7 right-7 flex gap-1">
-                {dynamicStatusFlow.slice(0, -1).map((_, index) => {
-                  const isCompleted = index < currentStatusIndex;
-                  return (
-                    <div
-                      key={index}
-                      className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                        isCompleted ? dynamicSegmentColors[index] : 'bg-slate-200'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Status steps */}
-              <div className="relative flex justify-between">
-                {dynamicStatusFlow.map((status, index) => {
-                  const Icon = statusIcons[status];
-                  const isCompleted = index <= currentStatusIndex;
-                  const isCurrent = index === currentStatusIndex;
-                  const colors = statusColors[status];
-                  const isEntregadoFinal = status === OrderStatus.ENTREGADO && isCurrent;
-                  const showAsCompleted = (isCompleted && !isCurrent) || isEntregadoFinal;
-                  const historyItem = displayOrder.statusHistory.find((h) => h.status === status);
-
-                  return (
-                    <Tooltip key={status}>
-                      <TooltipTrigger asChild>
-                        <div className="flex flex-col items-center cursor-pointer">
-                          <div
-                            className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 ${
-                              showAsCompleted
-                                ? `bg-linear-to-br ${colors.gradient} shadow-lg`
-                                : isCurrent
-                                  ? `${colors.bgLight} border-2 ${colors.border}`
-                                  : 'border-2 border-slate-200 bg-white'
-                            }`}
-                          >
-                            {showAsCompleted ? (
-                              <Check className="h-6 w-6 text-white" />
-                            ) : (
-                              <Icon
-                                className={`h-6 w-6 ${isCurrent ? colors.text : 'text-slate-300'}`}
-                              />
-                            )}
-                            {isCurrent && !isEntregadoFinal && (
-                              <span
-                                className={`absolute inset-0 animate-ping rounded-full ${colors.bgLight} opacity-50`}
-                              />
-                            )}
-                          </div>
-                          <div className="mt-3 text-center hidden sm:block">
-                            <p
-                              className={`text-xs font-medium ${isCompleted || isCurrent ? 'text-slate-900' : 'text-slate-400'}`}
-                            >
-                              {OrderStatusLabels[status]}
-                            </p>
-                            {historyItem && (
-                              <p className="mt-0.5 text-[10px] text-slate-400">
-                                {formatDate(historyItem.changedAt)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-center">
-                        <p className="font-medium">{OrderStatusLabels[status]}</p>
-                        {historyItem && (
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(historyItem.changedAt)}
-                          </p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
+          <div className="relative min-w-[650px]">
+            {/* Progress segments with gaps */}
+            <div className="absolute top-7 left-7 right-7 flex gap-1">
+              {dynamicStatusFlow.slice(0, -1).map((_, index) => {
+                const isCompleted = index < currentStatusIndex;
+                return (
+                  <div
+                    key={index}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                      isCompleted ? dynamicSegmentColors[index] : 'bg-slate-200'
+                    }`}
+                  />
+                );
+              })}
             </div>
-          </TooltipProvider>
+
+            {/* Status steps */}
+            <div className="relative flex justify-between gap-6">
+              {dynamicStatusFlow.map((status, index) => {
+                const Icon = statusIcons[status];
+                const isCompleted = index <= currentStatusIndex;
+                const isCurrent = index === currentStatusIndex;
+                const colors = statusColors[status];
+                const isEntregadoFinal = status === OrderStatus.ENTREGADO && isCurrent;
+                const showAsCompleted = (isCompleted && !isCurrent) || isEntregadoFinal;
+                const historyItem = displayOrder.statusHistory.find((h) => h.status === status);
+
+                return (
+                  <div key={status} className="flex flex-col items-center min-w-[100px]">
+                    <div
+                      className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 ${
+                        showAsCompleted
+                          ? `bg-linear-to-br ${colors.gradient} shadow-lg`
+                          : isCurrent
+                            ? `${colors.bgLight} border-2 ${colors.border}`
+                            : 'border-2 border-slate-200 bg-white'
+                      }`}
+                    >
+                      <Icon
+                        className={`h-6 w-6 ${
+                          showAsCompleted
+                            ? 'text-white'
+                            : isCurrent
+                              ? colors.text
+                              : 'text-slate-300'
+                        }`}
+                      />
+                      {isCurrent && !isEntregadoFinal && (
+                        <span
+                          className={`absolute inset-0 animate-ping rounded-full ${colors.bgLight} opacity-50`}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-3 text-center">
+                      <p
+                        className={`text-sm font-medium whitespace-nowrap ${
+                          isCompleted || isCurrent ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                      >
+                        {OrderStatusLabels[status]}
+                      </p>
+                      {historyItem && (
+                        <p className="mt-1 text-xs text-slate-400">
+                          {formatDate(historyItem.changedAt)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
@@ -342,10 +330,10 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
             style={{ width: `${Math.min(paymentProgress, 100)}%` }}
           />
         </div>
-        <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
+        <div className="flex items-left flex-col gap-2 justify-between mt-3 text-sm text-slate-500">
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />
-            Entrega: {formatDate(displayOrder.dueDate)}
+            Entrega estimada: {formatDate(displayOrder.dueDate)}
           </span>
           <span>
             {displayOrder.serviceType} • {displayOrder.quantity} unidades
@@ -375,7 +363,7 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
         {/* History Tab */}
         <TabsContent value="history" className="mt-4">
           <Card className="rounded-2xl border-0 bg-white/80 backdrop-blur-sm shadow-sm">
-            <CardContent className="p-5">
+            <CardContent className="p-3 sm:p-5">
               {displayOrder.statusHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <div className="rounded-full bg-slate-100 p-3">
@@ -385,54 +373,123 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200" />
+                  {/* Timeline line - left side on mobile, left on desktop */}
+                  <div className="absolute left-1.5 sm:left-5 top-0 bottom-0 w-0.5 bg-slate-200" />
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {displayOrder.statusHistory.map((item) => {
                       const colors = statusColors[item.status as OrderStatusType];
                       const Icon = statusIcons[item.status as OrderStatusType];
 
                       return (
-                        <div key={item.id} className="relative pl-14">
-                          <div
-                            className={`absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${colors.gradient} shadow-md`}
-                          >
-                            <Icon className="h-5 w-5 text-white" />
-                          </div>
-
-                          <div className={`rounded-xl border ${colors.border} ${colors.light} p-4`}>
-                            <div className="flex items-center justify-between gap-2">
-                              <Badge className={`${colors.bg} border-0 text-white`}>
-                                {OrderStatusLabels[item.status as OrderStatusType]}
-                              </Badge>
-                              <span className="text-xs text-slate-500">
-                                {formatDate(item.changedAt)} • {formatTime(item.changedAt)}
-                              </span>
+                        <div key={item.id} className="relative">
+                          {/* Mobile: Card with icon inside, timeline on left edge */}
+                          <div className="sm:hidden pl-8">
+                            {/* Connection dot on the line - positioned at card's vertical center */}
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                              <div
+                                className={`h-4 w-4 rounded-full ${colors.bg} ring-4 ring-white shadow-sm`}
+                              />
                             </div>
 
-                            {item.observations && (
-                              <div className="mt-3">
-                                <p className="text-xs font-medium uppercase text-slate-400">
-                                  Observaciones
-                                </p>
-                                <p className="mt-1 text-sm text-slate-700">{item.observations}</p>
-                              </div>
-                            )}
+                            {/* Card */}
+                            <div
+                              className={`rounded-xl border-2 ${colors.border} ${colors.light} p-4 relative overflow-hidden`}
+                            >
+                              {/* Decorative gradient bar at left */}
+                              <div
+                                className={`absolute top-0 left-0 bottom-0 w-1 bg-linear-to-b ${colors.gradient}`}
+                              />
 
-                            {item.changedBy && (
-                              <p className="mt-2 text-xs text-slate-400">
-                                Actualizado por {item.changedBy}
-                              </p>
-                            )}
-
-                            {item.photos && item.photos.length > 0 && (
-                              <div className="mt-3">
-                                <p className="text-xs font-medium uppercase text-slate-400 mb-2">
-                                  Fotos
-                                </p>
-                                <ImageGallery photos={item.photos} />
+                              {/* Header with icon */}
+                              <div className="flex items-start gap-3 pl-2">
+                                <div
+                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${colors.gradient} shadow-md`}
+                                >
+                                  <Icon className="h-5 w-5 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <Badge className={`${colors.bg} border-0 text-white text-xs`}>
+                                      {OrderStatusLabels[item.status as OrderStatusType]}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    {formatDate(item.changedAt)} • {formatTime(item.changedAt)}
+                                  </p>
+                                </div>
                               </div>
-                            )}
+
+                              {item.observations && (
+                                <div className="mt-3 pt-3 border-t border-slate-200/50 pl-2">
+                                  <p className="text-xs font-medium uppercase text-slate-400">
+                                    Observaciones
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-700">{item.observations}</p>
+                                </div>
+                              )}
+
+                              {item.changedBy && (
+                                <p className="mt-2 text-xs text-slate-400 pl-2">
+                                  Por {item.changedBy}
+                                </p>
+                              )}
+
+                              {item.photos && item.photos.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-slate-200/50 pl-2">
+                                  <p className="text-xs font-medium uppercase text-slate-400 mb-2">
+                                    Fotos
+                                  </p>
+                                  <ImageGallery photos={item.photos} />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Desktop: Original layout with icon on left */}
+                          <div className="hidden sm:block pl-14">
+                            <div
+                              className={`absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${colors.gradient} shadow-md`}
+                            >
+                              <Icon className="h-5 w-5 text-white" />
+                            </div>
+
+                            <div
+                              className={`rounded-xl border ${colors.border} ${colors.light} p-4`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <Badge className={`${colors.bg} border-0 text-white`}>
+                                  {OrderStatusLabels[item.status as OrderStatusType]}
+                                </Badge>
+                                <span className="text-xs text-slate-500">
+                                  {formatDate(item.changedAt)} • {formatTime(item.changedAt)}
+                                </span>
+                              </div>
+
+                              {item.observations && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-medium uppercase text-slate-400">
+                                    Observaciones
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-700">{item.observations}</p>
+                                </div>
+                              )}
+
+                              {item.changedBy && (
+                                <p className="mt-2 text-xs text-slate-400">
+                                  Actualizado por {item.changedBy}
+                                </p>
+                              )}
+
+                              {item.photos && item.photos.length > 0 && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-medium uppercase text-slate-400 mb-2">
+                                    Fotos
+                                  </p>
+                                  <ImageGallery photos={item.photos} />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -447,7 +504,7 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
         {/* Payments Tab */}
         <TabsContent value="payments" className="mt-4">
           <Card className="rounded-2xl border-0 bg-white/80 backdrop-blur-sm shadow-sm">
-            <CardContent className="p-5">
+            <CardContent className="p-3 sm:p-5">
               {displayOrder.payments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <div className="rounded-full bg-slate-100 p-3">
@@ -457,7 +514,8 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-emerald-200" />
+                  {/* Timeline line - left side on mobile, left on desktop */}
+                  <div className="absolute left-1.5 sm:left-5 top-0 bottom-0 w-0.5 bg-emerald-200" />
 
                   <div className="space-y-4">
                     {displayOrder.payments.map((payment) => {
@@ -465,43 +523,100 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                         paymentMethods.find((m) => m.id === payment.method)?.icon || DollarSign;
 
                       return (
-                        <div key={payment.id} className="relative pl-14">
-                          <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-emerald-500 shadow-md">
-                            <PaymentIcon className="h-5 w-5 text-white" />
-                          </div>
-
-                          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-lg font-semibold text-emerald-600">
-                                ${payment.amount.toLocaleString()}
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                {formatDate(payment.paymentDate)} •{' '}
-                                {formatTime(payment.paymentDate)}
-                              </span>
+                        <div key={payment.id} className="relative">
+                          {/* Mobile: Card with icon inside, timeline on left edge */}
+                          <div className="sm:hidden pl-8">
+                            {/* Connection dot on the line - positioned at card's vertical center */}
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                              <div className="h-4 w-4 rounded-full bg-emerald-500 ring-4 ring-white shadow-sm" />
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge
-                                variant="outline"
-                                className="text-xs border-emerald-200 text-emerald-700"
-                              >
-                                {paymentMethods.find((m) => m.id === payment.method)?.label ||
-                                  'Otro'}
-                              </Badge>
-                              {payment.receivedBy && (
-                                <span className="text-xs text-slate-400">
-                                  por {payment.receivedBy}
-                                </span>
+
+                            {/* Card */}
+                            <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50/50 p-4 relative overflow-hidden">
+                              {/* Decorative gradient bar at left */}
+                              <div className="absolute top-0 left-0 bottom-0 w-1 bg-linear-to-b from-emerald-400 to-emerald-500" />
+
+                              {/* Header with icon */}
+                              <div className="flex items-start gap-3 pl-2">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-400 to-emerald-500 shadow-md">
+                                  <PaymentIcon className="h-5 w-5 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xl font-bold text-emerald-600">
+                                    ${payment.amount.toLocaleString()}
+                                  </span>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    {formatDate(payment.paymentDate)} •{' '}
+                                    {formatTime(payment.paymentDate)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-emerald-200/50 pl-2">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-emerald-200 text-emerald-700"
+                                >
+                                  {paymentMethods.find((m) => m.id === payment.method)?.label ||
+                                    'Otro'}
+                                </Badge>
+                                {payment.receivedBy && (
+                                  <span className="text-xs text-slate-400">
+                                    por {payment.receivedBy}
+                                  </span>
+                                )}
+                              </div>
+
+                              {payment.notes && (
+                                <p className="mt-2 text-sm text-slate-600 pl-2">{payment.notes}</p>
+                              )}
+                              {payment.photos && payment.photos.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-emerald-200/50 pl-2">
+                                  <ImageGallery photos={payment.photos} thumbnailSize="sm" />
+                                </div>
                               )}
                             </div>
-                            {payment.notes && (
-                              <p className="mt-2 text-sm text-slate-600">{payment.notes}</p>
-                            )}
-                            {payment.photos && payment.photos.length > 0 && (
-                              <div className="mt-2">
-                                <ImageGallery photos={payment.photos} thumbnailSize="sm" />
+                          </div>
+
+                          {/* Desktop: Original layout with icon on left */}
+                          <div className="hidden sm:block pl-14">
+                            <div className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-emerald-500 shadow-md">
+                              <PaymentIcon className="h-5 w-5 text-white" />
+                            </div>
+
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-lg font-semibold text-emerald-600">
+                                  ${payment.amount.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {formatDate(payment.paymentDate)} •{' '}
+                                  {formatTime(payment.paymentDate)}
+                                </span>
                               </div>
-                            )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-emerald-200 text-emerald-700"
+                                >
+                                  {paymentMethods.find((m) => m.id === payment.method)?.label ||
+                                    'Otro'}
+                                </Badge>
+                                {payment.receivedBy && (
+                                  <span className="text-xs text-slate-400">
+                                    por {payment.receivedBy}
+                                  </span>
+                                )}
+                              </div>
+                              {payment.notes && (
+                                <p className="mt-2 text-sm text-slate-600">{payment.notes}</p>
+                              )}
+                              {payment.photos && payment.photos.length > 0 && (
+                                <div className="mt-2">
+                                  <ImageGallery photos={payment.photos} thumbnailSize="sm" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
