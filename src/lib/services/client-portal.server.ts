@@ -227,6 +227,8 @@ export async function getClientPanelData(): Promise<ClientPanelData | null> {
  * Get detailed information for a specific order
  * Includes status history with photos and payments with photos
  * Verifies the order belongs to the authenticated client
+ *
+ * OPTIMIZED: Uses parallel queries and batch profile lookups
  */
 export async function getClientOrderDetail(
   orderIdOrNumber: string
@@ -252,21 +254,25 @@ export async function getClientOrderDetail(
     return null;
   }
 
-  // Get the order - try by order_number first, then by id
+  // Check if it's a valid UUID (36 characters with dashes in correct positions)
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    orderIdOrNumber
+  );
+
+  // Get the order
   let orderQuery = supabase.from('orders_with_payments').select('*').eq('client_id', client.id);
 
-  // Check if it looks like a UUID or an order number
-  if (orderIdOrNumber.startsWith('ORD-') || !orderIdOrNumber.includes('-')) {
-    orderQuery = orderQuery.eq('order_number', orderIdOrNumber);
-  } else {
+  if (isUUID) {
     orderQuery = orderQuery.eq('id', orderIdOrNumber);
+  } else {
+    // It's an order number (ORD-XXX, PED-XXX, etc.)
+    orderQuery = orderQuery.eq('order_number', orderIdOrNumber);
   }
 
   const { data: orderData, error: orderError } = await orderQuery.single();
 
   if (orderError) {
     if (orderError.code === 'PGRST116') {
-      // Order not found or doesn't belong to this client
       return null;
     }
     console.error('Error fetching order:', orderError);
@@ -277,103 +283,82 @@ export async function getClientOrderDetail(
     return null;
   }
 
-  // Get status history with photos
-  const { data: statusHistoryData, error: statusError } = await supabase
-    .from('order_status_history')
-    .select(
+  // Fetch status history and payments in PARALLEL
+  const [statusHistoryResult, paymentsResult] = await Promise.all([
+    supabase
+      .from('order_status_history')
+      .select(
+        `
+        id,
+        status,
+        observations,
+        changed_at,
+        changed_by,
+        order_status_photos (photo_url)
       `
-      id,
-      status,
-      observations,
-      changed_at,
-      changed_by,
-      order_status_photos (photo_url)
-    `
-    )
-    .eq('order_id', orderData.id)
-    .order('changed_at', { ascending: false });
+      )
+      .eq('order_id', orderData.id)
+      .order('changed_at', { ascending: false }),
+    supabase
+      .from('payments')
+      .select(
+        `
+        id,
+        amount,
+        method,
+        notes,
+        payment_date,
+        received_by,
+        payment_photos (photo_url)
+      `
+      )
+      .eq('order_id', orderData.id)
+      .order('payment_date', { ascending: false }),
+  ]);
 
-  if (statusError) {
-    console.error('Error fetching status history:', statusError);
+  const statusHistoryData = statusHistoryResult.data || [];
+  const paymentsData = paymentsResult.data || [];
+
+  // Collect all unique profile IDs that need to be fetched
+  const profileIds = new Set<string>();
+  statusHistoryData.forEach((sh) => sh.changed_by && profileIds.add(sh.changed_by));
+  paymentsData.forEach((p) => p.received_by && profileIds.add(p.received_by));
+
+  // Batch fetch all profiles at once
+  const profilesMap = new Map<string, string>();
+  if (profileIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .in('id', Array.from(profileIds));
+
+    if (profiles) {
+      profiles.forEach((p) => {
+        profilesMap.set(p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim());
+      });
+    }
   }
 
-  // Get user names for status history
-  const statusHistory: StatusHistoryItem[] = await Promise.all(
-    (statusHistoryData || []).map(async (sh) => {
-      let changedByName: string | null = null;
+  // Map status history with cached profile names
+  const statusHistory: StatusHistoryItem[] = statusHistoryData.map((sh) => ({
+    id: sh.id,
+    status: sh.status as OrderStatus,
+    observations: sh.observations,
+    changedAt: sh.changed_at,
+    changedBy: sh.changed_by ? profilesMap.get(sh.changed_by) || null : null,
+    photos: (sh.order_status_photos || []).map((p: { photo_url: string }) => p.photo_url),
+  }));
 
-      if (sh.changed_by) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', sh.changed_by)
-          .single();
-
-        if (profileData) {
-          changedByName = `${profileData.first_name} ${profileData.last_name}`.trim();
-        }
-      }
-
-      return {
-        id: sh.id,
-        status: sh.status as OrderStatus,
-        observations: sh.observations,
-        changedAt: sh.changed_at,
-        changedBy: changedByName,
-        photos: (sh.order_status_photos || []).map((p: { photo_url: string }) => p.photo_url),
-      };
-    })
-  );
-
-  // Get payments with photos
-  const { data: paymentsData, error: paymentsError } = await supabase
-    .from('payments')
-    .select(
-      `
-      id,
-      amount,
-      method,
-      notes,
-      payment_date,
-      received_by,
-      payment_photos (photo_url)
-    `
-    )
-    .eq('order_id', orderData.id)
-    .order('payment_date', { ascending: false });
-
-  if (paymentsError) {
-    console.error('Error fetching payments:', paymentsError);
-  }
-
-  // Get user names for payments
-  const payments: PaymentItem[] = await Promise.all(
-    (paymentsData || []).map(async (p) => {
-      let receivedByName: string | null = null;
-
-      if (p.received_by) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', p.received_by)
-          .single();
-
-        if (profileData) {
-          receivedByName = `${profileData.first_name} ${profileData.last_name}`.trim();
-        }
-      }
-
-      return {
-        id: p.id,
-        amount: p.amount,
-        method: p.method as PaymentMethod,
-        notes: p.notes,
-        paymentDate: p.payment_date,
-        receivedBy: receivedByName,
-        photos: (p.payment_photos || []).map((ph: { photo_url: string }) => ph.photo_url),
-      };
-    })
-  );
+  // Map payments with cached profile names
+  const payments: PaymentItem[] = paymentsData.map((p) => ({
+    id: p.id,
+    amount: p.amount,
+    method: p.method as PaymentMethod,
+    notes: p.notes,
+    paymentDate: p.payment_date,
+    receivedBy: p.received_by ? profilesMap.get(p.received_by) || null : null,
+    photos: (p.payment_photos || []).map((ph: { photo_url: string }) => ph.photo_url),
+  }));
 
   return {
     id: orderData.id,
