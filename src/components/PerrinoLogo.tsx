@@ -25,7 +25,7 @@ export function PerrinoLogo({ size = 'md', className, rounded = 'xl' }: PerrinoL
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center overflow-hidden bg-slate-900',
+        'flex shrink-0 items-center justify-center overflow-hidden',
         sizeClasses[size],
         roundedClass,
         className

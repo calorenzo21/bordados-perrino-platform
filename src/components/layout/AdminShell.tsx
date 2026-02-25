@@ -206,9 +206,6 @@ export function AdminShell({ children }: AdminShellProps) {
               className={cn('flex items-center', sidebarCollapsed ? 'justify-center' : 'gap-2.5')}
             >
               <PerrinoLogo size="sm" />
-              {!sidebarCollapsed && (
-                <span className="text-lg font-semibold text-slate-800">Perrino</span>
-              )}
             </Link>
 
             {/* Collapse button - Desktop */}
