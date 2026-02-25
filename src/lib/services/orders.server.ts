@@ -3,7 +3,10 @@
  *
  * Server-side data fetching for orders.
  * Uses the server Supabase client for SSR.
+ * React.cache() deduplicates within the same request.
  */
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 
 export interface OrderClient {
@@ -26,6 +29,8 @@ export interface Order {
   isDelayed: boolean;
   daysRemaining: number;
   isUrgent: boolean;
+  /** Saldo pendiente por cobrar (total - abonos). > 0 = no cancelado en su totalidad */
+  remainingBalance: number;
 }
 
 export interface OrdersData {
@@ -45,8 +50,9 @@ function getInitials(name: string): string {
 /**
  * Fetch all orders on the server
  * This is called from Server Components
+ * React.cache() deduplicates calls within the same request
  */
-export async function getOrdersData(): Promise<OrdersData> {
+export const getOrdersData = cache(async function getOrdersData(): Promise<OrdersData> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -78,10 +84,11 @@ export async function getOrdersData(): Promise<OrdersData> {
     isDelayed: o.is_delayed || false,
     daysRemaining: o.days_remaining || 0,
     isUrgent: o.is_urgent || false,
+    remainingBalance: Number(o.remaining_balance) || 0,
   }));
 
   return {
     orders,
     lastUpdated: new Date().toISOString(),
   };
-}
+});

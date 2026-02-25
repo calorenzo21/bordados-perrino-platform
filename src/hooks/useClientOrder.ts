@@ -13,7 +13,7 @@ import useSWR from 'swr';
 import type { ClientOrderDetail } from '@/lib/services/client-portal.server';
 
 const fetcher = async (url: string): Promise<ClientOrderDetail> => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || 'Error al cargar el pedido');
@@ -31,15 +31,11 @@ export function useClientOrder(orderId: string, options: UseClientOrderOptions =
     fetcher,
     {
       fallbackData: options.fallbackData,
-      // Keep data in cache - this is key for instant navigation
-      dedupingInterval: 60000, // 1 minute deduping
-      revalidateOnFocus: false, // Don't refetch on window focus
-      revalidateOnReconnect: true, // Refetch on reconnect
-      // Show stale data while revalidating (instant navigation)
+      dedupingInterval: 15000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
       revalidateIfStale: true,
-      // Keep previous data while loading new
       keepPreviousData: true,
-      // Retry on error
       errorRetryCount: 2,
       errorRetryInterval: 3000,
     }

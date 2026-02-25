@@ -77,6 +77,7 @@ interface StatusHistoryItem {
   observations: string;
   photos: string[];
   user: string;
+  quantityDelivered?: number | null;
 }
 
 interface Payment {
@@ -236,7 +237,7 @@ export default function OrderDetailPage() {
   const supabase = createClient();
 
   // Usar el hook para obtener datos de Supabase
-  const { order, setOrder, isLoading: loading, refetch: _refetch } = useOrder(orderId);
+  const { order, setOrder, isLoading: loading, refetch } = useOrder(orderId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -254,6 +255,7 @@ export default function OrderDetailPage() {
     status: '' as OrderStatusType,
     observations: '',
     photos: [] as string[],
+    quantityDelivered: '' as string,
   });
   // Estados para fotos del cambio de estado
   const [statusPhotoFiles, setStatusPhotoFiles] = useState<File[]>([]);
@@ -312,6 +314,18 @@ export default function OrderDetailPage() {
   const totalPaid = order?.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
   const remainingBalance = order ? order.total - totalPaid : 0;
   const paymentProgress = order ? (totalPaid / order.total) * 100 : 0;
+
+  // Calcular total entregado (solo entradas PARCIALMENTE_ENTREGADO con quantityDelivered)
+  const statusHistoryItems = (order?.statusHistory ?? []) as StatusHistoryItem[];
+  const totalDelivered =
+    statusHistoryItems.reduce(
+      (sum, h) =>
+        h.status === OrderStatus.PARCIALMENTE_ENTREGADO && h.quantityDelivered != null
+          ? sum + h.quantityDelivered
+          : sum,
+      0
+    ) || 0;
+  const remainingToDeliver = order ? order.quantity - totalDelivered : 0;
 
   // Función para agregar un nuevo abono
   const handleAddPayment = async () => {
@@ -418,6 +432,7 @@ export default function OrderDetailPage() {
 
       // Revalidar caché del servidor
       await revalidateOrder(order.uuid);
+      refetch();
 
       // 5. Resetear el formulario y cerrar
       setNewPaymentData({ amount: '', method: 'efectivo', notes: '', photos: [] });
@@ -523,6 +538,7 @@ export default function OrderDetailPage() {
 
       // Revalidar caché del servidor
       await revalidateOrder(order.uuid);
+      refetch();
 
       setIsEditing(false);
     } catch (err) {
@@ -540,6 +556,20 @@ export default function OrderDetailPage() {
 
   const confirmStatusChange = async () => {
     if (!order || !newStatusData.status || !newStatusData.observations) return;
+
+    if (newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO) {
+      const qty = parseInt(newStatusData.quantityDelivered || '0', 10);
+      if (isNaN(qty) || qty <= 0) {
+        alert('Ingresa la cantidad de unidades entregadas (mayor a 0)');
+        return;
+      }
+      if (qty > remainingToDeliver) {
+        alert(
+          `La cantidad no puede superar las ${remainingToDeliver} unidades pendientes por entregar`
+        );
+        return;
+      }
+    }
 
     setIsStatusChanging(true);
 
@@ -588,14 +618,21 @@ export default function OrderDetailPage() {
       }
 
       // 3. Insertar el nuevo registro en el historial de estados (con changed_by)
+      const insertPayload: Record<string, unknown> = {
+        order_id: order.uuid,
+        status: newStatusData.status,
+        observations: newStatusData.observations,
+        changed_by: currentUser?.id || null,
+      };
+      if (
+        newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+        newStatusData.quantityDelivered
+      ) {
+        insertPayload.quantity_delivered = parseInt(newStatusData.quantityDelivered, 10);
+      }
       const { data: historyData, error: historyError } = await supabase
         .from('order_status_history')
-        .insert({
-          order_id: order.uuid,
-          status: newStatusData.status,
-          observations: newStatusData.observations,
-          changed_by: currentUser?.id || null,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
@@ -621,7 +658,11 @@ export default function OrderDetailPage() {
         }
       }
 
-      // 5. Actualizar el estado local inmediatamente
+      const qtyDelivered =
+        newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+        newStatusData.quantityDelivered
+          ? parseInt(newStatusData.quantityDelivered, 10)
+          : null;
       const newHistoryItem: StatusHistoryItem = {
         id: historyData?.id || Date.now().toString(),
         status: newStatusData.status,
@@ -634,6 +675,7 @@ export default function OrderDetailPage() {
         observations: newStatusData.observations,
         photos: uploadedPhotoUrls,
         user: userName,
+        quantityDelivered: qtyDelivered,
       };
 
       setOrder({
@@ -644,9 +686,15 @@ export default function OrderDetailPage() {
 
       // Revalidar caché del servidor
       await revalidateOrder(order.uuid);
+      refetch();
 
       // 6. Limpiar y cerrar
-      setNewStatusData({ status: '' as OrderStatusType, observations: '', photos: [] });
+      setNewStatusData({
+        status: '' as OrderStatusType,
+        observations: '',
+        photos: [],
+        quantityDelivered: '',
+      });
       setStatusPhotoFiles([]);
       setStatusPhotoPreviews([]);
       setIsStatusDialogOpen(false);
@@ -676,7 +724,7 @@ export default function OrderDetailPage() {
               >
                 {OrderStatusLabels[order.status as OrderStatusType]}
               </Badge>
-              {order.isUrgent && (
+              {order.isUrgent && order.status !== OrderStatus.ENTREGADO && (
                 <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700">
                   <AlertTriangle className="h-3 w-3" />
                   URGENTE
@@ -876,19 +924,28 @@ export default function OrderDetailPage() {
             </TooltipProvider>
           </div>
 
-          {/* Indicador de entregas parciales si aplica */}
-          {partialDeliveryCount > 0 && (
-            <div className="mt-6 flex items-center justify-center gap-3 rounded-xl border-2 border-purple-200 bg-purple-50 p-4">
-              <PackageCheck className="h-5 w-5 text-purple-600" />
-              <div className="text-center">
-                <p className="text-sm font-semibold text-purple-900">
-                  {partialDeliveryCount} entrega{partialDeliveryCount > 1 ? 's' : ''} parcial
-                  {partialDeliveryCount > 1 ? 'es' : ''} registrada
-                  {partialDeliveryCount > 1 ? 's' : ''}
-                </p>
-                <p className="mt-1 text-xs text-purple-600">
-                  Revisa el historial para ver los detalles
-                </p>
+          {/* Progreso de entrega si hay entregas parciales */}
+          {(partialDeliveryCount > 0 || order.status === OrderStatus.PARCIALMENTE_ENTREGADO) && (
+            <div className="mt-6 flex flex-col gap-3 rounded-xl border-2 border-purple-200 bg-purple-50 p-4">
+              <div className="flex items-center justify-center gap-3">
+                <PackageCheck className="h-5 w-5 text-purple-600" />
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-purple-900">
+                    {totalDelivered} de {order.quantity} unidades entregadas
+                  </p>
+                  <p className="mt-1 text-xs text-purple-600">
+                    {remainingToDeliver} pendientes • {partialDeliveryCount} entrega
+                    {partialDeliveryCount > 1 ? 's' : ''} parcial
+                    {partialDeliveryCount > 1 ? 'es' : ''} registrada
+                    {partialDeliveryCount > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="relative h-2.5 w-full rounded-full bg-purple-200 overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-purple-400 to-purple-500 transition-all duration-500"
+                  style={{ width: `${Math.min((totalDelivered / order.quantity) * 100, 100)}%` }}
+                />
               </div>
             </div>
           )}
@@ -1486,7 +1543,7 @@ export default function OrderDetailPage() {
                     <div className="absolute bottom-0 left-6 top-0 w-0.5 bg-slate-200" />
 
                     <div className="space-y-8">
-                      {order.statusHistory
+                      {statusHistoryItems
                         .slice()
                         .reverse()
                         .map((item, index) => {
@@ -1525,6 +1582,21 @@ export default function OrderDetailPage() {
                                     <span>{item.time}</span>
                                   </div>
                                 </div>
+
+                                {/* Cantidad entregada - solo para PARCIALMENTE_ENTREGADO */}
+                                {item.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                                  item.quantityDelivered != null &&
+                                  item.quantityDelivered > 0 && (
+                                    <div className="mt-3">
+                                      <p className="text-xs font-medium uppercase text-slate-400">
+                                        Unidades entregadas
+                                      </p>
+                                      <p className="mt-1 text-sm font-semibold text-purple-600">
+                                        {item.quantityDelivered} unidad
+                                        {item.quantityDelivered !== 1 ? 'es' : ''}
+                                      </p>
+                                    </div>
+                                  )}
 
                                 {/* Observaciones */}
                                 {item.observations && (
@@ -1625,6 +1697,30 @@ export default function OrderDetailPage() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
+
+            {/* Cantidad entregada - solo para PARCIALMENTE_ENTREGADO */}
+            {newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Cantidad entregada <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={remainingToDeliver}
+                  placeholder={`Quedan ${remainingToDeliver} por entregar`}
+                  value={newStatusData.quantityDelivered}
+                  onChange={(e) =>
+                    setNewStatusData({ ...newStatusData, quantityDelivered: e.target.value })
+                  }
+                  className="rounded-xl border-slate-200"
+                />
+                <p className="text-xs text-slate-500">
+                  {totalDelivered} de {order?.quantity || 0} unidades entregadas •{' '}
+                  {remainingToDeliver} pendientes
+                </p>
+              </div>
+            )}
 
             {/* Subir fotos */}
             <div className="space-y-2">
@@ -1733,7 +1829,12 @@ export default function OrderDetailPage() {
                 setIsStatusDialogOpen(false);
                 setStatusPhotoFiles([]);
                 setStatusPhotoPreviews([]);
-                setNewStatusData({ status: '' as OrderStatusType, observations: '', photos: [] });
+                setNewStatusData({
+                  status: '' as OrderStatusType,
+                  observations: '',
+                  photos: [],
+                  quantityDelivered: '',
+                });
               }}
               className="rounded-xl"
             >
@@ -1741,7 +1842,13 @@ export default function OrderDetailPage() {
             </Button>
             <Button
               onClick={confirmStatusChange}
-              disabled={!newStatusData.observations || isStatusChanging}
+              disabled={
+                !newStatusData.observations ||
+                isStatusChanging ||
+                (newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                  (!newStatusData.quantityDelivered ||
+                    parseInt(newStatusData.quantityDelivered, 10) <= 0))
+              }
               className="rounded-xl bg-blue-500 hover:bg-blue-600"
             >
               {isStatusChanging ? (

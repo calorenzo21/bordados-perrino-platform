@@ -1,18 +1,17 @@
 /**
  * Dashboard Data Fetching
- * 
+ *
  * Server-side data fetching for the dashboard.
  * Falls back to mock data if database is not available.
  */
-
-import { createClient } from '@/lib/supabase/server';
 import { DashboardService } from '@/lib/services/dashboard.service';
-import type { 
-  DashboardMetrics, 
-  OrdersByMonth, 
-  OrdersByStatus, 
-  OrdersByService,
+import { createClient } from '@/lib/supabase/server';
+import type {
+  DashboardMetrics,
   OrderWithPayments,
+  OrdersByMonth,
+  OrdersByService,
+  OrdersByStatus,
 } from '@/lib/types/database';
 
 // Mock data for fallback
@@ -25,6 +24,7 @@ const mockMetrics: DashboardMetrics = {
   monthlyExpensesChange: -3.4,
   totalClients: 20,
   totalClientsChange: 5,
+  pendingToCollect: 0,
   completedOrders: 156,
   completedOrdersChange: 15,
 };
@@ -61,19 +61,14 @@ export async function getDashboardData(): Promise<DashboardData> {
     const supabase = await createClient();
     const service = new DashboardService(supabase);
 
-    const [
-      metrics,
-      ordersByMonth,
-      ordersByStatus,
-      ordersByService,
-      recentOrders,
-    ] = await Promise.all([
-      service.getMetrics(),
-      service.getOrdersByMonth(12),
-      service.getOrdersByStatus(),
-      service.getOrdersByService(),
-      service.getRecentOrders(5),
-    ]);
+    const [metrics, ordersByMonth, ordersByStatus, ordersByService, recentOrders] =
+      await Promise.all([
+        service.getMetrics(),
+        service.getOrdersByMonth(12),
+        service.getOrdersByStatus(),
+        service.getOrdersByService(),
+        service.getRecentOrders(5),
+      ]);
 
     return {
       metrics,
@@ -85,7 +80,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   } catch (error) {
     console.error('Error fetching dashboard data, using mock data:', error);
-    
+
     // Return mock data if database is not available
     return {
       metrics: mockMetrics,

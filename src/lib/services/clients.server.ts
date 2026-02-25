@@ -3,7 +3,10 @@
  *
  * Server-side data fetching for clients.
  * Uses the server Supabase client for SSR.
+ * React.cache() deduplicates within the same request.
  */
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 
 export interface ClientOrder {
@@ -47,8 +50,9 @@ function getInitials(name: string): string {
 /**
  * Fetch all clients on the server
  * This is called from Server Components
+ * React.cache() deduplicates calls within the same request
  */
-export async function getClientsData(): Promise<ClientsData> {
+export const getClientsData = cache(async function getClientsData(): Promise<ClientsData> {
   const supabase = await createClient();
 
   // Get clients with stats
@@ -109,4 +113,4 @@ export async function getClientsData(): Promise<ClientsData> {
     clients,
     lastUpdated: new Date().toISOString(),
   };
-}
+});

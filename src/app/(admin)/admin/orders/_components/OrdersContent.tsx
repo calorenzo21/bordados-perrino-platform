@@ -4,17 +4,20 @@ import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
+import { adminOrderFetcher, getAdminOrderSwrKey } from '@/hooks/use-orders';
 import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Clock,
+  DollarSign,
   Download,
   Plus,
   Search,
   User,
   X,
 } from 'lucide-react';
+import { useSWRConfig } from 'swr';
 
 import type { Order } from '@/lib/services/orders.server';
 import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
@@ -69,6 +72,14 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
   const orders = initialOrders;
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const { mutate } = useSWRConfig();
+
+  const prefetchOrder = useMemo(
+    () => (orderId: string) => {
+      mutate(getAdminOrderSwrKey(orderId), () => adminOrderFetcher(getAdminOrderSwrKey(orderId)));
+    },
+    [mutate]
+  );
 
   // Extraer lista de clientes únicos de los pedidos
   const clients = useMemo(() => {
@@ -349,88 +360,119 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedOrders.map((order) => (
-                <TableRow
-                  key={order.id}
-                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50"
-                >
-                  <TableCell className="pl-6">
-                    <Link href={`/admin/orders/${order.id}`} className="block">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">
-                          {order.id}
+              {paginatedOrders.map((order) => {
+                const hasPendingBalance =
+                  order.status !== OrderStatus.CANCELADO && (order.remainingBalance ?? 0) > 0;
+                return (
+                  <TableRow
+                    key={order.id}
+                    className={`group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 ${
+                      hasPendingBalance ? 'border-l-4 border-l-amber-400 bg-amber-50/40' : ''
+                    }`}
+                  >
+                    <TableCell className="pl-6">
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="block"
+                        onMouseEnter={() => prefetchOrder(order.id)}
+                        onFocus={() => prefetchOrder(order.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">
+                            {order.id}
+                          </span>
+                          {order.isUrgent && order.status !== OrderStatus.ENTREGADO && (
+                            <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              URGENTE
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400">{order.quantity} unidades</p>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="flex items-center gap-2"
+                        onMouseEnter={() => prefetchOrder(order.id)}
+                        onFocus={() => prefetchOrder(order.id)}
+                      >
+                        <Avatar className="h-8 w-8 border border-slate-100">
+                          <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-xs text-white">
+                            {order.client.initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-slate-900">{order.client.name}</p>
+                          <p className="text-xs text-slate-400">{order.client.email}</p>
+                        </div>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="block max-w-[200px]"
+                        onMouseEnter={() => prefetchOrder(order.id)}
+                        onFocus={() => prefetchOrder(order.id)}
+                      >
+                        <p className="truncate text-sm text-slate-700">{order.description}</p>
+                        <Badge
+                          variant="outline"
+                          className="mt-1 border-slate-200 bg-slate-50 text-xs font-normal text-slate-500"
+                        >
+                          {order.serviceType}
+                        </Badge>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <OrderStatusBadge status={order.status as OrderStatusType} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {order.isDelayed ? (
+                          <>
+                            <AlertCircle className="h-4 w-4 text-rose-500" />
+                            <span className="text-sm font-medium text-rose-600">
+                              {Math.abs(order.daysRemaining)}d tarde
+                            </span>
+                          </>
+                        ) : order.daysRemaining === 0 ? (
+                          <>
+                            <Clock className="h-4 w-4 text-amber-500" />
+                            <span className="text-sm font-medium text-amber-600">Hoy</span>
+                          </>
+                        ) : order.status === OrderStatus.ENTREGADO ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 text-sky-500" />
+                            <span className="text-sm text-sky-600">Completado</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            <span className="text-sm text-slate-600">{order.daysRemaining}d</span>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="font-semibold text-emerald-500 text-sm">
+                          ${order.total.toLocaleString()}
                         </span>
-                        {order.isUrgent && (
-                          <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600">
-                            <AlertTriangle className="h-3 w-3" />
-                            URGENTE
+                        {hasPendingBalance && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+                            title="Saldo pendiente por cobrar"
+                          >
+                            ${(order.remainingBalance ?? 0).toLocaleString()} pend.
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400">{order.quantity} unidades</p>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/admin/orders/${order.id}`} className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8 border border-slate-100">
-                        <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-xs text-white">
-                          {order.client.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-slate-900">{order.client.name}</p>
-                        <p className="text-xs text-slate-400">{order.client.email}</p>
-                      </div>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/admin/orders/${order.id}`} className="block max-w-[200px]">
-                      <p className="truncate text-sm text-slate-700">{order.description}</p>
-                      <Badge
-                        variant="outline"
-                        className="mt-1 border-slate-200 bg-slate-50 text-xs font-normal text-slate-500"
-                      >
-                        {order.serviceType}
-                      </Badge>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <OrderStatusBadge status={order.status as OrderStatusType} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      {order.isDelayed ? (
-                        <>
-                          <AlertCircle className="h-4 w-4 text-rose-500" />
-                          <span className="text-sm font-medium text-rose-600">
-                            {Math.abs(order.daysRemaining)}d tarde
-                          </span>
-                        </>
-                      ) : order.daysRemaining === 0 ? (
-                        <>
-                          <Clock className="h-4 w-4 text-amber-500" />
-                          <span className="text-sm font-medium text-amber-600">Hoy</span>
-                        </>
-                      ) : order.status === OrderStatus.ENTREGADO ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 text-sky-500" />
-                          <span className="text-sm text-sky-600">Completado</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          <span className="text-sm text-slate-600">{order.daysRemaining}d</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="font-semibold text-emerald-500 text-sm">
-                      ${order.total.toLocaleString()}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
 

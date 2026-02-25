@@ -13,7 +13,7 @@ import useSWR from 'swr';
 import type { ClientPanelData } from '@/lib/services/client-portal.server';
 
 const fetcher = async (url: string): Promise<ClientPanelData> => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || 'Error al cargar los datos');
@@ -26,15 +26,11 @@ export function useClientPanel() {
     '/api/client/panel',
     fetcher,
     {
-      // Keep data in cache - this is key for instant navigation
-      dedupingInterval: 60000, // 1 minute deduping
-      revalidateOnFocus: false, // Don't refetch on window focus
-      revalidateOnReconnect: true, // Refetch on reconnect
-      // Show stale data while revalidating (instant navigation)
+      dedupingInterval: 30000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
       revalidateIfStale: true,
-      // Keep previous data while loading new
       keepPreviousData: true,
-      // Retry on error
       errorRetryCount: 2,
       errorRetryInterval: 3000,
     }

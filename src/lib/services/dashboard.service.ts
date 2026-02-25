@@ -1,15 +1,19 @@
 /**
  * Dashboard Service
- * 
+ *
  * Business logic for dashboard metrics and statistics.
  */
-
 import { SupabaseClient } from '@supabase/supabase-js';
 
-import { OrdersRepository } from '@/lib/repositories/orders.repository';
-import { ExpensesRepository } from '@/lib/repositories/expenses.repository';
 import { ClientsRepository } from '@/lib/repositories/clients.repository';
-import type { DashboardMetrics, OrdersByMonth, OrdersByStatus, OrdersByService } from '@/lib/types/database';
+import { ExpensesRepository } from '@/lib/repositories/expenses.repository';
+import { OrdersRepository } from '@/lib/repositories/orders.repository';
+import type {
+  DashboardMetrics,
+  OrdersByMonth,
+  OrdersByService,
+  OrdersByStatus,
+} from '@/lib/types/database';
 
 export class DashboardService {
   private ordersRepo: OrdersRepository;
@@ -65,7 +69,7 @@ export class DashboardService {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
-    
+
     // Mes anterior
     const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
@@ -78,6 +82,7 @@ export class DashboardService {
       monthlyExpenses,
       prevMonthlyExpenses,
       totalClients,
+      pendingToCollect,
     ] = await Promise.all([
       this.ordersRepo.countActive(),
       this.ordersRepo.countCompleted(),
@@ -86,6 +91,7 @@ export class DashboardService {
       this.getMonthlyExpenses(currentYear, currentMonth),
       this.getMonthlyExpenses(prevYear, prevMonth),
       this.clientsRepo.count(),
+      this.ordersRepo.getTotalPendingToCollect(),
     ]);
 
     return {
@@ -99,6 +105,7 @@ export class DashboardService {
       monthlyExpensesChange: 0, // No se calcula por ahora
       totalClients,
       totalClientsChange: 0, // No se calcula por ahora
+      pendingToCollect,
       completedOrders,
       completedOrdersChange: 0, // No se calcula por ahora
     };
@@ -137,6 +144,6 @@ export class DashboardService {
    */
   async getUrgentOrders() {
     const orders = await this.ordersRepo.findActive();
-    return orders.filter(o => o.is_urgent || o.is_delayed);
+    return orders.filter((o) => o.is_urgent || o.is_delayed);
   }
 }

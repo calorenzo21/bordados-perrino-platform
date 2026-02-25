@@ -1,6 +1,6 @@
 /**
  * Database Types - Generated from Supabase schema
- * 
+ *
  * These types represent the database schema and should be kept in sync
  * with the actual database structure.
  */
@@ -9,7 +9,7 @@
 // ENUMS
 // ============================================
 
-export type OrderStatus = 
+export type OrderStatus =
   | 'RECIBIDO'
   | 'CONFECCION'
   | 'RETIRO'
@@ -26,11 +26,7 @@ export type ServiceType =
   | 'Sublimación'
   | 'Bordados';
 
-export type PaymentMethod =
-  | 'efectivo'
-  | 'transferencia'
-  | 'tarjeta'
-  | 'otro';
+export type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
 
 export type UserRole = 'ADMIN' | 'CLIENT';
 
@@ -104,6 +100,7 @@ export interface OrderStatusHistory {
   observations: string | null;
   changed_by: string | null;
   changed_at: string;
+  quantity_delivered?: number | null;
 }
 
 export interface OrderStatusPhoto {
@@ -272,6 +269,8 @@ export interface DashboardMetrics {
   monthlyExpensesChange: number;
   totalClients: number;
   totalClientsChange: number;
+  /** Suma del saldo pendiente de cobro en todos los pedidos (total - abonos) */
+  pendingToCollect: number;
   completedOrders: number;
   completedOrdersChange: number;
 }

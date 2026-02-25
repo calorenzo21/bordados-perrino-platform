@@ -5,7 +5,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { adminClientFetcher, getAdminClientSwrKey } from '@/hooks/use-clients';
 import { Calendar, Download, Loader2, Mail, Phone, Plus, Search, User } from 'lucide-react';
+import { useSWRConfig } from 'swr';
 
 import type { Client } from '@/lib/services/clients.server';
 
@@ -40,9 +42,19 @@ interface ClientsContentProps {
 
 export function ClientsContent({ initialClients }: ClientsContentProps) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
 
   // Use server data directly - single source of truth
   const clients = initialClients;
+
+  const prefetchClient = useMemo(
+    () => (clientId: string) => {
+      mutate(getAdminClientSwrKey(clientId), () =>
+        adminClientFetcher(getAdminClientSwrKey(clientId))
+      );
+    },
+    [mutate]
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -210,7 +222,12 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                   className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50"
                 >
                   <TableCell className="pl-6">
-                    <Link href={`/admin/clients/${client.id}`} className="flex items-center gap-3">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="flex items-center gap-3"
+                      onMouseEnter={() => prefetchClient(client.id)}
+                      onFocus={() => prefetchClient(client.id)}
+                    >
                       <div className="relative">
                         <Avatar className="h-11 w-11 border-2 border-white shadow-md transition-transform group-hover:scale-105">
                           <AvatarFallback className="bg-linear-to-br from-blue-500 to-indigo-600 text-sm font-semibold text-white">
@@ -231,7 +248,12 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/clients/${client.id}`} className="block">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="block"
+                      onMouseEnter={() => prefetchClient(client.id)}
+                      onFocus={() => prefetchClient(client.id)}
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-sm text-slate-600">
                           <Mail className="h-3.5 w-3.5 text-slate-400" />
@@ -245,21 +267,36 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/clients/${client.id}`} className="block">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="block"
+                      onMouseEnter={() => prefetchClient(client.id)}
+                      onFocus={() => prefetchClient(client.id)}
+                    >
                       <div>
                         <p className="font-semibold text-slate-900">{client.totalOrders}</p>
                       </div>
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/clients/${client.id}`} className="block">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="block"
+                      onMouseEnter={() => prefetchClient(client.id)}
+                      onFocus={() => prefetchClient(client.id)}
+                    >
                       <p className="font-semibold text-emerald-600">
                         ${client.totalSpent.toLocaleString()}
                       </p>
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/admin/clients/${client.id}`} className="block">
+                    <Link
+                      href={`/admin/clients/${client.id}`}
+                      className="block"
+                      onMouseEnter={() => prefetchClient(client.id)}
+                      onFocus={() => prefetchClient(client.id)}
+                    >
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
                         <span className="text-sm text-slate-600">{client.lastOrderDate}</span>

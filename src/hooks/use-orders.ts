@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useAuth } from '@/hooks/use-auth';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import useSWR, { useSWRConfig } from 'swr';
+
 import { createClient } from '@/lib/supabase/browser';
 
 // Tipos que coinciden con la interfaz existente
@@ -29,7 +34,7 @@ interface Order {
 function getInitials(name: string): string {
   return name
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
@@ -53,7 +58,9 @@ export function useOrders() {
 
     try {
       // Verificar que hay sesión antes de hacer la query
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         // No hay sesión, esperar un poco y reintentar
         if (!hasFetched.current) {
@@ -74,7 +81,7 @@ export function useOrders() {
 
       hasFetched.current = true;
 
-      const transformedOrders: Order[] = (data || []).map(o => ({
+      const transformedOrders: Order[] = (data || []).map((o) => ({
         id: o.order_number || o.id,
         client: {
           id: o.client_id,
@@ -168,7 +175,7 @@ interface _StatusHistoryItem {
 }
 
 // Para la página de detalle del pedido (formato compatible con la interfaz existente)
-interface OrderForDetail {
+export interface OrderForDetail {
   id: string;
   uuid: string; // UUID real del pedido para operaciones con Supabase
   client: {
@@ -198,6 +205,7 @@ interface OrderForDetail {
     observations: string;
     photos: string[];
     user: string;
+    quantityDelivered?: number | null;
   }[];
   payments: {
     id: string;
@@ -211,160 +219,151 @@ interface OrderForDetail {
   }[];
 }
 
-export function useOrder(orderId: string) {
-  const [order, setOrder] = useState<OrderForDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
+const ADMIN_ORDER_SWR_KEY_PREFIX = 'admin-order' as const;
 
-  const supabase = useMemo(() => createClient(), []);
+export function getAdminOrderSwrKey(orderId: string): readonly [string, string] {
+  return [ADMIN_ORDER_SWR_KEY_PREFIX, orderId];
+}
 
-  const fetchOrder = useCallback(async () => {
-    if (!orderId || !isMounted.current) return;
+async function fetchOrderForDetail(
+  orderId: string,
+  supabase: SupabaseClient
+): Promise<OrderForDetail> {
+  let query = supabase.from('orders_with_payments').select('*');
+  if (orderId.startsWith('ORD-')) {
+    query = query.eq('order_number', orderId);
+  } else {
+    query = query.eq('id', orderId);
+  }
+  const { data: orderData, error: orderError } = await query.single();
+  if (orderError) throw orderError;
 
-    setIsLoading(true);
-    setError(null);
+  const [paymentsRes, historyRes] = await Promise.all([
+    supabase
+      .from('payments')
+      .select(`*, payment_photos (photo_url), profiles:received_by (first_name, last_name)`)
+      .eq('order_id', orderData.id)
+      .order('payment_date', { ascending: false }),
+    supabase
+      .from('order_status_history')
+      .select(`*, order_status_photos (photo_url), profiles:changed_by (first_name, last_name)`)
+      .eq('order_id', orderData.id)
+      .order('changed_at', { ascending: true }),
+  ]);
 
-    try {
-      // Verificar sesión
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        if (!hasFetched.current) {
-          setTimeout(() => {
-            if (isMounted.current) fetchOrder();
-          }, 500);
-        }
-        return;
-      }
-
-      // Buscar por order_number o por id
-      let query = supabase
-        .from('orders_with_payments')
-        .select('*');
-
-      if (orderId.startsWith('ORD-')) {
-        query = query.eq('order_number', orderId);
-      } else {
-        query = query.eq('id', orderId);
-      }
-
-      const { data: orderData, error: orderError } = await query.single();
-
-      if (orderError) throw orderError;
-
-      hasFetched.current = true;
-
-      // Obtener pagos con el nombre del usuario que los registró
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          payment_photos (photo_url),
-          profiles:received_by (first_name, last_name)
-        `)
-        .eq('order_id', orderData.id)
-        .order('payment_date', { ascending: false });
-
-      // Obtener historial de estados con el nombre del usuario
-      const { data: historyData } = await supabase
-        .from('order_status_history')
-        .select(`
-          *,
-          order_status_photos (photo_url),
-          profiles:changed_by (first_name, last_name)
-        `)
-        .eq('order_id', orderData.id)
-        .order('changed_at', { ascending: true });
-
-      // Transformar pagos al formato esperado
-      const payments = (paymentsData || []).map(p => {
-        const dateTime = p.payment_date?.split('T') || ['', ''];
-        // Obtener el nombre del usuario desde el perfil
-        const profile = p.profiles as { first_name?: string; last_name?: string } | null;
-        const userName = profile
-          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
-          : 'Admin';
-        return {
-          id: p.id,
-          amount: p.amount,
-          date: dateTime[0] || '',
-          time: dateTime[1]?.slice(0, 8) || '00:00:00',
-          method: (p.method?.toLowerCase() || 'efectivo') as 'efectivo' | 'transferencia' | 'tarjeta' | 'otro',
-          notes: p.notes || '',
-          photos: p.payment_photos?.map((ph: { photo_url: string }) => ph.photo_url) || [],
-          user: userName,
-        };
-      });
-
-      // Transformar historial de estados al formato esperado
-      const statusHistory = (historyData || []).map(h => {
-        const dateTime = h.changed_at?.split('T') || ['', ''];
-        // Obtener el nombre del usuario desde el perfil
-        const profile = h.profiles as { first_name?: string; last_name?: string } | null;
-        const userName = profile
-          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
-          : 'Admin';
-        return {
-          id: h.id,
-          status: h.status,
-          date: dateTime[0] || '',
-          time: dateTime[1]?.slice(0, 8) || '00:00:00',
-          observations: h.observations || '',
-          photos: h.order_status_photos?.map((ph: { photo_url: string }) => ph.photo_url) || [],
-          user: userName,
-        };
-      });
-
-      if (isMounted.current) {
-        setOrder({
-          id: orderData.order_number || orderData.id,
-          uuid: orderData.id, // UUID real para operaciones con Supabase
-          client: {
-            id: orderData.client_id,
-            name: orderData.client_name,
-            initials: getInitials(orderData.client_name),
-            email: orderData.client_email,
-            phone: orderData.client_phone || '',
-            cedula: orderData.client_cedula || '',
-            address: orderData.client_address || '',
-          },
-          description: orderData.description,
-          serviceType: orderData.service_type,
-          quantity: orderData.quantity,
-          total: orderData.total,
-          status: orderData.status,
-          dueDate: orderData.due_date,
-          createdAt: orderData.created_at?.split('T')[0] || '',
-          isDelayed: orderData.is_delayed || false,
-          daysRemaining: orderData.days_remaining || 0,
-          isUrgent: orderData.is_urgent || false,
-          statusHistory,
-          payments,
-        });
-      }
-
-    } catch (err) {
-      console.error('Error fetching order:', err);
-      if (isMounted.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar pedido');
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+  const payments: OrderForDetail['payments'] = (paymentsRes.data || []).map(
+    (p: Record<string, unknown>) => {
+      const dateTime = (p.payment_date as string)?.split('T') || ['', ''];
+      const profile = p.profiles as { first_name?: string; last_name?: string } | null;
+      const userName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
+      const notes = p.notes;
+      return {
+        id: String(p.id ?? ''),
+        amount: Number(p.amount) || 0,
+        date: dateTime[0] || '',
+        time: (dateTime[1] as string)?.slice(0, 8) || '00:00:00',
+        method: ((p.method as string)?.toLowerCase() || 'efectivo') as
+          | 'efectivo'
+          | 'transferencia'
+          | 'tarjeta'
+          | 'otro',
+        notes: typeof notes === 'string' ? notes : '',
+        photos: ((p.payment_photos as { photo_url: string }[]) || []).map((ph) => ph.photo_url),
+        user: userName,
+      };
     }
-  }, [orderId, supabase]);
+  );
 
-  useEffect(() => {
-    isMounted.current = true;
-    hasFetched.current = false;
-    fetchOrder();
+  const statusHistory: OrderForDetail['statusHistory'] = (historyRes.data || []).map(
+    (h: Record<string, unknown>) => {
+      const dateTime = (h.changed_at as string)?.split('T') || ['', ''];
+      const profile = h.profiles as { first_name?: string; last_name?: string } | null;
+      const userName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
+      const observations = h.observations;
+      return {
+        id: String(h.id ?? ''),
+        status: String(h.status ?? ''),
+        date: dateTime[0] || '',
+        time: (dateTime[1] as string)?.slice(0, 8) || '00:00:00',
+        observations: typeof observations === 'string' ? observations : '',
+        photos: ((h.order_status_photos as { photo_url: string }[]) || []).map(
+          (ph) => ph.photo_url
+        ),
+        user: userName,
+        quantityDelivered: h.quantity_delivered != null ? Number(h.quantity_delivered) : null,
+      };
+    }
+  );
 
-    return () => {
-      isMounted.current = false;
-    };
-  }, [fetchOrder]);
+  return {
+    id: orderData.order_number || orderData.id,
+    uuid: orderData.id,
+    client: {
+      id: orderData.client_id,
+      name: orderData.client_name,
+      initials: getInitials(orderData.client_name),
+      email: orderData.client_email,
+      phone: orderData.client_phone || '',
+      cedula: orderData.client_cedula || '',
+      address: orderData.client_address || '',
+    },
+    description: orderData.description,
+    serviceType: orderData.service_type,
+    quantity: orderData.quantity,
+    total: orderData.total,
+    status: orderData.status,
+    dueDate: orderData.due_date,
+    createdAt: orderData.created_at?.split('T')[0] || '',
+    isDelayed: orderData.is_delayed || false,
+    daysRemaining: orderData.days_remaining || 0,
+    isUrgent: orderData.is_urgent || false,
+    statusHistory,
+    payments,
+  };
+}
 
-  return { order, setOrder, isLoading, error, refetch: fetchOrder };
+export async function adminOrderFetcher(key: readonly [string, string]): Promise<OrderForDetail> {
+  const [, orderId] = key;
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Unauthorized');
+  return fetchOrderForDetail(orderId, supabase);
+}
+
+const SWR_OPTIONS = {
+  revalidateOnFocus: true,
+  dedupingInterval: 20000,
+} as const;
+
+export function useOrder(orderId: string) {
+  const { user: authUser } = useAuth();
+  const { mutate: globalMutate } = useSWRConfig();
+  const key = authUser && orderId ? getAdminOrderSwrKey(orderId) : null;
+
+  const { data: order, error, isLoading, mutate } = useSWR(key, adminOrderFetcher, SWR_OPTIONS);
+
+  const setOrder = useCallback(
+    (update: OrderForDetail | null | ((prev: OrderForDetail | null) => OrderForDetail | null)) => {
+      if (!key) return;
+      const next = typeof update === 'function' ? update(order ?? null) : update;
+      globalMutate(key, next, { revalidate: false });
+    },
+    [key, order, globalMutate]
+  );
+
+  const refetch = useCallback(() => mutate(), [mutate]);
+
+  return {
+    order: order ?? null,
+    setOrder,
+    isLoading: key === null ? true : isLoading,
+    error: error ? (error instanceof Error ? error.message : 'Error al cargar pedido') : null,
+    refetch,
+  };
 }

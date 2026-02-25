@@ -1,8 +1,18 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
 import { useRouter } from 'next/navigation';
-import { User, Session } from '@supabase/supabase-js';
+
+import { Session, User } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/browser';
 import type { Profile } from '@/lib/types/database';
@@ -33,41 +43,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isInitialized = useRef(false);
 
   // Función para obtener el perfil
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const fetchProfile = useCallback(
+    async (userId: string): Promise<Profile | null> => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return null;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error in fetchProfile:', error);
         return null;
       }
-
-      return data;
-    } catch (error) {
-      console.error('Error in fetchProfile:', error);
-      return null;
-    }
-  }, [supabase]);
+    },
+    [supabase]
+  );
 
   // Función para actualizar el estado con usuario y perfil
-  const updateAuthState = useCallback(async (session: Session | null) => {
-    if (!isMounted.current) return;
+  const updateAuthState = useCallback(
+    async (session: Session | null) => {
+      if (!isMounted.current) return;
 
-    if (session?.user) {
-      setUser(session.user);
-      const profileData = await fetchProfile(session.user.id);
-      if (isMounted.current) {
-        setProfile(profileData);
+      if (session?.user) {
+        setUser(session.user);
+        const profileData = await fetchProfile(session.user.id);
+        if (isMounted.current) {
+          setProfile(profileData);
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
       }
-    } else {
-      setUser(null);
-      setProfile(null);
-    }
-  }, [fetchProfile]);
+    },
+    [fetchProfile]
+  );
 
   // Refrescar perfil manualmente
   const refreshProfile = useCallback(async () => {
@@ -82,7 +98,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refrescar sesión manualmente (útil después del login)
   const refreshSession = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       await updateAuthState(session);
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -95,13 +113,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Obtener sesión inicial
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (isMounted.current) {
           await updateAuthState(session);
-          isInitialized.current = true;
-          setIsLoading(false);
+          if (!isInitialized.current) {
+            isInitialized.current = true;
+            setIsLoading(false);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -111,22 +132,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Listener para cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Solo procesar si ya se inicializó (evitar duplicados)
-        if (!isInitialized.current) return;
+    // Listener: debe procesar INITIAL_SESSION para cuando la sesión se restaura desde cookies
+    // después de un redirect (OAuth o primera carga). Si no lo manejamos, getSession() puede
+    // resolver con null y el usuario se queda en "Redirigiendo..." hasta recargar.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        await updateAuthState(session);
+        if (isMounted.current && !isInitialized.current) {
+          isInitialized.current = true;
+          setIsLoading(false);
+        }
+        return;
+      }
+      if (!isInitialized.current) return;
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          await updateAuthState(session);
-        } else if (event === 'SIGNED_OUT') {
-          if (isMounted.current) {
-            setUser(null);
-            setProfile(null);
-          }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        await updateAuthState(session);
+      } else if (event === 'SIGNED_OUT') {
+        if (isMounted.current) {
+          setUser(null);
+          setProfile(null);
         }
       }
-    );
+    });
 
     initializeAuth();
 
@@ -162,11 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshSession,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

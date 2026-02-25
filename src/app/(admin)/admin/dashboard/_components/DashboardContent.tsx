@@ -9,6 +9,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  DollarSign,
   Download,
   Loader2,
   MoreHorizontal,
@@ -327,10 +328,10 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           iconColor="rose"
         />
         <MetricCard
-          title="Clientes Totales"
-          value={(metrics?.totalClients || 0).toString()}
-          description="Registrados en el sistema"
-          icon={Users}
+          title="Pendiente por Cobrar"
+          value={`$${(metrics?.pendingToCollect ?? 0).toLocaleString()}`}
+          description="Saldo pendiente en pedidos"
+          icon={DollarSign}
           iconColor="purple"
         />
         <MetricCard

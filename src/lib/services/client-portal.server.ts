@@ -58,6 +58,7 @@ export interface StatusHistoryItem {
   changedAt: string;
   changedBy: string | null;
   photos: string[];
+  quantityDelivered?: number | null;
 }
 
 export interface PaymentItem {
@@ -294,6 +295,7 @@ export async function getClientOrderDetail(
         observations,
         changed_at,
         changed_by,
+        quantity_delivered,
         order_status_photos (photo_url)
       `
       )
@@ -347,6 +349,7 @@ export async function getClientOrderDetail(
     changedAt: sh.changed_at,
     changedBy: sh.changed_by ? profilesMap.get(sh.changed_by) || null : null,
     photos: (sh.order_status_photos || []).map((p: { photo_url: string }) => p.photo_url),
+    quantityDelivered: sh.quantity_delivered ?? null,
   }));
 
   // Map payments with cached profile names

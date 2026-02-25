@@ -118,7 +118,7 @@ const statusFilterOptions = [
 
 export function PanelContent() {
   const router = useRouter();
-  const { data, isLoading, isValidating, error } = useClientPanel();
+  const { data, isLoading, isValidating, error, mutate } = useClientPanel();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -217,9 +217,21 @@ export function PanelContent() {
                 : 'No tienes pedidos activos'}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-white">{orders.length}</p>
-            <p className="text-xs text-blue-100">pedidos totales</p>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-3xl font-bold text-white">{orders.length}</p>
+              <p className="text-xs text-blue-100">pedidos totales</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 transition-all"
+              onClick={() => mutate()}
+              disabled={isValidating}
+              aria-label="Actualizar datos"
+            >
+              <RefreshCw className={`h-4 w-4 text-white ${isValidating ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
       </div>

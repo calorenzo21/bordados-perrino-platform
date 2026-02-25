@@ -128,7 +128,7 @@ interface OrderDetailContentProps {
 
 export function OrderDetailContent({ orderId, initialData }: OrderDetailContentProps) {
   const router = useRouter();
-  const { order, isLoading, isValidating, error } = useClientOrder(orderId, {
+  const { order, isLoading, isValidating, error, mutate } = useClientOrder(orderId, {
     fallbackData: initialData,
   });
 
@@ -163,6 +163,19 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
   const paymentProgress =
     displayOrder.total > 0 ? (displayOrder.totalPaid / displayOrder.total) * 100 : 0;
   const isPaid = displayOrder.remainingBalance <= 0;
+
+  // Delivery progress (parcialmente entregado)
+  const totalDelivered =
+    displayOrder.status === OrderStatus.ENTREGADO
+      ? displayOrder.quantity
+      : displayOrder.statusHistory
+          .filter((h) => h.status === OrderStatus.PARCIALMENTE_ENTREGADO)
+          .reduce((sum, h) => sum + (h.quantityDelivered ?? 0), 0);
+  const remainingToDeliver = Math.max(0, displayOrder.quantity - totalDelivered);
+  const showDeliveryProgress =
+    totalDelivered > 0 || displayOrder.status === OrderStatus.PARCIALMENTE_ENTREGADO;
+  const deliveryProgress =
+    displayOrder.quantity > 0 ? (totalDelivered / displayOrder.quantity) * 100 : 0;
 
   // Dynamic status flow
   const partialDeliveryCount = displayOrder.statusHistory.filter(
@@ -205,7 +218,7 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
             >
               {OrderStatusLabels[displayOrder.status as OrderStatusType]}
             </Badge>
-            {displayOrder.isUrgent && (
+            {displayOrder.isUrgent && displayOrder.status !== OrderStatus.ENTREGADO && (
               <Badge className="bg-rose-500/10 text-rose-600 border-rose-200/50">
                 <AlertTriangle className="mr-1 h-3 w-3" />
                 Urgente
@@ -215,6 +228,18 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
           </div>
           <p className="text-md text-slate-500 mt-0.5">{displayOrder.description}</p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-xl backdrop-blur-sm bg-white/50 border border-slate-200/50 hover:bg-white/80 transition-all"
+          onClick={() => mutate()}
+          disabled={isValidating}
+          aria-label="Actualizar pedido"
+        >
+          <RefreshCw
+            className={`h-5 w-5 ${isValidating ? 'animate-spin text-slate-400' : 'text-slate-600'}`}
+          />
+        </Button>
       </div>
 
       {/* Timeline */}
@@ -339,6 +364,33 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
             {displayOrder.serviceType} • {displayOrder.quantity} unidades
           </span>
         </div>
+
+        {/* Progreso de entrega - visible cuando hay entregas parciales */}
+        {showDeliveryProgress && (
+          <>
+            <div className="mt-5 pt-5 border-t border-slate-200/50">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="h-5 w-5 text-purple-500" />
+                  <span className="font-medium text-slate-900">
+                    {totalDelivered} de {displayOrder.quantity} unidades entregadas
+                  </span>
+                </div>
+                {remainingToDeliver > 0 && (
+                  <span className="text-sm text-slate-500">
+                    {remainingToDeliver} pendiente{remainingToDeliver !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              <div className="relative h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 bg-linear-to-r from-purple-400 to-purple-500"
+                  style={{ width: `${Math.min(deliveryProgress, 100)}%` }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tabs */}
@@ -420,6 +472,20 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                                 </div>
                               </div>
 
+                              {item.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                                item.quantityDelivered != null &&
+                                item.quantityDelivered > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-slate-200/50 pl-2">
+                                    <p className="text-xs font-medium uppercase text-slate-400">
+                                      Unidades entregadas
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-purple-600">
+                                      {item.quantityDelivered} unidad
+                                      {item.quantityDelivered !== 1 ? 'es' : ''}
+                                    </p>
+                                  </div>
+                                )}
+
                               {item.observations && (
                                 <div className="mt-3 pt-3 border-t border-slate-200/50 pl-2">
                                   <p className="text-xs font-medium uppercase text-slate-400">
@@ -465,6 +531,20 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                                   {formatDate(item.changedAt)} • {formatTime(item.changedAt)}
                                 </span>
                               </div>
+
+                              {item.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                                item.quantityDelivered != null &&
+                                item.quantityDelivered > 0 && (
+                                  <div className="mt-3">
+                                    <p className="text-xs font-medium uppercase text-slate-400">
+                                      Unidades entregadas
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-purple-600">
+                                      {item.quantityDelivered} unidad
+                                      {item.quantityDelivered !== 1 ? 'es' : ''}
+                                    </p>
+                                  </div>
+                                )}
 
                               {item.observations && (
                                 <div className="mt-3">

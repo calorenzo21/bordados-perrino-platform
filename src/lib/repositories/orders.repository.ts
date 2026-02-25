@@ -1,32 +1,31 @@
 /**
  * Orders Repository
- * 
+ *
  * Data access layer for orders and related tables.
  */
-
 import { SupabaseClient } from '@supabase/supabase-js';
 
 import type {
   Order,
-  OrderInsert,
-  OrderUpdate,
-  OrderWithPayments,
   OrderFilters,
+  OrderImage,
+  OrderInsert,
   OrderStatus,
   OrderStatusHistory,
   OrderStatusHistoryInsert,
-  OrderImage,
+  OrderUpdate,
+  OrderWithPayments,
+  OrdersByMonth,
+  OrdersByService,
+  OrdersByStatus,
+  PaginatedResponse,
   Payment,
   PaymentInsert,
-  PaginatedResponse,
-  OrdersByMonth,
-  OrdersByStatus,
-  OrdersByService,
   ServiceType,
 } from '@/lib/types/database';
 
 export class OrdersRepository {
-  constructor(private supabase: SupabaseClient) { }
+  constructor(private supabase: SupabaseClient) {}
 
   // ============================================
   // ORDERS
@@ -68,9 +67,7 @@ export class OrdersRepository {
     pageSize: number = 10,
     filters?: OrderFilters
   ): Promise<PaginatedResponse<OrderWithPayments>> {
-    let query = this.supabase
-      .from('orders_with_payments')
-      .select('*', { count: 'exact' });
+    let query = this.supabase.from('orders_with_payments').select('*', { count: 'exact' });
 
     // Apply filters
     if (filters?.status) {
@@ -164,11 +161,7 @@ export class OrdersRepository {
    * Create a new order
    */
   async create(order: OrderInsert): Promise<Order> {
-    const { data, error } = await this.supabase
-      .from('orders')
-      .insert(order)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.from('orders').insert(order).select().single();
 
     if (error) throw new Error(error.message);
     return data;
@@ -200,10 +193,7 @@ export class OrdersRepository {
    * Delete an order
    */
   async delete(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('orders')
-      .delete()
-      .eq('id', id);
+    const { error } = await this.supabase.from('orders').delete().eq('id', id);
 
     if (error) throw new Error(error.message);
   }
@@ -218,16 +208,18 @@ export class OrdersRepository {
   async getStatusHistory(orderId: string): Promise<(OrderStatusHistory & { photos: string[] })[]> {
     const { data, error } = await this.supabase
       .from('order_status_history')
-      .select(`
+      .select(
+        `
         *,
         order_status_photos (photo_url)
-      `)
+      `
+      )
       .eq('order_id', orderId)
       .order('changed_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map(item => ({
+    return (data || []).map((item) => ({
       ...item,
       photos: item.order_status_photos?.map((p: { photo_url: string }) => p.photo_url) || [],
     }));
@@ -251,14 +243,12 @@ export class OrdersRepository {
    * Add photos to status history
    */
   async addStatusPhotos(historyId: string, photoUrls: string[]): Promise<void> {
-    const photos = photoUrls.map(url => ({
+    const photos = photoUrls.map((url) => ({
       status_history_id: historyId,
       photo_url: url,
     }));
 
-    const { error } = await this.supabase
-      .from('order_status_photos')
-      .insert(photos);
+    const { error } = await this.supabase.from('order_status_photos').insert(photos);
 
     if (error) throw new Error(error.message);
   }
@@ -285,14 +275,12 @@ export class OrdersRepository {
    * Add images to an order
    */
   async addImages(orderId: string, imageUrls: string[]): Promise<void> {
-    const images = imageUrls.map(url => ({
+    const images = imageUrls.map((url) => ({
       order_id: orderId,
       image_url: url,
     }));
 
-    const { error } = await this.supabase
-      .from('order_images')
-      .insert(images);
+    const { error } = await this.supabase.from('order_images').insert(images);
 
     if (error) throw new Error(error.message);
   }
@@ -307,16 +295,18 @@ export class OrdersRepository {
   async getPayments(orderId: string): Promise<(Payment & { photos: string[] })[]> {
     const { data, error } = await this.supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         payment_photos (photo_url)
-      `)
+      `
+      )
       .eq('order_id', orderId)
       .order('payment_date', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map(item => ({
+    return (data || []).map((item) => ({
       ...item,
       photos: item.payment_photos?.map((p: { photo_url: string }) => p.photo_url) || [],
     }));
@@ -326,11 +316,7 @@ export class OrdersRepository {
    * Add a payment
    */
   async addPayment(payment: PaymentInsert): Promise<Payment> {
-    const { data, error } = await this.supabase
-      .from('payments')
-      .insert(payment)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.from('payments').insert(payment).select().single();
 
     if (error) throw new Error(error.message);
     return data;
@@ -340,14 +326,12 @@ export class OrdersRepository {
    * Add photos to a payment
    */
   async addPaymentPhotos(paymentId: string, photoUrls: string[]): Promise<void> {
-    const photos = photoUrls.map(url => ({
+    const photos = photoUrls.map((url) => ({
       payment_id: paymentId,
       photo_url: url,
     }));
 
-    const { error } = await this.supabase
-      .from('payment_photos')
-      .insert(photos);
+    const { error } = await this.supabase.from('payment_photos').insert(photos);
 
     if (error) throw new Error(error.message);
   }
@@ -360,14 +344,12 @@ export class OrdersRepository {
    * Count orders by status
    */
   async countByStatus(): Promise<OrdersByStatus[]> {
-    const { data, error } = await this.supabase
-      .from('orders')
-      .select('status');
+    const { data, error } = await this.supabase.from('orders').select('status');
 
     if (error) throw new Error(error.message);
 
     const counts: Record<string, number> = {};
-    data?.forEach(order => {
+    data?.forEach((order) => {
       counts[order.status] = (counts[order.status] || 0) + 1;
     });
 
@@ -396,7 +378,7 @@ export class OrdersRepository {
     // Group by month
     const monthlyData: Record<string, { count: number; revenue: number }> = {};
 
-    data?.forEach(order => {
+    data?.forEach((order) => {
       const date = new Date(order.created_at);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -407,8 +389,34 @@ export class OrdersRepository {
       monthlyData[key].revenue += order.total;
     });
 
-    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const monthNamesFull = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const monthNames = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    const monthNamesFull = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
 
     return Object.entries(monthlyData).map(([key, value]) => {
       const [year, month] = key.split('-');
@@ -445,7 +453,7 @@ export class OrdersRepository {
     // Agrupar por nombre del servicio
     const serviceData: Record<string, { count: number; total: number }> = {};
 
-    orders?.forEach(order => {
+    orders?.forEach((order) => {
       const serviceName = order.service_type;
       if (!serviceData[serviceName]) {
         serviceData[serviceName] = { count: 0, total: 0 };
@@ -455,7 +463,7 @@ export class OrdersRepository {
     });
 
     // Combinar con los tipos de servicio para obtener colores e íconos
-    return (serviceTypes || []).map(st => ({
+    return (serviceTypes || []).map((st) => ({
       serviceType: st.name as ServiceType,
       count: serviceData[st.name]?.count || 0,
       total: serviceData[st.name]?.total || 0,
@@ -488,6 +496,18 @@ export class OrdersRepository {
 
     if (error) throw new Error(error.message);
     return count || 0;
+  }
+
+  /**
+   * Sum of remaining balance across all orders (pending to collect).
+   */
+  async getTotalPendingToCollect(): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('orders_with_payments')
+      .select('remaining_balance');
+
+    if (error) throw new Error(error.message);
+    return (data || []).reduce((sum, row) => sum + (Number(row.remaining_balance) || 0), 0);
   }
 
   /**

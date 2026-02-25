@@ -6,7 +6,10 @@
  *
  * Note: Page-level caching via `revalidate` handles query optimization.
  * unstable_cache cannot be used here because createClient() uses cookies().
+ * React.cache() deduplicates within the same request.
  */
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 import type {
   DashboardMetrics,
@@ -60,8 +63,9 @@ function getInitials(name: string): string {
  * This is called from Server Components
  *
  * Caching is handled at the page level via `revalidate = 60`
+ * React.cache() deduplicates calls within the same request
  */
-export async function getDashboardData(): Promise<DashboardData> {
+export const getDashboardData = cache(async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createClient();
   const service = new DashboardService(supabase);
 
@@ -128,4 +132,4 @@ export async function getDashboardData(): Promise<DashboardData> {
     topClients,
     lastUpdated: new Date().toISOString(),
   };
-}
+});

@@ -27,6 +27,8 @@ export async function revalidateOrder(orderId: string) {
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath('/admin/orders');
   revalidatePath('/admin/dashboard');
+  revalidatePath('/client/panel');
+  revalidatePath(`/client/orders/${orderId}`);
 }
 
 /**

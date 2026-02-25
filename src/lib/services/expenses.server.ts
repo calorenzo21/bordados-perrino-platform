@@ -6,7 +6,10 @@
  *
  * Note: Page-level caching via `revalidate` handles query optimization.
  * unstable_cache cannot be used here because createClient() uses cookies().
+ * React.cache() deduplicates within the same request.
  */
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 
 export interface ExpenseType {
@@ -38,8 +41,9 @@ export interface ExpensesData {
  * This is called from Server Components
  *
  * Caching is handled at the page level via `revalidate = 60`
+ * React.cache() deduplicates calls within the same request
  */
-export async function getExpensesData(): Promise<ExpensesData> {
+export const getExpensesData = cache(async function getExpensesData(): Promise<ExpensesData> {
   const supabase = await createClient();
 
   // Fetch types and expenses in parallel
@@ -93,4 +97,4 @@ export async function getExpensesData(): Promise<ExpensesData> {
     expenseTypes,
     lastUpdated: new Date().toISOString(),
   };
-}
+});
