@@ -1,7 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
-import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/context/auth-context';
+
+import { SerwistProvider } from '@/components/SerwistProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 import './globals.css';
 
@@ -13,6 +15,23 @@ export const metadata: Metadata = {
   description:
     'Plataforma de gestión de pedidos de bordados personalizados. Uniformes, gorras, camisetas y más.',
   keywords: ['bordados', 'uniformes', 'personalización', 'bordados perrino'],
+  manifest: '/api/manifest',
+  applicationName: 'Bordados Perrino',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Bordados Perrino',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
@@ -23,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         {/* Cargar fuentes de Google Fonts via link para evitar errores de build */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -31,14 +51,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body
-        className="font-sans antialiased"
-        suppressHydrationWarning
-      >
-        <AuthProvider>
-          {children}
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
+      <body className="font-sans antialiased" suppressHydrationWarning>
+        <SerwistProvider swUrl="/serwist/sw.js">
+          <AuthProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
+        </SerwistProvider>
       </body>
     </html>
   );

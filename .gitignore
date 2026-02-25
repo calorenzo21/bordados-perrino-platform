@@ -36,6 +36,14 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Serwist - service worker build artifacts
+public/sw.js
+public/sw*.js
+public/swe-worker*
+public/workbox-*
+public/worker-*
+public/serialized-workers*
+
 # vercel
 .vercel
 
