@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
+import { PerrinoLogo } from '@/components/PerrinoLogo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+
 import { signUp } from '../actions';
-import { useAuth } from '@/hooks/use-auth';
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +35,7 @@ export default function RegisterPage() {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
-            <span className="text-lg font-bold text-white">BP</span>
-          </div>
+          <PerrinoLogo size="md" />
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           <p className="text-sm text-slate-500">
             {user ? 'Redirigiendo...' : 'Verificando sesión...'}
@@ -77,8 +79,8 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg">
         <CardHeader className="text-center">
           {/* Logo */}
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
-            <span className="text-xl font-bold text-white">BP</span>
+          <div className="mx-auto mb-4">
+            <PerrinoLogo size="lg" rounded="2xl" />
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Crear Cuenta</CardTitle>
           <CardDescription className="text-slate-500">
@@ -87,16 +89,10 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             {success && (
-              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">
-                {success}
-              </div>
+              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -170,9 +166,7 @@ export default function RegisterPage() {
                 disabled={isPending}
                 className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
               />
-              <p className="text-xs text-slate-400">
-                Mínimo 6 caracteres
-              </p>
+              <p className="text-xs text-slate-400">Mínimo 6 caracteres</p>
             </div>
             <Button
               type="submit"

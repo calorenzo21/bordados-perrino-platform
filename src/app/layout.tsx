@@ -26,12 +26,13 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    apple: '/icons/apple-touch-icon.png',
+    icon: '/icons/perrino-logo.png',
+    apple: '/icons/perrino-logo.png',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2563eb',
+  themeColor: '#0f172a',
 };
 
 export default function RootLayout({

@@ -10,6 +10,7 @@ import { Loader2, LogOut, Menu, Package, User, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
+import { PerrinoLogo } from '@/components/PerrinoLogo';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,9 +62,7 @@ export function ClientShell({ children }: ClientShellProps) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
-            <span className="text-lg font-bold text-white">BP</span>
-          </div>
+          <PerrinoLogo size="md" />
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           <p className="text-sm text-slate-500">Verificando acceso...</p>
         </div>
@@ -119,9 +118,7 @@ export function ClientShell({ children }: ClientShellProps) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
           {/* Logo */}
           <Link href="/client/panel" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-200">
-              <span className="text-base font-bold text-white">BP</span>
-            </div>
+            <PerrinoLogo size="sm" />
             <div className="hidden sm:block">
               <span className="text-lg font-semibold text-slate-800">Bordados Perrino</span>
             </div>

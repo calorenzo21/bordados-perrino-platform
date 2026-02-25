@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useTransition, Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
+
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
+import { createClient } from '@/lib/supabase/browser';
+
+import { PerrinoLogo } from '@/components/PerrinoLogo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+
 import { signIn } from '../actions';
-import { createClient } from '@/lib/supabase/browser';
-import { useAuth } from '@/hooks/use-auth';
 
 function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -105,8 +110,8 @@ function LoginForm() {
       <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg">
         <CardHeader className="text-center">
           {/* Logo */}
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
-            <span className="text-xl font-bold text-white">BP</span>
+          <div className="mx-auto mb-4">
+            <PerrinoLogo size="lg" rounded="2xl" />
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Bienvenido</CardTitle>
           <CardDescription className="text-slate-500">
@@ -115,11 +120,7 @@ function LoginForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-slate-700">
@@ -140,10 +141,7 @@ function LoginForm() {
                 <label htmlFor="password" className="text-sm font-medium text-slate-700">
                   Contraseña
                 </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-blue-500 hover:text-blue-600"
-                >
+                <Link href="/forgot-password" className="text-sm text-blue-500 hover:text-blue-600">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>

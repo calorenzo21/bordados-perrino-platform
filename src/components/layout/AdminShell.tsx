@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
+import { useAuth } from '@/hooks/use-auth';
 import {
   Bell,
   ChevronLeft,
@@ -19,6 +20,9 @@ import {
   X,
 } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+
+import { PerrinoLogo } from '@/components/PerrinoLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,14 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NavItem {
   title: string;
@@ -86,9 +83,7 @@ export function AdminShell({ children }: AdminShellProps) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
-            <span className="text-lg font-bold text-white">BP</span>
-          </div>
+          <PerrinoLogo size="md" />
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           <p className="text-sm text-slate-500">Verificando acceso...</p>
         </div>
@@ -210,9 +205,7 @@ export function AdminShell({ children }: AdminShellProps) {
               href="/admin/dashboard"
               className={cn('flex items-center', sidebarCollapsed ? 'justify-center' : 'gap-2.5')}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-200">
-                <span className="text-base font-bold text-white">BP</span>
-              </div>
+              <PerrinoLogo size="sm" />
               {!sidebarCollapsed && (
                 <span className="text-lg font-semibold text-slate-800">Perrino</span>
               )}
@@ -310,11 +303,7 @@ export function AdminShell({ children }: AdminShellProps) {
                     <Avatar className="h-8 w-8 border-2 border-slate-100">
                       <AvatarImage src="/avatar.png" />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-xs font-semibold text-white">
-                        {isLoading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          getInitials()
-                        )}
+                        {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : getInitials()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -323,7 +312,9 @@ export function AdminShell({ children }: AdminShellProps) {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{getDisplayName()}</p>
-                      <p className="text-xs text-slate-500">{user?.email || 'admin@bordados.com'}</p>
+                      <p className="text-xs text-slate-500">
+                        {user?.email || 'admin@bordados.com'}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
