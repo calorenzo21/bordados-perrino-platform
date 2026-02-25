@@ -118,7 +118,7 @@ export function ClientShell({ children }: ClientShellProps) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
           {/* Logo */}
           <Link href="/client/panel" className="flex items-center gap-2.5">
-            <PerrinoLogo size="sm" />
+            <PerrinoLogo size="md" />
             <div className="hidden sm:block">
               <span className="text-lg font-semibold text-slate-800">Bordados Perrino</span>
             </div>
