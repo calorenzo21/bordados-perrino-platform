@@ -11,41 +11,30 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  CreditCard,
   DollarSign,
   Package,
   PackageCheck,
   RefreshCw,
   Truck,
-  Wallet,
   XCircle,
 } from 'lucide-react';
 
+import { PAYMENT_METHODS } from '@/lib/constants';
 import type { ClientOrderDetail } from '@/lib/services/client-portal.server';
-import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
+import {
+  OrderStatus,
+  OrderStatusLabels,
+  type OrderStatusType,
+  SEGMENT_COLORS,
+  STATUS_COLOR_MAP,
+  STATUS_FLOW,
+} from '@/lib/utils/status';
 
 import { ImageGallery } from '@/components/client/ImageGallery';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Payment methods
-const paymentMethods = [
-  { id: 'efectivo', label: 'Efectivo', icon: Banknote },
-  { id: 'transferencia', label: 'Transferencia', icon: Wallet },
-  { id: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
-  { id: 'otro', label: 'Otro', icon: DollarSign },
-] as const;
-
-// Status flow
-const statusFlow: OrderStatusType[] = [
-  OrderStatus.RECIBIDO,
-  OrderStatus.CONFECCION,
-  OrderStatus.RETIRO,
-  OrderStatus.PARCIALMENTE_ENTREGADO,
-  OrderStatus.ENTREGADO,
-];
 
 const statusIcons = {
   [OrderStatus.RECIBIDO]: Package,
@@ -56,58 +45,10 @@ const statusIcons = {
   [OrderStatus.CANCELADO]: XCircle,
 };
 
-const statusColors = {
-  [OrderStatus.RECIBIDO]: {
-    bg: 'bg-blue-500',
-    bgLight: 'bg-blue-100',
-    light: 'bg-blue-50',
-    text: 'text-blue-600',
-    border: 'border-blue-200',
-    gradient: 'from-blue-500 to-blue-600',
-  },
-  [OrderStatus.CONFECCION]: {
-    bg: 'bg-amber-500',
-    bgLight: 'bg-amber-100',
-    light: 'bg-amber-50',
-    text: 'text-amber-600',
-    border: 'border-amber-200',
-    gradient: 'from-amber-500 to-amber-600',
-  },
-  [OrderStatus.RETIRO]: {
-    bg: 'bg-emerald-500',
-    bgLight: 'bg-emerald-100',
-    light: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    border: 'border-emerald-200',
-    gradient: 'from-emerald-500 to-emerald-600',
-  },
-  [OrderStatus.PARCIALMENTE_ENTREGADO]: {
-    bg: 'bg-purple-500',
-    bgLight: 'bg-purple-100',
-    light: 'bg-purple-50',
-    text: 'text-purple-600',
-    border: 'border-purple-200',
-    gradient: 'from-purple-500 to-purple-600',
-  },
-  [OrderStatus.ENTREGADO]: {
-    bg: 'bg-sky-500',
-    bgLight: 'bg-sky-100',
-    light: 'bg-sky-50',
-    text: 'text-sky-600',
-    border: 'border-sky-200',
-    gradient: 'from-sky-500 to-sky-600',
-  },
-  [OrderStatus.CANCELADO]: {
-    bg: 'bg-rose-500',
-    bgLight: 'bg-rose-100',
-    light: 'bg-rose-50',
-    text: 'text-rose-600',
-    border: 'border-rose-200',
-    gradient: 'from-rose-500 to-rose-600',
-  },
-};
-
-const segmentColors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-purple-500'];
+const statusColors = STATUS_COLOR_MAP;
+const statusFlow = STATUS_FLOW;
+const paymentMethods = PAYMENT_METHODS;
+const segmentColors = SEGMENT_COLORS;
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -355,7 +296,7 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
             style={{ width: `${Math.min(paymentProgress, 100)}%` }}
           />
         </div>
-        <div className="flex items-left flex-col gap-2 justify-between mt-3 text-sm text-slate-500">
+        <div className="flex items-start flex-col gap-2 justify-between mt-3 text-sm text-slate-500">
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />
             Entrega estimada: {formatDate(displayOrder.dueDate)}

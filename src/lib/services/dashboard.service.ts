@@ -138,12 +138,4 @@ export class DashboardService {
   async getRecentOrders(limit: number = 5) {
     return this.ordersRepo.findRecentByDate(limit);
   }
-
-  /**
-   * Get urgent/priority orders
-   */
-  async getUrgentOrders() {
-    const orders = await this.ordersRepo.findActive();
-    return orders.filter((o) => o.is_urgent || o.is_delayed);
-  }
 }

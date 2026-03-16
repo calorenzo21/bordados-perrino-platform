@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -16,6 +16,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+
+import { createClient } from '@/lib/supabase/browser';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,7 +38,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { createClient } from '@/lib/supabase/browser';
 
 interface ExpenseType {
   id: string;
@@ -60,7 +61,7 @@ export default function ExpenseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const expenseId = params.id as string;
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   const [expense, setExpense] = useState<Expense | null>(null);
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
@@ -90,20 +91,26 @@ export default function ExpenseDetailPage() {
           .order('is_system', { ascending: false })
           .order('name', { ascending: true });
 
-        setExpenseTypes((typesData || []).map(t => ({
-          id: t.id,
-          name: t.name,
-          color: t.color,
-          isCustom: !t.is_system,
-        })));
+        setExpenseTypes(
+          (typesData || []).map(
+            (t: { id: string; name: string; color: string | null; is_system: boolean }) => ({
+              id: t.id,
+              name: t.name,
+              color: t.color,
+              isCustom: !t.is_system,
+            })
+          )
+        );
 
         // Cargar gasto
         const { data: expenseData, error: expenseError } = await supabase
           .from('expenses')
-          .select(`
+          .select(
+            `
             *,
             expense_types (name, color)
-          `)
+          `
+          )
           .eq('id', expenseId)
           .single();
 
@@ -164,7 +171,7 @@ export default function ExpenseDetailPage() {
       if (updateError) throw updateError;
 
       // Actualizar el estado local
-      const selectedType = expenseTypes.find(t => t.id === formData.typeId);
+      const selectedType = expenseTypes.find((t) => t.id === formData.typeId);
       setExpense({
         ...expense!,
         typeId: formData.typeId,
@@ -189,10 +196,7 @@ export default function ExpenseDetailPage() {
     setError(null);
 
     try {
-      const { error: deleteError } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', expenseId);
+      const { error: deleteError } = await supabase.from('expenses').delete().eq('id', expenseId);
 
       if (deleteError) throw deleteError;
 
@@ -247,11 +251,7 @@ export default function ExpenseDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/expenses">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -301,11 +301,15 @@ export default function ExpenseDetailPage() {
         <div className="lg:col-span-2">
           <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
             {/* Header visual */}
-            <div className={`h-24 bg-gradient-to-br ${selectedType?.color || 'from-blue-500 to-blue-600'} ${!selectedType?.color ? '' : selectedType.color.replace('bg-', 'from-') + ' to-' + selectedType.color.replace('bg-', '').replace('-500', '-600')}`} />
+            <div
+              className={`h-24 bg-gradient-to-br ${selectedType?.color || 'from-blue-500 to-blue-600'} ${!selectedType?.color ? '' : selectedType.color.replace('bg-', 'from-') + ' to-' + selectedType.color.replace('bg-', '').replace('-500', '-600')}`}
+            />
 
             <CardContent className="relative px-6 pb-6">
               {/* Icono */}
-              <div className={`absolute -top-8 left-6 flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg ${selectedType?.color || 'bg-blue-500'}`}>
+              <div
+                className={`absolute -top-8 left-6 flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg ${selectedType?.color || 'bg-blue-500'}`}
+              >
                 <Receipt className="h-7 w-7 text-white" />
               </div>
 
@@ -487,12 +491,16 @@ export default function ExpenseDetailPage() {
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 my-4">
             <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${expense.typeColor}`}>
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-lg ${expense.typeColor}`}
+              >
                 <Receipt className="h-5 w-5 text-white" />
               </div>
               <div>
                 <p className="font-medium text-slate-900">{expense.description}</p>
-                <p className="text-sm text-slate-500">{expense.typeName} • {expense.date}</p>
+                <p className="text-sm text-slate-500">
+                  {expense.typeName} • {expense.date}
+                </p>
               </div>
               <div className="ml-auto">
                 <span className="font-bold text-blue-600">-${expense.amount.toLocaleString()}</span>

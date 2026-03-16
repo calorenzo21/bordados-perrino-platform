@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { revalidateExpenseTypes, revalidateExpenses } from '@/lib/actions/revalidate';
+import { ITEMS_PER_PAGE } from '@/lib/constants';
 import type { Expense, ExpenseType } from '@/lib/services/expenses.server';
 import { createClient } from '@/lib/supabase/browser';
 
@@ -54,8 +55,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const ITEMS_PER_PAGE = 10;
 
 interface ExpensesContentProps {
   initialExpenses: Expense[];
@@ -100,7 +99,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
   const [expenseToDelete, setExpenseToDelete] = useState<(typeof expenses)[0] | null>(null);
   const [isDeletingExpense, setIsDeletingExpense] = useState(false);
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   // Usar tipos directamente de la DB
   const expenseTypes = dbExpenseTypes;
@@ -156,16 +155,6 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setSelectedType(type);
     setCurrentPage(1);
   };
-
-  // Calcular totales (disponibles para uso futuro)
-  const _totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const _thisMonthExpenses = expenses
-    .filter((exp) => {
-      const expDate = new Date(exp.date);
-      const now = new Date();
-      return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, exp) => sum + exp.amount, 0);
 
   // Contadores por tipo
   const typeCounts = expenseTypes.reduce(
@@ -450,7 +439,12 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
             <Settings className="h-4 w-4" />
             Tipos de Gasto
           </Button>
-          <Button variant="outline" className="h-10 gap-2 rounded-xl border-slate-200">
+          <Button
+            variant="outline"
+            className="h-10 gap-2 rounded-xl border-slate-200"
+            disabled
+            title="Próximamente"
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>

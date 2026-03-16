@@ -12,7 +12,7 @@ import {
 
 import { useRouter } from 'next/navigation';
 
-import { Session, User } from '@supabase/supabase-js';
+import { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/browser';
 import type { Profile } from '@/lib/types/database';
@@ -35,8 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Usar useMemo para evitar crear múltiples clientes
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   // Ref para evitar carreras de estado
   const isMounted = useRef(true);
@@ -137,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // resolver con null y el usuario se queda en "Redirigiendo..." hasta recargar.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (event === 'INITIAL_SESSION') {
         await updateAuthState(session);
         if (isMounted.current && !isInitialized.current) {
@@ -182,15 +181,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = profile?.role === 'ADMIN';
 
-  const value = {
-    user,
-    profile,
-    isLoading,
-    isAdmin,
-    signOut,
-    refreshProfile,
-    refreshSession,
-  };
+  const value = useMemo(
+    () => ({ user, profile, isLoading, isAdmin, signOut, refreshProfile, refreshSession }),
+    [user, profile, isLoading, isAdmin, signOut, refreshProfile, refreshSession]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,35 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import useSWR, { useSWRConfig } from 'swr';
 
 import { createClient } from '@/lib/supabase/browser';
-
-// Tipos que coinciden con la interfaz existente
-interface OrderClient {
-  id: string;
-  name: string;
-  initials: string;
-  email: string;
-}
-
-interface Order {
-  id: string;
-  client: OrderClient;
-  description: string;
-  serviceType: string;
-  quantity: number;
-  total: number;
-  status: string;
-  dueDate: string;
-  createdAt: string;
-  isDelayed: boolean;
-  daysRemaining: number;
-  isUrgent: boolean;
-}
 
 function getInitials(name: string): string {
   return name
@@ -40,144 +17,9 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
-
-  // Crear cliente una sola vez
-  const supabase = useMemo(() => createClient(), []);
-
-  const fetchOrders = useCallback(async () => {
-    if (!isMounted.current) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Verificar que hay sesión antes de hacer la query
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        // No hay sesión, esperar un poco y reintentar
-        if (!hasFetched.current) {
-          setTimeout(() => {
-            if (isMounted.current) fetchOrders();
-          }, 500);
-        }
-        return;
-      }
-
-      const { data, error: queryError } = await supabase
-        .from('orders_with_payments')
-        .select('*')
-        .order('is_urgent', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (queryError) throw queryError;
-
-      hasFetched.current = true;
-
-      const transformedOrders: Order[] = (data || []).map((o) => ({
-        id: o.order_number || o.id,
-        client: {
-          id: o.client_id,
-          name: o.client_name,
-          initials: getInitials(o.client_name),
-          email: o.client_email,
-        },
-        description: o.description,
-        serviceType: o.service_type,
-        quantity: o.quantity,
-        total: o.total,
-        status: o.status,
-        dueDate: o.due_date,
-        createdAt: o.created_at?.split('T')[0] || '',
-        isDelayed: o.is_delayed || false,
-        daysRemaining: o.days_remaining || 0,
-        isUrgent: o.is_urgent || false,
-      }));
-
-      if (isMounted.current) {
-        setOrders(transformedOrders);
-      }
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      if (isMounted.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar pedidos');
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    hasFetched.current = false;
-    fetchOrders();
-
-    return () => {
-      isMounted.current = false;
-    };
-  }, [fetchOrders]);
-
-  return { orders, isLoading, error, refetch: fetchOrders };
-}
-
-// Tipos usados en el mapeo de datos del pedido (interfaces locales)
-interface _OrderDetail {
-  id: string;
-  orderNumber: string;
-  client: {
-    id: string;
-    name: string;
-    initials: string;
-    email: string;
-    phone: string;
-    cedula: string;
-    address: string;
-  };
-  description: string;
-  serviceType: string;
-  quantity: number;
-  total: number;
-  status: string;
-  dueDate: string;
-  createdAt: string;
-  isDelayed: boolean;
-  daysRemaining: number;
-  isUrgent: boolean;
-  totalPaid: number;
-  remainingBalance: number;
-  paymentStatus: string;
-}
-
-interface _Payment {
-  id: string;
-  amount: number;
-  method: string;
-  notes: string;
-  date: string;
-  photos: string[];
-}
-
-interface _StatusHistoryItem {
-  id: string;
-  status: string;
-  observations: string;
-  date: string;
-  photos: string[];
-}
-
-// Para la página de detalle del pedido (formato compatible con la interfaz existente)
 export interface OrderForDetail {
   id: string;
-  uuid: string; // UUID real del pedido para operaciones con Supabase
+  uuid: string;
   client: {
     id: string;
     name: string;

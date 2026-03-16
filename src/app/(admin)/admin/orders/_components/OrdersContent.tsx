@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 
+import { ITEMS_PER_PAGE } from '@/lib/constants';
 import type { Order } from '@/lib/services/orders.server';
 import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
 
@@ -38,8 +39,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const ITEMS_PER_PAGE = 10;
 
 // Función para obtener la prioridad del status (menor número = mayor prioridad)
 function getStatusPriority(status: string, isUrgent: boolean): number {
@@ -186,6 +185,8 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
           <Button
             variant="outline"
             className="h-10 gap-2 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+            disabled
+            title="Próximamente"
           >
             <Download className="h-4 w-4" />
             Exportar

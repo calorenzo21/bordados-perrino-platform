@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import useSWR from 'swr';
@@ -42,36 +42,21 @@ function getInitials(name: string): string {
 }
 
 export function useClients() {
+  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
-  const hasFetched = useRef(false);
 
-  // Crear cliente una sola vez
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   const fetchClients = useCallback(async () => {
-    if (!isMounted.current) return;
+    if (!isMounted.current || !user) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      // Verificar que hay sesión antes de hacer la query
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        if (!hasFetched.current) {
-          setTimeout(() => {
-            if (isMounted.current) fetchClients();
-          }, 500);
-        }
-        return;
-      }
-
-      // Obtener clientes con estadísticas
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients_with_stats')
         .select('*')
@@ -79,46 +64,25 @@ export function useClients() {
 
       if (clientsError) throw clientsError;
 
-      hasFetched.current = true;
-
-      // Obtener pedidos para cada cliente
-      const clientsWithOrders = await Promise.all(
-        (clientsData || []).map(async (client) => {
-          const { data: ordersData } = await supabase
-            .from('orders')
-            .select('id, order_number, description, status, total, created_at')
-            .eq('client_id', client.id)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-          const orders: Order[] = (ordersData || []).map((o) => ({
-            id: o.order_number || o.id,
-            description: o.description,
-            status: o.status,
-            total: o.total,
-            date: o.created_at?.split('T')[0] || '',
-          }));
-
-          return {
-            id: client.id,
-            name: client.name,
-            initials: getInitials(client.name),
-            email: client.email,
-            phone: client.phone,
-            cedula: client.cedula || '',
-            address: client.address || '',
-            totalOrders: client.total_orders || 0,
-            activeOrders: client.active_orders || 0,
-            totalSpent: client.total_spent || 0,
-            lastOrderDate: client.last_order_date?.split('T')[0] || '',
-            createdAt: client.created_at?.split('T')[0] || '',
-            orders,
-          };
-        })
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mappedClients: Client[] = (clientsData || []).map((client: any) => ({
+        id: client.id,
+        name: client.name,
+        initials: getInitials(client.name),
+        email: client.email,
+        phone: client.phone,
+        cedula: client.cedula || '',
+        address: client.address || '',
+        totalOrders: client.total_orders || 0,
+        activeOrders: client.active_orders || 0,
+        totalSpent: client.total_spent || 0,
+        lastOrderDate: client.last_order_date?.split('T')[0] || '',
+        createdAt: client.created_at?.split('T')[0] || '',
+        orders: [],
+      }));
 
       if (isMounted.current) {
-        setClients(clientsWithOrders);
+        setClients(mappedClients);
       }
     } catch (err) {
       console.error('Error fetching clients:', err);
@@ -134,13 +98,12 @@ export function useClients() {
 
   useEffect(() => {
     isMounted.current = true;
-    hasFetched.current = false;
-    fetchClients();
+    if (user) fetchClients();
 
     return () => {
       isMounted.current = false;
     };
-  }, [fetchClients]);
+  }, [user, fetchClients]);
 
   return { clients, isLoading, error, refetch: fetchClients };
 }

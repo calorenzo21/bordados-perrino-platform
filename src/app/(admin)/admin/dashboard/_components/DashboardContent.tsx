@@ -21,14 +21,8 @@ import {
 } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
+import { SERVICE_COLORS } from '@/lib/constants';
 import type { DashboardData, RecentExpense, TopClient } from '@/lib/services/dashboard.server';
-import type {
-  DashboardMetrics,
-  OrderWithPayments,
-  OrdersByMonth,
-  OrdersByService,
-  OrdersByStatus,
-} from '@/lib/types/database';
 import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
 
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -67,16 +61,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-// Colores para tipos de servicio
-const serviceColors: Record<string, string> = {
-  BORDADOS: 'bg-blue-500',
-  DTF: 'bg-emerald-500',
-  SUBLIMACION: 'bg-amber-500',
-  IMPRESION: 'bg-purple-500',
-  IMPRESION_PLANCHADO: 'bg-rose-500',
-  LLAVEROS: 'bg-cyan-500',
-  IMPRESION_PLANCHADO_TELA: 'bg-orange-500',
-};
+const serviceColors = SERVICE_COLORS;
 
 function getInitials(name: string): string {
   return name
@@ -295,7 +280,11 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="h-10 gap-2 rounded-full bg-blue-500 px-5 text-white hover:bg-blue-600">
+          <Button
+            className="h-10 gap-2 rounded-full bg-blue-500 px-5 text-white hover:bg-blue-600"
+            disabled
+            title="Próximamente"
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
@@ -572,8 +561,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl">
-                <DropdownMenuItem className="rounded-lg">Ver detalles</DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg">Exportar</DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg" disabled>
+                  Ver detalles
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg" disabled>
+                  Exportar
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </CardHeader>

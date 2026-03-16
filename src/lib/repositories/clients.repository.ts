@@ -1,20 +1,20 @@
 /**
  * Clients Repository
- * 
+ *
  * Data access layer for clients table.
  * All database operations for clients should go through this repository.
  */
-
 import { SupabaseClient } from '@supabase/supabase-js';
 
 import type {
   Client,
+  ClientFilters,
   ClientInsert,
   ClientUpdate,
   ClientWithStats,
-  ClientFilters,
   PaginatedResponse,
 } from '@/lib/types/database';
+import { escapeIlike } from '@/lib/utils';
 
 export class ClientsRepository {
   constructor(private supabase: SupabaseClient) {}
@@ -40,15 +40,12 @@ export class ClientsRepository {
     pageSize: number = 10,
     filters?: ClientFilters
   ): Promise<PaginatedResponse<ClientWithStats>> {
-    let query = this.supabase
-      .from('clients_with_stats')
-      .select('*', { count: 'exact' });
+    let query = this.supabase.from('clients_with_stats').select('*', { count: 'exact' });
 
     // Apply filters
     if (filters?.search) {
-      query = query.or(
-        `name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
-      );
+      const s = escapeIlike(filters.search);
+      query = query.or(`name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
     }
 
     if (filters?.hasActiveOrders) {
@@ -129,11 +126,7 @@ export class ClientsRepository {
    * Create a new client
    */
   async create(client: ClientInsert): Promise<Client> {
-    const { data, error } = await this.supabase
-      .from('clients')
-      .insert(client)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.from('clients').insert(client).select().single();
 
     if (error) throw new Error(error.message);
     return data;
@@ -158,10 +151,7 @@ export class ClientsRepository {
    * Delete a client
    */
   async delete(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('clients')
-      .delete()
-      .eq('id', id);
+    const { error } = await this.supabase.from('clients').delete().eq('id', id);
 
     if (error) throw new Error(error.message);
   }

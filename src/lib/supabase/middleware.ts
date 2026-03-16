@@ -1,5 +1,7 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+
+import { env } from '@/config/env';
+import { type CookieOptions, createServerClient } from '@supabase/ssr';
 
 export type UserRole = 'ADMIN' | 'CLIENT' | null;
 
@@ -20,8 +22,8 @@ export async function updateSession(request: NextRequest): Promise<SessionResult
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -70,4 +72,3 @@ export async function updateSession(request: NextRequest): Promise<SessionResult
 
   return { supabaseResponse, user, role };
 }
-

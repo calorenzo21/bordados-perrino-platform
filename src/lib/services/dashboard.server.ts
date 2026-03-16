@@ -17,7 +17,6 @@ import type {
   OrdersByMonth,
   OrdersByService,
   OrdersByStatus,
-  ServiceType as _ServiceType,
 } from '@/lib/types/database';
 
 import { DashboardService } from './dashboard.service';
@@ -79,11 +78,26 @@ export const getDashboardData = cache(async function getDashboardData(): Promise
     expensesResult,
     clientsResult,
   ] = await Promise.all([
-    service.getMetrics().catch(() => null),
-    service.getOrdersByMonth(12).catch(() => []),
-    service.getOrdersByStatus().catch(() => []),
-    service.getOrdersByService().catch(() => []),
-    service.getRecentOrders(5).catch(() => []),
+    service.getMetrics().catch((err) => {
+      console.error('[Dashboard] getMetrics failed:', err);
+      return null;
+    }),
+    service.getOrdersByMonth(12).catch((err) => {
+      console.error('[Dashboard] getOrdersByMonth failed:', err);
+      return [];
+    }),
+    service.getOrdersByStatus().catch((err) => {
+      console.error('[Dashboard] getOrdersByStatus failed:', err);
+      return [];
+    }),
+    service.getOrdersByService().catch((err) => {
+      console.error('[Dashboard] getOrdersByService failed:', err);
+      return [];
+    }),
+    service.getRecentOrders(5).catch((err) => {
+      console.error('[Dashboard] getRecentOrders failed:', err);
+      return [];
+    }),
     supabase
       .from('expenses')
       .select(

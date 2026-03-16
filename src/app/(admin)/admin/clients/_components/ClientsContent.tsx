@@ -9,6 +9,7 @@ import { adminClientFetcher, getAdminClientSwrKey } from '@/hooks/use-clients';
 import { Calendar, Download, Loader2, Mail, Phone, Plus, Search, User } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 
+import { ITEMS_PER_PAGE } from '@/lib/constants';
 import type { Client } from '@/lib/services/clients.server';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -33,8 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-const ITEMS_PER_PAGE = 10;
 
 interface ClientsContentProps {
   initialClients: Client[];
@@ -159,7 +158,12 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
           <p className="mt-1 text-sm text-slate-500">Administra tu cartera de clientes</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-10 gap-2 rounded-xl border-slate-200">
+          <Button
+            variant="outline"
+            className="h-10 gap-2 rounded-xl border-slate-200"
+            disabled
+            title="Próximamente"
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>

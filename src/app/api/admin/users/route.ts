@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminSchema, deleteAdminSchema } from '@/lib/validators/admin.schema';
 
 // Generar contraseña aleatoria
 function generatePassword(length: number = 12): string {
@@ -77,11 +78,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, firstName, lastName } = body;
+    const parsed = createAdminSchema.safeParse(body);
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email es requerido' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' },
+        { status: 400 }
+      );
     }
+
+    const { email, firstName, lastName } = parsed.data;
 
     // Verificar si el email ya existe
     const { data: existingProfile } = await supabase
@@ -187,11 +193,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('id');
+    const parsed = deleteAdminSchema.safeParse({ id: searchParams.get('id') });
 
-    if (!userId) {
-      return NextResponse.json({ error: 'ID de usuario requerido' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? 'ID inválido' },
+        { status: 400 }
+      );
     }
+
+    const userId = parsed.data.id;
 
     // No permitir eliminarse a sí mismo
     if (userId === user.id) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,8 @@ import {
   User,
   X,
 } from 'lucide-react';
+
+import { createClient } from '@/lib/supabase/browser';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,7 +40,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { createClient } from '@/lib/supabase/browser';
 
 // Tipos
 interface ExpenseType {
@@ -98,12 +99,16 @@ export default function NewExpensePage() {
 
         if (error) throw error;
 
-        setExpenseTypes((data || []).map(t => ({
-          id: t.id,
-          name: t.name,
-          color: t.color,
-          isCustom: !t.is_system,
-        })));
+        setExpenseTypes(
+          (data || []).map(
+            (t: { id: string; name: string; color: string | null; is_system: boolean }) => ({
+              id: t.id,
+              name: t.name,
+              color: t.color,
+              isCustom: !t.is_system,
+            })
+          )
+        );
       } catch (err) {
         console.error('Error loading expense types:', err);
       } finally {
@@ -121,14 +126,12 @@ export default function NewExpensePage() {
     setError(null);
 
     try {
-      const { error: insertError } = await supabase
-        .from('expenses')
-        .insert({
-          expense_type_id: formData.typeId,
-          description: formData.description.trim() || formData.typeName,
-          amount: parseFloat(formData.amount),
-          date: formData.date,
-        });
+      const { error: insertError } = await supabase.from('expenses').insert({
+        expense_type_id: formData.typeId,
+        description: formData.description.trim() || formData.typeName,
+        amount: parseFloat(formData.amount),
+        date: formData.date,
+      });
 
       if (insertError) throw insertError;
 
@@ -201,11 +204,7 @@ export default function NewExpensePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/expenses">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-slate-100"
-            >
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -472,10 +471,11 @@ export default function NewExpensePage() {
                   <button
                     key={color}
                     onClick={() => setNewTypeColor(color)}
-                    className={`h-8 w-8 rounded-full ${color} transition-all ${newTypeColor === color
+                    className={`h-8 w-8 rounded-full ${color} transition-all ${
+                      newTypeColor === color
                         ? 'ring-2 ring-offset-2 ring-slate-400 scale-110'
                         : 'hover:scale-110'
-                      }`}
+                    }`}
                   />
                 ))}
               </div>

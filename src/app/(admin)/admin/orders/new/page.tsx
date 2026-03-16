@@ -222,23 +222,20 @@ function NewOrderContent() {
     );
   };
 
-  // Generar número de orden
   const generateOrderNumber = async (): Promise<string> => {
-    const { data, error } = await supabase.from('orders').select('order_number');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('order_number')
+      .like('order_number', 'ORD-%')
+      .order('order_number', { ascending: false })
+      .limit(1);
 
     if (error) throw error;
 
     let maxNumber = 0;
-    if (data && data.length > 0) {
-      // Encontrar el número más alto
-      data.forEach((order) => {
-        if (order.order_number) {
-          const num = parseInt(order.order_number.replace('ORD-', ''));
-          if (!isNaN(num) && num > maxNumber) {
-            maxNumber = num;
-          }
-        }
-      });
+    if (data && data.length > 0 && data[0].order_number) {
+      const num = parseInt(data[0].order_number.replace('ORD-', ''));
+      if (!isNaN(num)) maxNumber = num;
     }
 
     return `ORD-${String(maxNumber + 1).padStart(3, '0')}`;

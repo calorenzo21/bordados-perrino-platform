@@ -1,22 +1,22 @@
 /**
  * Expenses Repository
- * 
+ *
  * Data access layer for expenses and expense types tables.
  */
-
 import { SupabaseClient } from '@supabase/supabase-js';
 
 import type {
   Expense,
+  ExpenseFilters,
   ExpenseInsert,
-  ExpenseUpdate,
-  ExpenseWithType,
   ExpenseType,
   ExpenseTypeInsert,
   ExpenseTypeUpdate,
-  ExpenseFilters,
+  ExpenseUpdate,
+  ExpenseWithType,
   PaginatedResponse,
 } from '@/lib/types/database';
+import { escapeIlike } from '@/lib/utils';
 
 // Helper para extraer datos de expense_types que puede venir como objeto o array
 function getExpenseTypeData(expenseTypes: unknown): { name: string; color: string } {
@@ -111,10 +111,7 @@ export class ExpensesRepository {
       throw new Error('No se pueden eliminar tipos de gasto del sistema');
     }
 
-    const { error } = await this.supabase
-      .from('expense_types')
-      .delete()
-      .eq('id', id);
+    const { error } = await this.supabase.from('expense_types').delete().eq('id', id);
 
     if (error) throw new Error(error.message);
   }
@@ -129,18 +126,20 @@ export class ExpensesRepository {
   async findAll(): Promise<ExpenseWithType[]> {
     const { data, error } = await this.supabase
       .from('expenses')
-      .select(`
+      .select(
+        `
         *,
         expense_types (
           name,
           color
         )
-      `)
+      `
+      )
       .order('date', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map(expense => {
+    return (data || []).map((expense) => {
       const typeData = getExpenseTypeData(expense.expense_types);
       return {
         ...expense,
@@ -158,22 +157,23 @@ export class ExpensesRepository {
     pageSize: number = 10,
     filters?: ExpenseFilters
   ): Promise<PaginatedResponse<ExpenseWithType>> {
-    let query = this.supabase
-      .from('expenses')
-      .select(`
+    let query = this.supabase.from('expenses').select(
+      `
         *,
         expense_types (
           name,
           color
         )
-      `, { count: 'exact' });
+      `,
+      { count: 'exact' }
+    );
 
     // Apply filters
     if (filters?.typeId) {
       query = query.eq('expense_type_id', filters.typeId);
     }
     if (filters?.search) {
-      query = query.ilike('description', `%${filters.search}%`);
+      query = query.ilike('description', `%${escapeIlike(filters.search)}%`);
     }
     if (filters?.fromDate) {
       query = query.gte('date', filters.fromDate);
@@ -186,13 +186,11 @@ export class ExpensesRepository {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await query
-      .order('date', { ascending: false })
-      .range(from, to);
+    const { data, error, count } = await query.order('date', { ascending: false }).range(from, to);
 
     if (error) throw new Error(error.message);
 
-    const expenses = (data || []).map(expense => {
+    const expenses = (data || []).map((expense) => {
       const typeData = getExpenseTypeData(expense.expense_types);
       return {
         ...expense,
@@ -216,13 +214,15 @@ export class ExpensesRepository {
   async findById(id: string): Promise<ExpenseWithType | null> {
     const { data, error } = await this.supabase
       .from('expenses')
-      .select(`
+      .select(
+        `
         *,
         expense_types (
           name,
           color
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -243,11 +243,7 @@ export class ExpensesRepository {
    * Create a new expense
    */
   async create(expense: ExpenseInsert): Promise<Expense> {
-    const { data, error } = await this.supabase
-      .from('expenses')
-      .insert(expense)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.from('expenses').insert(expense).select().single();
 
     if (error) throw new Error(error.message);
     return data;
@@ -272,10 +268,7 @@ export class ExpensesRepository {
    * Delete an expense
    */
   async delete(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('expenses')
-      .delete()
-      .eq('id', id);
+    const { error } = await this.supabase.from('expenses').delete().eq('id', id);
 
     if (error) throw new Error(error.message);
   }
@@ -298,7 +291,7 @@ export class ExpensesRepository {
       .gte('date', startOfMonth.toISOString().split('T')[0]);
 
     if (error) throw new Error(error.message);
-    
+
     return data?.reduce((sum, e) => sum + e.amount, 0) || 0;
   }
 
@@ -306,12 +299,10 @@ export class ExpensesRepository {
    * Get total expenses
    */
   async getTotal(): Promise<number> {
-    const { data, error } = await this.supabase
-      .from('expenses')
-      .select('amount');
+    const { data, error } = await this.supabase.from('expenses').select('amount');
 
     if (error) throw new Error(error.message);
-    
+
     return data?.reduce((sum, e) => sum + e.amount, 0) || 0;
   }
 
@@ -324,19 +315,21 @@ export class ExpensesRepository {
   ): Promise<{ typeId: string; typeName: string; total: number }[]> {
     const { data, error } = await this.supabase
       .from('expenses')
-      .select(`
+      .select(
+        `
         expense_type_id,
         amount,
         expense_types (name)
-      `)
+      `
+      )
       .gte('date', fromDate)
       .lte('date', toDate);
 
     if (error) throw new Error(error.message);
 
     const byType: Record<string, { typeName: string; total: number }> = {};
-    
-    data?.forEach(expense => {
+
+    data?.forEach((expense) => {
       const typeId = expense.expense_type_id;
       if (!byType[typeId]) {
         const typeData = getExpenseTypeData(expense.expense_types);

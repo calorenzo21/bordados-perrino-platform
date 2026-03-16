@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
+import { useClient } from '@/hooks/use-clients';
 import {
   ArrowLeft,
   Calendar,
@@ -26,6 +27,8 @@ import {
   User,
   X,
 } from 'lucide-react';
+
+import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
 
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
@@ -57,9 +60,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
-import { useClient } from '@/hooks/use-clients';
-
 
 // Función para calcular estadísticas
 const getStatusColor = (status: OrderStatusType) => {
@@ -169,10 +169,13 @@ export default function ClientDetailPage() {
   }
 
   // Calcular estadísticas adicionales
-  const serviceTypeStats = client.orders.reduce((acc, order) => {
-    acc[order.serviceType] = (acc[order.serviceType] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const serviceTypeStats = client.orders.reduce(
+    (acc, order) => {
+      acc[order.serviceType] = (acc[order.serviceType] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const mostUsedService = Object.entries(serviceTypeStats).sort((a, b) => b[1] - a[1])[0];
 
@@ -197,7 +200,11 @@ export default function ClientDetailPage() {
                 <h1 className="text-2xl font-bold text-slate-900">{client.name}</h1>
               </div>
               <p className="mt-0.5 text-sm text-slate-500">
-                Cliente desde {new Date(client.createdAt).toLocaleDateString('es-AR', { year: 'numeric', month: 'long' })}
+                Cliente desde{' '}
+                {new Date(client.createdAt).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: 'long',
+                })}
               </p>
             </div>
           </div>
@@ -223,11 +230,11 @@ export default function ClientDetailPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 rounded-xl">
-              <DropdownMenuItem className="rounded-lg">
+              <DropdownMenuItem className="rounded-lg" disabled>
                 <Mail className="mr-2 h-4 w-4" />
                 Enviar Email
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg">
+              <DropdownMenuItem className="rounded-lg" disabled>
                 <Phone className="mr-2 h-4 w-4" />
                 Llamar
               </DropdownMenuItem>
@@ -247,7 +254,9 @@ export default function ClientDetailPage() {
           value={client.totalOrders.toString()}
           description={`${client.activeOrders} activos actualmente`}
           icon={ShoppingBag}
-          trend={client.activeOrders > 0 ? { value: client.activeOrders, isPositive: true } : undefined}
+          trend={
+            client.activeOrders > 0 ? { value: client.activeOrders, isPositive: true } : undefined
+          }
           iconColor="blue"
         />
         <MetricCard
@@ -308,7 +317,9 @@ export default function ClientDetailPage() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-medium uppercase text-purple-500">Dirección</p>
-            <p className="truncate text-sm font-medium text-slate-800">{client.address || 'Sin dirección registrada'}</p>
+            <p className="truncate text-sm font-medium text-slate-800">
+              {client.address || 'Sin dirección registrada'}
+            </p>
           </div>
         </div>
       </div>
@@ -321,7 +332,9 @@ export default function ClientDetailPage() {
               <ShoppingCart className="h-5 w-5 text-blue-500" />
               Historial de Pedidos
             </CardTitle>
-            <p className="mt-1 text-sm text-slate-500">{client.orders.length} pedido{client.orders.length !== 1 ? 's' : ''} en total</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {client.orders.length} pedido{client.orders.length !== 1 ? 's' : ''} en total
+            </p>
           </div>
           <Link href={`/admin/orders?client=${client.id}`}>
             <Button variant="outline" size="sm" className="rounded-lg">
@@ -334,12 +347,24 @@ export default function ClientDetailPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-slate-100 hover:bg-transparent">
-                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">Pedido</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">Descripción</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">Servicio</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">Estado</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">Fecha</TableHead>
-                <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400">Total</TableHead>
+                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
+                  Pedido
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  Descripción
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  Servicio
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  Estado
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  Fecha
+                </TableHead>
+                <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400">
+                  Total
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -351,11 +376,15 @@ export default function ClientDetailPage() {
                   <TableCell className="pl-6">
                     <Link href={`/admin/orders/${order.id}`} className="block">
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br ${getStatusColor(order.status as OrderStatusType)} shadow-sm`}>
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br ${getStatusColor(order.status as OrderStatusType)} shadow-sm`}
+                        >
                           <Package className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">{order.id}</p>
+                          <p className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">
+                            {order.id}
+                          </p>
                           <p className="text-xs text-slate-400">{order.quantity} unidades</p>
                         </div>
                       </div>
@@ -367,7 +396,10 @@ export default function ClientDetailPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+                    <Badge
+                      variant="outline"
+                      className="border-slate-200 bg-slate-50 text-slate-600"
+                    >
                       {order.serviceType}
                     </Badge>
                   </TableCell>
@@ -381,7 +413,9 @@ export default function ClientDetailPage() {
                     </div>
                   </TableCell>
                   <TableCell className="pr-6 text-right">
-                    <p className="text-sm font-semibold text-emerald-600">${order.total.toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-emerald-600">
+                      ${order.total.toLocaleString()}
+                    </p>
                   </TableCell>
                 </TableRow>
               ))}
@@ -404,20 +438,23 @@ export default function ClientDetailPage() {
       </Card>
 
       {/* Dialog de Edición */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-        if (!open) setEditError(null);
-        setIsEditDialogOpen(open);
-      }}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditError(null);
+          setIsEditDialogOpen(open);
+        }}
+      >
         <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
             <DialogTitle>Editar Datos del Cliente</DialogTitle>
-            <DialogDescription>Actualiza la información de contacto de {client.name}</DialogDescription>
+            <DialogDescription>
+              Actualiza la información de contacto de {client.name}
+            </DialogDescription>
           </DialogHeader>
 
           {editError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {editError}
-            </div>
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{editError}</div>
           )}
 
           <div className="grid gap-4 py-4">

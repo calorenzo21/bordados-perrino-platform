@@ -66,10 +66,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // Redirect to the appropriate page
       if (result.redirectTo) {
-        router.push(result.redirectTo);
-        router.refresh();
+        window.location.href = result.redirectTo;
       }
     });
   };

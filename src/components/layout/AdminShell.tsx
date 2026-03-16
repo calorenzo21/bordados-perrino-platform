@@ -61,6 +61,7 @@ interface AdminShellProps {
 export function AdminShell({ children }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, isLoading, isAdmin, signOut } = useAuth();
@@ -122,7 +123,13 @@ export function AdminShell({ children }: AdminShellProps) {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      setIsSigningOut(true);
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      setIsSigningOut(false);
+    }
   };
 
   const NavLink = ({ item }: { item: NavItem }) => {
@@ -326,9 +333,14 @@ export function AdminShell({ children }: AdminShellProps) {
                   <DropdownMenuItem
                     className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
                     onClick={handleSignOut}
+                    disabled={isSigningOut}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesión
+                    {isSigningOut ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="mr-2 h-4 w-4" />
+                    )}
+                    {isSigningOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

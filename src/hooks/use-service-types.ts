@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
 import { createClient } from '@/lib/supabase/browser';
 
-// Tipos para los servicios
 export interface ServiceType {
   id: string;
   name: string;
@@ -34,7 +34,8 @@ export function useServiceTypes() {
 
       if (queryError) throw queryError;
 
-      const transformedTypes: ServiceType[] = (data || []).map(st => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedTypes: ServiceType[] = (data || []).map((st: any) => ({
         id: st.id,
         name: st.name,
         description: st.description,

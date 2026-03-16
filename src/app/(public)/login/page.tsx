@@ -23,7 +23,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo');
-  const { user, isLoading, isAdmin, refreshSession } = useAuth();
+  const { user, isLoading, isAdmin } = useAuth();
 
   // Redirigir si el usuario ya está autenticado
   useEffect(() => {
@@ -38,7 +38,7 @@ function LoginForm() {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
             <span className="text-lg font-bold text-white">BP</span>
           </div>
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
@@ -64,11 +64,6 @@ function LoginForm() {
         return;
       }
 
-      // Refrescar la sesión en el contexto de auth para cargar el perfil
-      await refreshSession();
-
-      // Determine the final destination
-      // If there's a redirectTo param, validate it matches the user's role
       let destination = result.redirectTo || '/admin/dashboard';
 
       if (redirectTo) {
@@ -76,15 +71,16 @@ function LoginForm() {
         const isClientRoute = redirectTo.startsWith('/client');
         const userIsAdmin = result.redirectTo === '/admin/dashboard';
 
-        // Only use redirectTo if user has permission for that route
         if ((isAdminRoute && userIsAdmin) || (isClientRoute && !userIsAdmin)) {
           destination = redirectTo;
         }
-        // Otherwise, use the role-based destination from result
       }
 
-      router.push(destination);
-      router.refresh();
+      // Hard navigation so the middleware picks up the fresh cookie
+      // and onAuthStateChange fires INITIAL_SESSION with the new session.
+      // Using router.push + refreshSession causes a race condition where
+      // the browser client hasn't synced the server-set cookie yet.
+      window.location.href = destination;
     });
   };
 

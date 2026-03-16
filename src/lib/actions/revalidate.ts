@@ -1,29 +1,25 @@
 'use server';
 
-/**
- * Server Actions for Cache Revalidation
- *
- * These actions can be called from client components after mutations
- * to invalidate the server-side cache and show fresh data.
- *
- * Note: We use revalidatePath to invalidate ISR cached pages.
- * When data changes, calling these functions will trigger a fresh
- * server render on the next request.
- */
 import { revalidatePath } from 'next/cache';
 
-/**
- * Revalidate after order mutations (create, update, delete)
- */
+import { createClient } from '@/lib/supabase/server';
+
+async function requireAuth() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+}
+
 export async function revalidateOrders() {
+  await requireAuth();
   revalidatePath('/admin/orders');
   revalidatePath('/admin/dashboard');
 }
 
-/**
- * Revalidate a specific order page
- */
 export async function revalidateOrder(orderId: string) {
+  await requireAuth();
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath('/admin/orders');
   revalidatePath('/admin/dashboard');
@@ -31,58 +27,43 @@ export async function revalidateOrder(orderId: string) {
   revalidatePath(`/client/orders/${orderId}`);
 }
 
-/**
- * Revalidate after client mutations (create, update, delete)
- */
 export async function revalidateClients() {
+  await requireAuth();
   revalidatePath('/admin/clients');
   revalidatePath('/admin/dashboard');
 }
 
-/**
- * Revalidate a specific client page
- */
 export async function revalidateClient(clientId: string) {
+  await requireAuth();
   revalidatePath(`/admin/clients/${clientId}`);
   revalidatePath('/admin/clients');
   revalidatePath('/admin/dashboard');
 }
 
-/**
- * Revalidate after expense mutations (create, update, delete)
- */
 export async function revalidateExpenses() {
+  await requireAuth();
   revalidatePath('/admin/expenses');
   revalidatePath('/admin/dashboard');
 }
 
-/**
- * Revalidate after expense type mutations
- */
 export async function revalidateExpenseTypes() {
+  await requireAuth();
   revalidatePath('/admin/expenses');
 }
 
-/**
- * Revalidate after service type mutations
- */
 export async function revalidateServiceTypes() {
+  await requireAuth();
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/orders');
 }
 
-/**
- * Revalidate dashboard data
- */
 export async function revalidateDashboard() {
+  await requireAuth();
   revalidatePath('/admin/dashboard');
 }
 
-/**
- * Revalidate all admin pages
- * Use sparingly - only when making large changes
- */
 export async function revalidateAll() {
+  await requireAuth();
   revalidatePath('/admin/dashboard');
   revalidatePath('/admin/orders');
   revalidatePath('/admin/clients');

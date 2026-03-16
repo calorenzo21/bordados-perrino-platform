@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createClientSchema, updateClientSchema } from '@/lib/validators/client.schema';
 
 // Función para generar contraseña por defecto (6 dígitos numéricos)
 function generateDefaultPassword(): string {
@@ -52,14 +53,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, phone, cedula, address } = body;
+    const parsed = createClientSchema.safeParse(body);
 
-    if (!name || !email || !phone) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Nombre, email y teléfono son requeridos' },
+        { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' },
         { status: 400 }
       );
     }
+
+    const { name, email, phone, cedula, address } = parsed.data;
 
     const adminClient = await createAdminClient();
     const { firstName, lastName } = splitFullName(name);
@@ -179,11 +182,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { clientId, name, email, phone, cedula, address } = body;
+    const parsed = updateClientSchema.safeParse(body);
 
-    if (!clientId) {
-      return NextResponse.json({ error: 'ID de cliente requerido' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' },
+        { status: 400 }
+      );
     }
+
+    const { clientId, name, email, phone, cedula, address } = parsed.data;
 
     const adminClient = await createAdminClient();
 
@@ -199,7 +207,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Actualizar cliente
-    const updateData: Record<string, string | undefined> = {
+    const updateData: Record<string, string | null | undefined> = {
       updated_at: new Date().toISOString(),
     };
 

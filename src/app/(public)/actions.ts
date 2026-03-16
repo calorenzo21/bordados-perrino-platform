@@ -1,7 +1,9 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+
+import { env } from '@/config/env';
 
 import { createClient } from '@/lib/supabase/server';
 
@@ -43,7 +45,7 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
   revalidatePath('/', 'layout');
 
   const redirectTo = profile?.role === 'ADMIN' ? '/admin/dashboard' : '/client/panel';
-  
+
   return { success: true, redirectTo };
 }
 
@@ -86,14 +88,14 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
 
   // Check if email confirmation is required
   if (data.user && !data.session) {
-    return { 
-      success: true, 
+    return {
+      success: true,
       error: 'Te hemos enviado un correo de confirmación. Por favor revisa tu bandeja de entrada.',
     };
   }
 
   revalidatePath('/', 'layout');
-  
+
   return { success: true, redirectTo: '/client/panel' };
 }
 
@@ -120,15 +122,15 @@ export async function requestPasswordReset(formData: FormData): Promise<AuthResu
   const supabase = await createClient();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || ''}/reset-password`,
+    redirectTo: `${env.APP_URL}/reset-password`,
   });
 
   if (error) {
     return { success: false, error: getErrorMessage(error.message) };
   }
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     error: 'Te hemos enviado un correo con instrucciones para restablecer tu contraseña.',
   };
 }
@@ -175,9 +177,11 @@ function getErrorMessage(message: string): string {
     'User already registered': 'Este correo electrónico ya está registrado.',
     'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
     'Signup requires a valid password': 'Se requiere una contraseña válida.',
-    'Unable to validate email address: invalid format': 'El formato del correo electrónico no es válido.',
+    'Unable to validate email address: invalid format':
+      'El formato del correo electrónico no es válido.',
     'Email rate limit exceeded': 'Demasiados intentos. Intenta de nuevo más tarde.',
-    'New password should be different from the old password': 'La nueva contraseña debe ser diferente a la anterior.',
+    'New password should be different from the old password':
+      'La nueva contraseña debe ser diferente a la anterior.',
   };
 
   return errorMap[message] || message;

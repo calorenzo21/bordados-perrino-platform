@@ -23,6 +23,7 @@ import type {
   PaymentInsert,
   ServiceType,
 } from '@/lib/types/database';
+import { escapeIlike } from '@/lib/utils';
 
 export class OrdersRepository {
   constructor(private supabase: SupabaseClient) {}
@@ -80,8 +81,9 @@ export class OrdersRepository {
       query = query.eq('is_urgent', filters.isUrgent);
     }
     if (filters?.search) {
+      const s = escapeIlike(filters.search);
       query = query.or(
-        `description.ilike.%${filters.search}%,order_number.ilike.%${filters.search}%,client_name.ilike.%${filters.search}%`
+        `description.ilike.%${s}%,order_number.ilike.%${s}%,client_name.ilike.%${s}%`
       );
     }
     if (filters?.fromDate) {
@@ -137,21 +139,6 @@ export class OrdersRepository {
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
-
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-
-  /**
-   * Get active orders (not completed or cancelled)
-   */
-  async findActive(): Promise<OrderWithPayments[]> {
-    const { data, error } = await this.supabase
-      .from('orders_with_payments')
-      .select('*')
-      .in('status', ['RECIBIDO', 'CONFECCION', 'RETIRO', 'PARCIALMENTE_ENTREGADO'])
-      .order('is_urgent', { ascending: false })
-      .order('due_date', { ascending: true });
 
     if (error) throw new Error(error.message);
     return data || [];

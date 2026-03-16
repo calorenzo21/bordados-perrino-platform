@@ -1,12 +1,15 @@
+import { env } from '@/config/env';
 import { createBrowserClient } from '@supabase/ssr';
 
-import { env } from '@/config/env';
+let client: ReturnType<typeof createBrowserClient> | null = null;
 
 /**
- * Creates a Supabase client for client-side operations
- * This is a singleton that can be used across the app
+ * Returns a singleton Supabase client for client-side operations.
+ * Safe to call from any component or hook — always returns the same instance.
  */
 export function createClient() {
-  return createBrowserClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  if (!client) {
+    client = createBrowserClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  }
+  return client;
 }
-

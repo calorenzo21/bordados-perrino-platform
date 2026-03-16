@@ -23,14 +23,11 @@ const DEFAULT_OPTIONS: CompressionOptions = {
  * - Si la imagen es menor a maxSizeKB, la devuelve sin cambios
  * - Si es mayor, la comprime reduciendo calidad y/o tamaño
  */
-export async function compressImage(
-  file: File,
-  options: CompressionOptions = {}
-): Promise<Blob> {
+export async function compressImage(file: File, options: CompressionOptions = {}): Promise<Blob> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  
+
   // Si el archivo es menor al tamaño máximo y no es muy grande en dimensiones, no comprimir
-  if (file.size < (opts.maxSizeKB! * 1024) && file.size < 500 * 1024) {
+  if (file.size < opts.maxSizeKB! * 1024 && file.size < 500 * 1024) {
     return file;
   }
 
@@ -58,11 +55,7 @@ export async function compressImage(
       // Función para obtener blob con calidad específica
       const getBlob = (quality: number): Promise<Blob> => {
         return new Promise((res) => {
-          canvas.toBlob(
-            (blob) => res(blob!),
-            'image/jpeg',
-            quality
-          );
+          canvas.toBlob((blob) => res(blob!), 'image/jpeg', quality);
         });
       };
 
@@ -116,7 +109,7 @@ function generateFileName(originalName: string, prefix?: string): string {
     .replace(/\.[^/.]+$/, '') // Quitar extensión
     .replace(/[^a-zA-Z0-9]/g, '_') // Reemplazar caracteres especiales
     .substring(0, 20); // Limitar longitud
-  
+
   return `${prefix ? prefix + '/' : ''}${timestamp}_${random}_${safeName}.${extension === 'png' || extension === 'gif' ? extension : 'jpg'}`;
 }
 
@@ -140,17 +133,18 @@ export async function uploadImage(
 
     // Comprimir si es necesario
     const compressedBlob = await compressImage(file, compressionOptions);
-    
+
+    const wasCompressed = compressedBlob !== file;
+    const contentType = wasCompressed ? 'image/jpeg' : file.type;
+
     // Generar nombre único
     const fileName = generateFileName(file.name, folder);
 
     // Subir a Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, compressedBlob, {
-        contentType: 'image/jpeg',
-        upsert: false,
-      });
+    const { data, error } = await supabase.storage.from(bucket).upload(fileName, compressedBlob, {
+      contentType,
+      upsert: false,
+    });
 
     if (error) {
       console.error('Error al subir imagen:', error);
@@ -158,9 +152,7 @@ export async function uploadImage(
     }
 
     // Obtener URL pública
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path);
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
 
     return {
       url: urlData.publicUrl,
@@ -196,16 +188,11 @@ export async function uploadMultipleImages(
 /**
  * Elimina una imagen de Supabase Storage
  */
-export async function deleteImage(
-  bucket: StorageBucket,
-  path: string
-): Promise<boolean> {
+export async function deleteImage(bucket: StorageBucket, path: string): Promise<boolean> {
   const supabase = createClient();
 
   try {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path]);
+    const { error } = await supabase.storage.from(bucket).remove([path]);
 
     if (error) {
       console.error('Error al eliminar imagen:', error);
