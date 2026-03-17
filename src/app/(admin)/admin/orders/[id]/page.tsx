@@ -799,7 +799,7 @@ export default function OrderDetailPage() {
                       type="button"
                       onClick={() => isClickable && handleStatusChange(status)}
                       disabled={!isClickable}
-                      className={`group relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+                      className={`group relative z-10 flex h-12 w-12 items-center justify-center rounded-full ring-2 ring-white transition-all duration-300 ${
                         showAsCompleted
                           ? `bg-linear-to-br ${colors.gradient} shadow-lg`
                           : isCurrent
@@ -809,19 +809,17 @@ export default function OrderDetailPage() {
                               : 'border-2 border-slate-200 bg-white'
                       }`}
                     >
-                      {showAsCompleted ? (
-                        <Check className="h-5 w-5 text-white" />
-                      ) : (
-                        <Icon
-                          className={`h-5 w-5 transition-colors duration-300 ${
-                            isCurrent
+                      <Icon
+                        className={`h-5 w-5 transition-colors duration-300 ${
+                          showAsCompleted
+                            ? 'text-white'
+                            : isCurrent
                               ? colors.text
                               : isClickable
                                 ? `text-slate-300 group-hover:${colors.text}`
                                 : 'text-slate-300'
-                          }`}
-                        />
-                      )}
+                        }`}
+                      />
 
                       {/* Efecto de pulso solo si es el estado actual y NO es entregado */}
                       {isCurrent && !isEntregadoFinal && (
