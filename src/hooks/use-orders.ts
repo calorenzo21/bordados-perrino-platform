@@ -184,11 +184,16 @@ const SWR_OPTIONS = {
 } as const;
 
 export function useOrder(orderId: string) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
   const key = authUser && orderId ? getAdminOrderSwrKey(orderId) : null;
 
-  const { data: order, error, isLoading, mutate } = useSWR(key, adminOrderFetcher, SWR_OPTIONS);
+  const {
+    data: order,
+    error,
+    isLoading: swrLoading,
+    mutate,
+  } = useSWR(key, adminOrderFetcher, SWR_OPTIONS);
 
   const setOrder = useCallback(
     (update: OrderForDetail | null | ((prev: OrderForDetail | null) => OrderForDetail | null)) => {
@@ -204,7 +209,9 @@ export function useOrder(orderId: string) {
   return {
     order: order ?? null,
     setOrder,
-    isLoading: key === null ? true : isLoading,
+    // auth loading: esperamos la sesión | key not null + swr loading: primera carga de datos
+    // Si auth termina pero user es null, isLoading = false (la página reacciona o el middleware redirige)
+    isLoading: authLoading || (key !== null && swrLoading),
     error: error ? (error instanceof Error ? error.message : 'Error al cargar pedido') : null,
     refetch,
   };

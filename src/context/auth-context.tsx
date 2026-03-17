@@ -106,46 +106,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase, updateAuthState]);
 
-  // Inicialización y listener de cambios de auth
+  // Inicialización y listener de cambios de auth.
+  // INITIAL_SESSION siempre es el primer evento que dispara Supabase al registrar el listener.
+  // Lo usamos como único punto de inicialización para evitar la race condition entre
+  // initializeAuth() y el handler de INITIAL_SESSION corriendo en paralelo.
   useEffect(() => {
     isMounted.current = true;
+    isInitialized.current = false;
 
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      if (!isMounted.current) return;
 
-        if (isMounted.current) {
+      if (event === 'INITIAL_SESSION') {
+        // try/catch/finally garantiza que isLoading se pone en false sin importar qué ocurra.
+        try {
           await updateAuthState(session);
-          if (!isInitialized.current) {
+        } catch (error) {
+          console.error('[Auth] Error en INITIAL_SESSION:', error);
+        } finally {
+          if (isMounted.current) {
             isInitialized.current = true;
             setIsLoading(false);
           }
         }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    // Listener: debe procesar INITIAL_SESSION para cuando la sesión se restaura desde cookies
-    // después de un redirect (OAuth o primera carga). Si no lo manejamos, getSession() puede
-    // resolver con null y el usuario se queda en "Redirigiendo..." hasta recargar.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (event === 'INITIAL_SESSION') {
-        await updateAuthState(session);
-        if (isMounted.current && !isInitialized.current) {
-          isInitialized.current = true;
-          setIsLoading(false);
-        }
         return;
       }
-      if (!isInitialized.current) return;
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         await updateAuthState(session);
@@ -156,8 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     });
-
-    initializeAuth();
 
     return () => {
       isMounted.current = false;

@@ -212,16 +212,22 @@ const SWR_OPTIONS = {
 } as const;
 
 export function useClient(clientId: string) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const key = authUser && clientId ? getAdminClientSwrKey(clientId) : null;
 
-  const { data: client, error, isLoading, mutate } = useSWR(key, adminClientFetcher, SWR_OPTIONS);
+  const {
+    data: client,
+    error,
+    isLoading: swrLoading,
+    mutate,
+  } = useSWR(key, adminClientFetcher, SWR_OPTIONS);
 
   const refetch = useCallback(() => mutate(), [mutate]);
 
   return {
     client: client ?? null,
-    isLoading: key === null ? true : isLoading,
+    // auth loading: esperamos la sesión | key not null + swr loading: primera carga de datos
+    isLoading: authLoading || (key !== null && swrLoading),
     error: error ? (error instanceof Error ? error.message : 'Error al cargar cliente') : null,
     refetch,
   };
