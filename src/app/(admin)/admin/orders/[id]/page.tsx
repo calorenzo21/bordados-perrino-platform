@@ -751,20 +751,27 @@ export default function OrderDetailPage() {
           {/* Texto explicativo */}
 
           <div className="relative">
-            {/* Segmentos de progreso con gaps */}
-            <div className="absolute left-6 right-6 top-6 flex gap-1">
-              {dynamicStatusFlow.slice(0, -1).map((_, index) => {
-                const isCompleted = index < currentStatusIndex;
-                return (
-                  <div
-                    key={index}
-                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                      isCompleted ? dynamicSegmentColors[index] : 'bg-slate-200'
-                    }`}
-                  />
-                );
-              })}
-            </div>
+            {/* Línea de progreso única continua (sin gaps): 4 segmentos entre 5 círculos */}
+            <div
+              className="absolute left-7 right-7 top-7 h-1 rounded-full transition-all duration-500"
+              style={{
+                background: (() => {
+                  const numSegments = dynamicStatusFlow.length - 1;
+                  const grey = '#e2e8f0';
+                  const hexForSegment = (seg: number) =>
+                    STATUS_COLOR_MAP[dynamicStatusFlow[seg] as OrderStatusType]?.hex ?? grey;
+                  const stops: string[] = [];
+                  for (let seg = 0; seg < numSegments; seg++) {
+                    const pctStart = (seg / numSegments) * 100;
+                    const pctEnd = ((seg + 1) / numSegments) * 100;
+                    const completed = currentStatusIndex >= seg + 1;
+                    const hex = completed ? hexForSegment(seg) : grey;
+                    stops.push(`${hex} ${pctStart}%`, `${hex} ${pctEnd}%`);
+                  }
+                  return `linear-gradient(to right, ${stops.join(', ')})`;
+                })(),
+              }}
+            />
 
             {/* Pasos del progreso */}
             <TooltipProvider delayDuration={200}>
@@ -799,7 +806,7 @@ export default function OrderDetailPage() {
                       type="button"
                       onClick={() => isClickable && handleStatusChange(status)}
                       disabled={!isClickable}
-                      className={`group relative z-10 flex h-12 w-12 items-center justify-center rounded-full ring-2 ring-white transition-all duration-300 ${
+                      className={`group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
                         showAsCompleted
                           ? `bg-linear-to-br ${colors.gradient} shadow-lg`
                           : isCurrent
@@ -810,7 +817,7 @@ export default function OrderDetailPage() {
                       }`}
                     >
                       <Icon
-                        className={`h-5 w-5 transition-colors duration-300 ${
+                        className={`h-6 w-6 transition-colors duration-300 ${
                           showAsCompleted
                             ? 'text-white'
                             : isCurrent
@@ -838,7 +845,7 @@ export default function OrderDetailPage() {
                   );
 
                   return (
-                    <div key={status} className="flex flex-col items-center">
+                    <div key={status} className="flex min-w-[80px] flex-col items-center">
                       {/* Círculo del paso - Interactivo con Tooltip */}
                       {isClickable ? (
                         <Tooltip>

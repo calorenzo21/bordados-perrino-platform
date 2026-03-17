@@ -40,27 +40,32 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Función para obtener la prioridad del status (menor número = mayor prioridad)
-function getStatusPriority(status: string, isUrgent: boolean): number {
-  // Los urgentes siempre van primero
-  if (isUrgent) return 0;
+/**
+ * Orden: 1) Urgentes primero, 2) Resto por fecha de recepción (primero en entrar, primero en mostrar),
+ * 3) Entregado todos al fondo, entre entregados primero con saldo pendiente y por orden de entrega.
+ */
+function compareOrders(a: Order, b: Order): number {
+  const entregado = OrderStatus.ENTREGADO;
+  const aEntregado = a.status === entregado;
+  const bEntregado = b.status === entregado;
 
-  // Luego por estado
-  switch (status) {
-    case OrderStatus.RECIBIDO:
-    case OrderStatus.CONFECCION:
-      return 1;
-    case OrderStatus.RETIRO: // Listo para Retiro
-      return 2;
-    case OrderStatus.PARCIALMENTE_ENTREGADO:
-      return 3;
-    case OrderStatus.ENTREGADO:
-      return 4;
-    case OrderStatus.CANCELADO:
-      return 5;
-    default:
-      return 6;
+  // Entregado siempre al fondo
+  if (aEntregado && !bEntregado) return 1;
+  if (!aEntregado && bEntregado) return -1;
+
+  if (!aEntregado && !bEntregado) {
+    // No entregados: urgentes primero, luego por fecha de creación (primero en entrar = primero)
+    if (a.isUrgent && !b.isUrgent) return -1;
+    if (!a.isUrgent && b.isUrgent) return 1;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }
+
+  // Ambos entregados: primero con saldo pendiente, luego por orden de entrega (createdAt como proxy)
+  const aPendiente = a.remainingBalance > 0;
+  const bPendiente = b.remainingBalance > 0;
+  if (aPendiente && !bPendiente) return -1;
+  if (!aPendiente && bPendiente) return 1;
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 }
 
 interface OrdersContentProps {
@@ -107,31 +112,17 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
 
   // Filtrar y ordenar pedidos
   const filteredOrders = useMemo(() => {
-    return (
-      orders
-        .filter((order) => {
-          const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
-          const matchesSearch =
-            order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.description.toLowerCase().includes(searchQuery.toLowerCase());
-          const matchesClient = selectedClient === 'all' || order.client.id === selectedClient;
-          return matchesStatus && matchesSearch && matchesClient;
-        })
-        // Ordenar: urgentes primero, luego por prioridad de estado, luego por fecha
-        .sort((a, b) => {
-          const priorityA = getStatusPriority(a.status, a.isUrgent);
-          const priorityB = getStatusPriority(b.status, b.isUrgent);
-
-          // Si tienen diferente prioridad, ordenar por prioridad
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB;
-          }
-
-          // Si tienen la misma prioridad, ordenar por fecha (más reciente primero)
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        })
-    );
+    return orders
+      .filter((order) => {
+        const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
+        const matchesSearch =
+          order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClient = selectedClient === 'all' || order.client.id === selectedClient;
+        return matchesStatus && matchesSearch && matchesClient;
+      })
+      .sort(compareOrders);
   }, [orders, selectedStatus, searchQuery, selectedClient]);
 
   // Calcular paginación
