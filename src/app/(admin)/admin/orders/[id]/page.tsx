@@ -350,6 +350,23 @@ export default function OrderDetailPage() {
       await revalidateOrder(order.uuid);
       refetch();
 
+      // 4.5 Enviar notificación por email (fire-and-forget)
+      if (order.client.email) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'payment',
+            email: order.client.email,
+            clientName: order.client.name,
+            orderNumber: order.id,
+            amount: finalAmount,
+            method: newPaymentData.method,
+            remainingBalance: remainingBalance - finalAmount,
+          }),
+        }).catch((e) => console.error('[Email] Payment notification failed:', e));
+      }
+
       // 5. Resetear el formulario y cerrar
       setNewPaymentData({ amount: '', method: 'efectivo', notes: '', photos: [] });
       setPaymentPhotoFiles([]);
@@ -603,6 +620,41 @@ export default function OrderDetailPage() {
       // Revalidar caché del servidor
       await revalidateOrder(order.uuid);
       refetch();
+
+      // 5.5 Enviar notificación por email (fire-and-forget)
+      if (order.client.email) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'status_change',
+            email: order.client.email,
+            clientName: order.client.name,
+            orderNumber: order.id,
+            newStatus: newStatusData.status,
+            observations: newStatusData.observations || undefined,
+          }),
+        }).catch((e) => console.error('[Email] Status notification failed:', e));
+
+        if (
+          newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+          newStatusData.quantityDelivered
+        ) {
+          const qtyDel = parseInt(newStatusData.quantityDelivered, 10);
+          fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'partial_delivery',
+              email: order.client.email,
+              clientName: order.client.name,
+              orderNumber: order.id,
+              qtyDelivered: qtyDel,
+              qtyRemaining: remainingToDeliver - qtyDel,
+            }),
+          }).catch((e) => console.error('[Email] Partial delivery notification failed:', e));
+        }
+      }
 
       // 6. Limpiar y cerrar
       setNewStatusData({

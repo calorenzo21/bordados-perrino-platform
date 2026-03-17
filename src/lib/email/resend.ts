@@ -1,8 +1,6 @@
+import { env } from '@/config/env';
 import { Resend } from 'resend';
 
-import { env } from '@/config/env';
-
-// Initialize Resend client
 const resend = new Resend(env.RESEND_API_KEY);
 
 export interface SendEmailParams {
@@ -12,6 +10,7 @@ export interface SendEmailParams {
   text?: string;
   from?: string;
   replyTo?: string;
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -21,68 +20,40 @@ export interface SendEmailResult {
 }
 
 /**
- * Send an email using Resend
+ * Send an email using Resend.
  *
- * @example
- * const result = await sendEmail({
- *   to: 'cliente@example.com',
- *   subject: 'Tu pedido está listo',
- *   html: '<h1>¡Tu pedido está listo para retirar!</h1>',
- * });
+ * Default `from` uses the Resend test address.
+ * Replace with your verified domain for production
+ * (e.g. "Bordados Perrino <noreply@bordadosperrino.com>").
  */
 export async function sendEmail({
   to,
   subject,
   html,
   text,
-  from = 'Bordados Perrino <noreply@bordadosperrino.com>',
+  from = 'Bordados Perrino <onboarding@resend.dev>',
   replyTo,
+  idempotencyKey,
 }: SendEmailParams): Promise<SendEmailResult> {
-  try {
-    const { data, error } = await resend.emails.send({
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      text,
-      replyTo,
-    });
+  const payload: Parameters<typeof resend.emails.send>[0] = {
+    from,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+    text,
+    replyTo,
+  };
 
-    if (error) {
-      console.error('[Email] Failed to send:', error);
-      return { success: false, error: error.message };
-    }
+  const options: Parameters<typeof resend.emails.send>[1] = idempotencyKey
+    ? { idempotencyKey }
+    : undefined;
 
-    return { success: true, data: { id: data?.id || '' } };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Email] Exception:', message);
-    return { success: false, error: message };
+  const { data, error } = await resend.emails.send(payload, options);
+
+  if (error) {
+    console.error('[Email] Failed to send:', error);
+    return { success: false, error: error.message };
   }
+
+  return { success: true, data: { id: data?.id || '' } };
 }
-
-/**
- * Email templates - Add your transactional email templates here
- */
-export const emailTemplates = {
-  orderReceived: (orderNumber: string, clientName: string) => ({
-    subject: `Pedido #${orderNumber} recibido`,
-    html: `
-      <h1>¡Hola ${clientName}!</h1>
-      <p>Hemos recibido tu pedido <strong>#${orderNumber}</strong>.</p>
-      <p>Te notificaremos cuando esté listo para retirar.</p>
-      <p>Gracias por confiar en Bordados Perrino.</p>
-    `,
-  }),
-
-  orderReady: (orderNumber: string, clientName: string) => ({
-    subject: `¡Tu pedido #${orderNumber} está listo!`,
-    html: `
-      <h1>¡Hola ${clientName}!</h1>
-      <p>Tu pedido <strong>#${orderNumber}</strong> está listo para retirar.</p>
-      <p>Te esperamos en nuestro local.</p>
-      <p>Gracias por confiar en Bordados Perrino.</p>
-    `,
-  }),
-};
-

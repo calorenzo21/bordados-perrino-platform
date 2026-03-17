@@ -1,6 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { sendEmail } from '@/lib/email/resend';
+import { newClientWelcomeEmail } from '@/lib/email/templates';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createClientSchema, updateClientSchema } from '@/lib/validators/client.schema';
 
@@ -141,10 +143,19 @@ export async function POST(request: NextRequest) {
     revalidatePath('/admin/clients');
     revalidatePath('/admin/dashboard');
 
+    // Enviar email de bienvenida (no bloquea la respuesta)
+    const { subject, html } = newClientWelcomeEmail(name, email, defaultPassword);
+    sendEmail({
+      to: email,
+      subject,
+      html,
+      idempotencyKey: `welcome/${authData.user.id}/${Date.now()}`,
+    }).catch((e) => console.error('[Email] Welcome email failed:', e));
+
     return NextResponse.json({
       success: true,
       client: clientData,
-      defaultPassword, // Retornar la contraseña para que el admin pueda comunicarla al cliente
+      defaultPassword,
       message: 'Cliente creado exitosamente',
     });
   } catch (error: unknown) {
