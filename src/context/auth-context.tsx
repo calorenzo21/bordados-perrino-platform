@@ -114,15 +114,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isMounted.current = true;
     isInitialized.current = false;
 
-    // Safety timeout: if INITIAL_SESSION never fires (e.g. PWA reopened with stale
-    // cached HTML, expired token refresh hang, or network failure on startup),
-    // unblock the UI after 5s so the middleware redirect can take effect.
+    // Safety timeout: if INITIAL_SESSION is delayed (common on PWA cold start),
+    // do NOT leave user=null while the server still has a valid session — that
+    // causes AdminShell to router.replace('/login') and middleware to bounce
+    // back to /admin → stuck on "Redirigiendo...". Recover from local session.
     const safetyTimeout = setTimeout(() => {
-      if (!isInitialized.current && isMounted.current) {
-        console.warn('[Auth] INITIAL_SESSION timeout - desbloqueando UI');
-        isInitialized.current = true;
-        setIsLoading(false);
-      }
+      void (async () => {
+        if (isInitialized.current || !isMounted.current) return;
+        console.warn(
+          '[Auth] INITIAL_SESSION tardó — recuperando sesión desde almacenamiento local'
+        );
+        try {
+          let {
+            data: { session },
+          } = await supabase.auth.getSession();
+          // Si no hay sesión en memoria/storage, getUser() fuerza validación/red
+          // con el refresh token (útil al reabrir la PWA con cookies pero sin evento INITIAL_SESSION).
+          if (!session && !isInitialized.current && isMounted.current) {
+            await supabase.auth.getUser();
+            ({
+              data: { session },
+            } = await supabase.auth.getSession());
+          }
+          if (isInitialized.current || !isMounted.current) return;
+          await updateAuthState(session);
+        } catch (e) {
+          console.error('[Auth] Error al recuperar sesión tras timeout:', e);
+        } finally {
+          if (isMounted.current && !isInitialized.current) {
+            isInitialized.current = true;
+            setIsLoading(false);
+          }
+        }
+      })();
     }, 5000);
 
     const {
