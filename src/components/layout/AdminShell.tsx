@@ -64,22 +64,18 @@ export function AdminShell({ children }: AdminShellProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, isLoading, isAdmin, signOut } = useAuth();
+  const { user, profile, isLoading, signOut } = useAuth();
 
-  // Protección de ruta del lado del cliente como respaldo
+  // Client-side fallback guard: the middleware already enforces role-based access,
+  // but if the auth context resolves with no user (e.g. session expired mid-session),
+  // redirect to login. Role validation is intentionally omitted here — the middleware
+  // is the source of truth for role-based routing.
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        // No hay usuario autenticado - redirigir a login
-        router.replace('/login');
-      } else if (profile && !isAdmin) {
-        // Usuario autenticado pero no es admin - redirigir a panel de cliente
-        router.replace('/client/panel');
-      }
+    if (!isLoading && !user) {
+      router.replace('/login');
     }
-  }, [isLoading, user, profile, isAdmin, router]);
+  }, [isLoading, user, router]);
 
-  // Mostrar loading mientras verifica autenticación
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -92,8 +88,7 @@ export function AdminShell({ children }: AdminShellProps) {
     );
   }
 
-  // Si no hay usuario o no es admin, no renderizar (el useEffect redirigirá)
-  if (!user || (profile && !isAdmin)) {
+  if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">

@@ -1,8 +1,9 @@
 import { type LucideIcon, TrendingDown, TrendingUp } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 
 interface MetricCardProps {
   title: string;
@@ -15,6 +16,8 @@ interface MetricCardProps {
   };
   iconColor?: 'blue' | 'green' | 'amber' | 'purple' | 'rose';
   loading?: boolean;
+  /** Clases para el valor principal (ej. text-lg line-clamp-2 para textos largos) */
+  valueClassName?: string;
 }
 
 const iconStyles = {
@@ -63,6 +66,7 @@ export function MetricCard({
   trend,
   iconColor = 'blue',
   loading = false,
+  valueClassName,
 }: MetricCardProps) {
   const styles = iconStyles[iconColor];
 
@@ -84,7 +88,7 @@ export function MetricCard({
   }
 
   return (
-    <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
       {/* Decorative background element */}
       <div
         className={cn(
@@ -92,41 +96,39 @@ export function MetricCard({
           styles.bg
         )}
       />
-      
-      {/* Subtle top accent line */}
-      <div
-        className={cn(
-          'absolute left-0 top-0 h-1 w-full opacity-80',
-          styles.bg
-        )}
-      />
 
-      <CardContent className="relative p-6">
+      {/* Subtle top accent line */}
+      <div className={cn('absolute left-0 top-0 h-1 w-full opacity-80', styles.bg)} />
+
+      <CardContent className="relative flex flex-1 flex-col p-6 pb-4">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             {/* Title with dot indicator */}
             <div className="flex items-center gap-2">
-              <div className={cn('h-2 w-2 rounded-full', styles.dot)} />
+              <div className={cn('h-2 w-2 shrink-0 rounded-full', styles.dot)} />
               <p className="text-sm font-medium text-slate-500">{title}</p>
             </div>
 
             {/* Value */}
             <div className="pt-2">
-              <p className="text-4xl font-bold tracking-tight text-slate-900">
+              <p
+                className={cn(
+                  'font-bold tracking-tight text-slate-900',
+                  valueClassName ?? 'text-4xl'
+                )}
+              >
                 {value}
               </p>
             </div>
 
             {/* Description */}
-            {description && (
-              <p className="pt-1 text-sm text-slate-400">{description}</p>
-            )}
+            {description && <p className="pt-1 text-sm text-slate-400">{description}</p>}
           </div>
 
           {/* Icon container with enhanced styling */}
           <div
             className={cn(
-              'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg ring-4 transition-transform duration-300 group-hover:scale-110',
+              'ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg ring-4 transition-transform duration-300 group-hover:scale-110',
               styles.bg,
               styles.shadow,
               styles.ring
@@ -136,16 +138,13 @@ export function MetricCard({
           </div>
         </div>
 
-        {/* Bottom row: Trend badge (left) and decorative dots (right) */}
-        <div className="absolute bottom-3 left-6 right-6 flex items-center justify-between">
-          {/* Trend badge */}
+        {/* Bottom row: Trend badge (left) and decorative dots (right) - in flow, no overlap */}
+        <div className="mt-4 flex items-center justify-between">
           {trend ? (
             <div
               className={cn(
                 'flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
-                trend.isPositive
-                  ? 'bg-emerald-50 text-emerald-600'
-                  : 'bg-rose-50 text-rose-600'
+                trend.isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
               )}
             >
               {trend.isPositive ? (
@@ -159,7 +158,6 @@ export function MetricCard({
             <div />
           )}
 
-          {/* Decorative dots */}
           <div className="flex gap-1 opacity-30">
             <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
             <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />

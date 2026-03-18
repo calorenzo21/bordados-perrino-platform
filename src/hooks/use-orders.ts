@@ -2,6 +2,8 @@
 
 import { useCallback } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useAuth } from '@/hooks/use-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import useSWR, { useSWRConfig } from 'swr';
@@ -171,21 +173,21 @@ async function fetchOrderForDetail(
 export async function adminOrderFetcher(key: readonly [string, string]): Promise<OrderForDetail> {
   const [, orderId] = key;
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error('Unauthorized');
+  // No getSession() here: the SWR key is only set when authUser exists (see useOrder),
+  // so the session is guaranteed valid. An extra getSession() just wastes a round-trip.
   return fetchOrderForDetail(orderId, supabase);
 }
 
 const SWR_OPTIONS = {
   revalidateOnFocus: true,
   dedupingInterval: 20000,
+  errorRetryCount: 2,
 } as const;
 
 export function useOrder(orderId: string) {
   const { user: authUser, isLoading: authLoading } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
+  const router = useRouter();
   const key = authUser && orderId ? getAdminOrderSwrKey(orderId) : null;
 
   const {
@@ -193,7 +195,14 @@ export function useOrder(orderId: string) {
     error,
     isLoading: swrLoading,
     mutate,
-  } = useSWR(key, adminOrderFetcher, SWR_OPTIONS);
+  } = useSWR(key, adminOrderFetcher, {
+    ...SWR_OPTIONS,
+    onError(err) {
+      if (err?.message === 'Unauthorized' || err?.status === 401) {
+        router.replace('/login');
+      }
+    },
+  });
 
   const setOrder = useCallback(
     (update: OrderForDetail | null | ((prev: OrderForDetail | null) => OrderForDetail | null)) => {

@@ -42,22 +42,17 @@ export function ClientShell({ children }: ClientShellProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const { user, profile, isLoading, isAdmin, signOut } = useAuth();
+  const { user, profile, isLoading, signOut } = useAuth();
 
-  // Protección de ruta del lado del cliente como respaldo
+  // Client-side fallback guard: the middleware already enforces role-based access.
+  // Only redirect when the session is definitively gone; role validation is left
+  // to the middleware to avoid race conditions with profile loading.
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        // No hay usuario autenticado - redirigir a login
-        router.replace('/login');
-      } else if (profile && isAdmin) {
-        // Usuario autenticado pero es admin - redirigir a panel admin
-        router.replace('/admin/dashboard');
-      }
+    if (!isLoading && !user) {
+      router.replace('/login');
     }
-  }, [isLoading, user, profile, isAdmin, router]);
+  }, [isLoading, user, router]);
 
-  // Mostrar loading mientras verifica autenticación
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -70,8 +65,7 @@ export function ClientShell({ children }: ClientShellProps) {
     );
   }
 
-  // Si no hay usuario o es admin, no renderizar (el useEffect redirigirá)
-  if (!user || (profile && isAdmin)) {
+  if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">

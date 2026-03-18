@@ -24,6 +24,7 @@ import { DashboardService } from './dashboard.service';
 export interface RecentExpense {
   id: string;
   type: string;
+  typeColor: string;
   amount: number;
   date: string;
   description: string;
@@ -106,7 +107,7 @@ export const getDashboardData = cache(async function getDashboardData(): Promise
         description,
         amount,
         date,
-        expense_types (name)
+        expense_types (name, color)
       `
       )
       .order('date', { ascending: false })
@@ -119,13 +120,17 @@ export const getDashboardData = cache(async function getDashboardData(): Promise
   ]);
 
   // Transform expenses
-  const recentExpenses: RecentExpense[] = (expensesResult.data || []).map((e) => ({
-    id: e.id,
-    type: (e.expense_types as { name?: string } | null)?.name || 'Sin tipo',
-    amount: e.amount,
-    date: e.date,
-    description: e.description,
-  }));
+  const recentExpenses: RecentExpense[] = (expensesResult.data || []).map((e) => {
+    const et = e.expense_types as { name?: string; color?: string } | null;
+    return {
+      id: e.id,
+      type: et?.name || 'Sin tipo',
+      typeColor: et?.color || 'bg-slate-500',
+      amount: e.amount,
+      date: e.date,
+      description: e.description,
+    };
+  });
 
   // Transform top clients
   const topClients: TopClient[] = (clientsResult.data || []).map((c) => ({

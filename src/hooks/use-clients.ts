@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useAuth } from '@/hooks/use-auth';
 import useSWR from 'swr';
 
@@ -146,10 +148,8 @@ export function getAdminClientSwrKey(clientId: string): readonly [string, string
 export async function adminClientFetcher(key: readonly [string, string]): Promise<ClientDetail> {
   const [, clientId] = key;
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error('Unauthorized');
+  // No getSession() here: the SWR key is only set when authUser exists (see useClient),
+  // so the session is guaranteed valid.
 
   // Fetch client and orders in parallel
   const [clientRes, ordersRes] = await Promise.all([
@@ -209,10 +209,12 @@ export async function adminClientFetcher(key: readonly [string, string]): Promis
 const SWR_OPTIONS = {
   revalidateOnFocus: true,
   dedupingInterval: 20000,
+  errorRetryCount: 2,
 } as const;
 
 export function useClient(clientId: string) {
   const { user: authUser, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const key = authUser && clientId ? getAdminClientSwrKey(clientId) : null;
 
   const {
@@ -220,7 +222,14 @@ export function useClient(clientId: string) {
     error,
     isLoading: swrLoading,
     mutate,
-  } = useSWR(key, adminClientFetcher, SWR_OPTIONS);
+  } = useSWR(key, adminClientFetcher, {
+    ...SWR_OPTIONS,
+    onError(err) {
+      if (err?.message === 'Unauthorized' || err?.status === 401) {
+        router.replace('/login');
+      }
+    },
+  });
 
   const refetch = useCallback(() => mutate(), [mutate]);
 

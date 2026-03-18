@@ -248,7 +248,7 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Métricas principales - Estilo Dashboard */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Pedidos Totales"
           value={client.totalOrders.toString()}
@@ -279,6 +279,7 @@ export default function ClientDetailPage() {
           description={mostUsedService ? `${mostUsedService[1]} pedidos` : 'Sin pedidos'}
           icon={Heart}
           iconColor="rose"
+          valueClassName="text-lg sm:text-xl font-bold line-clamp-2 leading-snug min-h-[2.5rem]"
         />
       </div>
 

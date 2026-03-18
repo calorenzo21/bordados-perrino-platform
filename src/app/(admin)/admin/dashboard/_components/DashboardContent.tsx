@@ -23,6 +23,7 @@ import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
 import { SERVICE_COLORS } from '@/lib/constants';
 import type { DashboardData, RecentExpense, TopClient } from '@/lib/services/dashboard.server';
+import { expenseTypeColorToBadgeClasses } from '@/lib/utils/expense-type-badge';
 import { OrderStatus, type OrderStatusType } from '@/lib/utils/status';
 
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -764,44 +765,29 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentExpenses.slice(0, 5).map((expense) => {
-                    const getTypeBadgeClasses = (type: string) => {
-                      switch (type) {
-                        case 'Personal':
-                          return 'bg-blue-100 text-blue-700 border-blue-200';
-                        case 'Castillo':
-                          return 'bg-amber-100 text-amber-700 border-amber-200';
-                        case 'Materiales':
-                          return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                        default:
-                          return 'bg-pink-100 text-pink-700 border-pink-200';
-                      }
-                    };
-
-                    return (
-                      <TableRow key={expense.id} className="hover:bg-slate-50">
-                        <TableCell className="pl-6">
-                          <Badge
-                            variant="outline"
-                            className={`font-medium ${getTypeBadgeClasses(expense.type)}`}
-                          >
-                            {expense.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-slate-600">{expense.description}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-slate-500">{expense.date}</span>
-                        </TableCell>
-                        <TableCell className="pr-6 text-right">
-                          <span className="font-semibold text-rose-600">
-                            -${expense.amount.toLocaleString()}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {recentExpenses.slice(0, 5).map((expense) => (
+                    <TableRow key={expense.id} className="hover:bg-slate-50">
+                      <TableCell className="pl-6">
+                        <Badge
+                          variant="outline"
+                          className={`font-medium ${expenseTypeColorToBadgeClasses(expense.typeColor)}`}
+                        >
+                          {expense.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{expense.description}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{expense.date}</span>
+                      </TableCell>
+                      <TableCell className="pr-6 text-right">
+                        <span className="font-semibold text-rose-600">
+                          -${expense.amount.toLocaleString()}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>

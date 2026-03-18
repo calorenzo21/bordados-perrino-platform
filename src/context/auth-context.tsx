@@ -114,12 +114,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isMounted.current = true;
     isInitialized.current = false;
 
+    // Safety timeout: if INITIAL_SESSION never fires (e.g. PWA reopened with stale
+    // cached HTML, expired token refresh hang, or network failure on startup),
+    // unblock the UI after 5s so the middleware redirect can take effect.
+    const safetyTimeout = setTimeout(() => {
+      if (!isInitialized.current && isMounted.current) {
+        console.warn('[Auth] INITIAL_SESSION timeout - desbloqueando UI');
+        isInitialized.current = true;
+        setIsLoading(false);
+      }
+    }, 5000);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (!isMounted.current) return;
 
       if (event === 'INITIAL_SESSION') {
+        clearTimeout(safetyTimeout);
         // try/catch/finally garantiza que isLoading se pone en false sin importar qué ocurra.
         try {
           await updateAuthState(session);
@@ -146,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       isMounted.current = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, [supabase, updateAuthState]);
