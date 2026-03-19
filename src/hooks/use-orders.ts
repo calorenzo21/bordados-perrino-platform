@@ -4,7 +4,6 @@ import { useCallback } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useAuth } from '@/hooks/use-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import useSWR, { useSWRConfig } from 'swr';
 
@@ -185,10 +184,11 @@ const SWR_OPTIONS = {
 } as const;
 
 export function useOrder(orderId: string) {
-  const { user: authUser, isLoading: authLoading } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
   const router = useRouter();
-  const key = authUser && orderId ? getAdminOrderSwrKey(orderId) : null;
+  // La ruta está protegida por middleware — si el componente renderiza, la auth está garantizada.
+  // Eliminamos la dependencia de authUser para que SWR fetchee inmediatamente al montar.
+  const key = orderId ? getAdminOrderSwrKey(orderId) : null;
 
   const {
     data: order,
@@ -218,9 +218,7 @@ export function useOrder(orderId: string) {
   return {
     order: order ?? null,
     setOrder,
-    // auth loading: esperamos la sesión | key not null + swr loading: primera carga de datos
-    // Si auth termina pero user es null, isLoading = false (la página reacciona o el middleware redirige)
-    isLoading: authLoading || (key !== null && swrLoading),
+    isLoading: key !== null && swrLoading,
     error: error ? (error instanceof Error ? error.message : 'Error al cargar pedido') : null,
     refetch,
   };

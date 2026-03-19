@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next';
 
 import { AuthProvider } from '@/context/auth-context';
 
+import { createClient } from '@/lib/supabase/server';
+import type { Profile } from '@/lib/types/database';
+
 import { SerwistProvider } from '@/components/SerwistProvider';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -35,11 +38,25 @@ export const viewport: Viewport = {
   themeColor: '#0f172a',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch user + profile server-side para eliminar el waterfall de auth client-side.
+  // getUser() valida el JWT localmente (sin DB). getProfile() solo corre si hay sesión.
+  // Es la misma query que ocurría en onAuthStateChange, pero adelantada al servidor.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let initialProfile: Profile | null = null;
+  if (user) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    initialProfile = data ?? null;
+  }
+
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
@@ -54,7 +71,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <SerwistProvider swUrl="/serwist/sw.js">
-          <AuthProvider>
+          <AuthProvider initialProfile={initialProfile}>
             {children}
             <Toaster position="top-right" richColors />
           </AuthProvider>

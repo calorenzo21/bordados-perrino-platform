@@ -29,17 +29,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  initialProfile = null,
+}: {
+  children: React.ReactNode;
+  initialProfile?: Profile | null;
+}) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // profile arranca con el valor del servidor (SSR) — disponible antes del primer render
+  const [profile, setProfile] = useState<Profile | null>(initialProfile);
+  // isLoading siempre empieza en false: el profile ya viene del servidor, no hay waterfall
+  const [isLoading] = useState(false);
   const router = useRouter();
 
   const supabase = createClient();
 
-  // Ref para evitar carreras de estado
   const isMounted = useRef(true);
-  const isInitialized = useRef(false);
 
   // Función para obtener el perfil
   const fetchProfile = useCallback(
@@ -65,26 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [supabase]
   );
 
-  // Función para actualizar el estado con usuario y perfil
-  const updateAuthState = useCallback(
-    async (session: Session | null) => {
-      if (!isMounted.current) return;
-
-      if (session?.user) {
-        setUser(session.user);
-        const profileData = await fetchProfile(session.user.id);
-        if (isMounted.current) {
-          setProfile(profileData);
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-    },
-    [fetchProfile]
-  );
-
-  // Refrescar perfil manualmente
+  // Refrescar perfil manualmente (usado en página de perfil)
   const refreshProfile = useCallback(async () => {
     if (user) {
       const profileData = await fetchProfile(user.id);
@@ -94,74 +81,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchProfile]);
 
-  // Refrescar sesión manualmente (útil después del login)
+  // Refrescar sesión manualmente (útil después del login con OAuth)
   const refreshSession = useCallback(async () => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      await updateAuthState(session);
+      if (!isMounted.current) return;
+      if (session?.user) {
+        setUser(session.user);
+        const profileData = await fetchProfile(session.user.id);
+        if (isMounted.current) setProfile(profileData);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
     } catch (error) {
       console.error('Error refreshing session:', error);
     }
-  }, [supabase, updateAuthState]);
+  }, [supabase, fetchProfile]);
 
-  // Inicialización y listener de cambios de auth.
-  // INITIAL_SESSION siempre es el primer evento que dispara Supabase al registrar el listener.
-  // Lo usamos como único punto de inicialización para evitar la race condition entre
-  // initializeAuth() y el handler de INITIAL_SESSION corriendo en paralelo.
+  // Listener de cambios de auth.
+  // INITIAL_SESSION se unifica con SIGNED_IN/TOKEN_REFRESHED: todos actualizan user y profile.
+  // Ya no controla isLoading porque el profile viene hydratado desde el servidor.
   useEffect(() => {
     isMounted.current = true;
-    isInitialized.current = false;
-
-    // Safety timeout: if INITIAL_SESSION never fires (e.g. PWA reopened with stale
-    // cached HTML, expired token refresh hang, or network failure on startup),
-    // unblock the UI after 5s so the middleware redirect can take effect.
-    const safetyTimeout = setTimeout(() => {
-      if (!isInitialized.current && isMounted.current) {
-        console.warn('[Auth] INITIAL_SESSION timeout - desbloqueando UI');
-        isInitialized.current = true;
-        setIsLoading(false);
-      }
-    }, 5000);
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (!isMounted.current) return;
 
-      if (event === 'INITIAL_SESSION') {
-        clearTimeout(safetyTimeout);
-        // try/catch/finally garantiza que isLoading se pone en false sin importar qué ocurra.
-        try {
-          await updateAuthState(session);
-        } catch (error) {
-          console.error('[Auth] Error en INITIAL_SESSION:', error);
-        } finally {
-          if (isMounted.current) {
-            isInitialized.current = true;
-            setIsLoading(false);
-          }
+      if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        if (session?.user) {
+          // Establecer el User de Supabase (tipo correcto, viene del cliente browser)
+          setUser(session.user);
+          // Re-fetch del profile en background para mantener datos frescos.
+          // El profile ya se muestra desde initialProfile (SSR), esto solo actualiza si cambió.
+          const profileData = await fetchProfile(session.user.id);
+          if (isMounted.current) setProfile(profileData);
+        } else {
+          setUser(null);
+          setProfile(null);
         }
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        await updateAuthState(session);
       } else if (event === 'SIGNED_OUT') {
         if (isMounted.current) {
           setUser(null);
           setProfile(null);
+          // Guard mid-session: si la sesión expira mientras el usuario está en la app
+          const pathname = window.location.pathname;
+          if (pathname.startsWith('/admin') || pathname.startsWith('/client')) {
+            router.push('/login');
+          }
         }
       }
     });
 
     return () => {
       isMounted.current = false;
-      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
-  }, [supabase, updateAuthState]);
+  }, [supabase, fetchProfile, router]);
 
   // NOTA: La protección de rutas se maneja en el middleware del servidor.
   // No hacemos redirecciones aquí para evitar loops y parpadeos.
@@ -177,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase, router]);
 
+  // isAdmin se computa desde profile que está disponible desde el primer render (SSR)
   const isAdmin = profile?.role === 'ADMIN';
 
   const value = useMemo(

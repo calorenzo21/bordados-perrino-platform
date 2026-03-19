@@ -1,10 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useAuth } from '@/hooks/use-auth';
 import useSWR from 'swr';
 
 import { createClient } from '@/lib/supabase/browser';
@@ -43,71 +42,55 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function useClients() {
-  const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
+export const ADMIN_CLIENTS_LIST_KEY = 'admin-clients-list' as const;
 
+// Fetcher puro — reutiliza la misma query y mapping, sin efectos secundarios
+async function fetchClientsList(): Promise<Client[]> {
   const supabase = createClient();
+  const { data, error } = await supabase
+    .from('clients_with_stats')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  const fetchClients = useCallback(async () => {
-    if (!isMounted.current || !user) return;
+  if (error) throw error;
 
-    setIsLoading(true);
-    setError(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((client: any) => ({
+    id: client.id,
+    name: client.name,
+    initials: getInitials(client.name),
+    email: client.email,
+    phone: client.phone,
+    cedula: client.cedula || '',
+    address: client.address || '',
+    totalOrders: client.total_orders || 0,
+    activeOrders: client.active_orders || 0,
+    totalSpent: client.total_spent || 0,
+    lastOrderDate: client.last_order_date?.split('T')[0] || '',
+    createdAt: client.created_at?.split('T')[0] || '',
+    orders: [],
+  }));
+}
 
-    try {
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients_with_stats')
-        .select('*')
-        .order('created_at', { ascending: false });
+export function useClients() {
+  const {
+    data: clients,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR(ADMIN_CLIENTS_LIST_KEY, fetchClientsList, {
+    revalidateOnFocus: true,
+    dedupingInterval: 30000,
+    errorRetryCount: 3,
+    errorRetryInterval: 2000,
+  });
 
-      if (clientsError) throw clientsError;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mappedClients: Client[] = (clientsData || []).map((client: any) => ({
-        id: client.id,
-        name: client.name,
-        initials: getInitials(client.name),
-        email: client.email,
-        phone: client.phone,
-        cedula: client.cedula || '',
-        address: client.address || '',
-        totalOrders: client.total_orders || 0,
-        activeOrders: client.active_orders || 0,
-        totalSpent: client.total_spent || 0,
-        lastOrderDate: client.last_order_date?.split('T')[0] || '',
-        createdAt: client.created_at?.split('T')[0] || '',
-        orders: [],
-      }));
-
-      if (isMounted.current) {
-        setClients(mappedClients);
-      }
-    } catch (err) {
-      console.error('Error fetching clients:', err);
-      if (isMounted.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar clientes');
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    if (user) fetchClients();
-
-    return () => {
-      isMounted.current = false;
-    };
-  }, [user, fetchClients]);
-
-  return { clients, isLoading, error, refetch: fetchClients };
+  return {
+    clients: clients ?? [],
+    isLoading,
+    error: error instanceof Error ? error.message : error ? 'Error al cargar clientes' : null,
+    refetch: () => mutate(),
+  };
 }
 
 // Interfaz extendida para la página de detalle del cliente (exportada para prefetch)
@@ -213,9 +196,10 @@ const SWR_OPTIONS = {
 } as const;
 
 export function useClient(clientId: string) {
-  const { user: authUser, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const key = authUser && clientId ? getAdminClientSwrKey(clientId) : null;
+  // La ruta está protegida por middleware — si el componente renderiza, la auth está garantizada.
+  // Eliminamos la dependencia de authUser para que SWR fetchee inmediatamente al montar.
+  const key = clientId ? getAdminClientSwrKey(clientId) : null;
 
   const {
     data: client,
@@ -235,8 +219,7 @@ export function useClient(clientId: string) {
 
   return {
     client: client ?? null,
-    // auth loading: esperamos la sesión | key not null + swr loading: primera carga de datos
-    isLoading: authLoading || (key !== null && swrLoading),
+    isLoading: key !== null && swrLoading,
     error: error ? (error instanceof Error ? error.message : 'Error al cargar cliente') : null,
     refetch,
   };

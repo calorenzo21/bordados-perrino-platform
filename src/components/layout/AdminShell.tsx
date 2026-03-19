@@ -76,29 +76,6 @@ export function AdminShell({ children }: AdminShellProps) {
     }
   }, [isLoading, user, router]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <PerrinoLogo size="md" />
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">Verificando acceso...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">Redirigiendo...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Get user initials for avatar
   const getInitials = () => {
     if (profile) {
@@ -118,11 +95,12 @@ export function AdminShell({ children }: AdminShellProps) {
   };
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     try {
-      setIsSigningOut(true);
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
       setIsSigningOut(false);
     }
   };
