@@ -125,43 +125,23 @@ export function MetricCard({
             {description && <p className="pt-1 text-sm text-slate-400">{description}</p>}
           </div>
 
-          {/* Icon container with enhanced styling */}
-          <div
-            className={cn(
-              'ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg ring-4 transition-transform duration-300 group-hover:scale-110',
-              styles.bg,
-              styles.shadow,
-              styles.ring
-            )}
-          >
-            <Icon className="h-7 w-7 text-white" strokeWidth={2} />
-          </div>
-        </div>
-
-        {/* Bottom row: Trend badge (left) and decorative dots (right) - in flow, no overlap */}
-        <div className="mt-4 flex items-center justify-between">
-          {trend ? (
+          <div className="flex flex-col items-end justify-between h-full">
+            {/* Icon container with enhanced styling */}
             <div
               className={cn(
-                'flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
-                trend.isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                'ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg ring-4 transition-transform duration-300 group-hover:scale-110',
+                styles.bg,
+                styles.shadow,
+                styles.ring
               )}
             >
-              {trend.isPositive ? (
-                <TrendingUp className="h-3.5 w-3.5" />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5" />
-              )}
-              <span>{trend.value}%</span>
+              <Icon className="h-7 w-7 text-white" strokeWidth={2} />
             </div>
-          ) : (
-            <div />
-          )}
-
-          <div className="flex gap-1 opacity-30">
-            <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
-            <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
-            <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
+            <div className="flex gap-1 opacity-30">
+              <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
+              <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
+              <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
+            </div>
           </div>
         </div>
       </CardContent>
