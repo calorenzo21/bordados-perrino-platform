@@ -41,31 +41,43 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
- * Orden: 1) Urgentes primero, 2) Resto por fecha de recepción (primero en entrar, primero en mostrar),
- * 3) Entregado todos al fondo, entre entregados primero con saldo pendiente y por orden de entrega.
+ * Orden de prioridad:
+ * 1. Activos — urgentes primero, luego por fecha de recepción (FIFO)
+ * 2. Entregados — con saldo pendiente primero, luego por fecha
+ * 3. Cancelados — siempre al final, por fecha de creación desc
  */
 function compareOrders(a: Order, b: Order): number {
-  const entregado = OrderStatus.ENTREGADO;
-  const aEntregado = a.status === entregado;
-  const bEntregado = b.status === entregado;
+  const aCancelado = a.status === OrderStatus.CANCELADO;
+  const bCancelado = b.status === OrderStatus.CANCELADO;
+  const aEntregado = a.status === OrderStatus.ENTREGADO;
+  const bEntregado = b.status === OrderStatus.ENTREGADO;
 
-  // Entregado siempre al fondo
+  // Cancelado siempre al final (tras entregados)
+  if (aCancelado && !bCancelado) return 1;
+  if (!aCancelado && bCancelado) return -1;
+
+  // Entregado antes que cancelado, pero después de activos
   if (aEntregado && !bEntregado) return 1;
   if (!aEntregado && bEntregado) return -1;
 
-  if (!aEntregado && !bEntregado) {
-    // No entregados: urgentes primero, luego por fecha de creación (primero en entrar = primero)
+  if (!aEntregado && !aCancelado && !bEntregado && !bCancelado) {
+    // Activos: urgentes primero, luego por fecha de creación (FIFO)
     if (a.isUrgent && !b.isUrgent) return -1;
     if (!a.isUrgent && b.isUrgent) return 1;
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }
 
-  // Ambos entregados: primero con saldo pendiente, luego por orden de entrega (createdAt como proxy)
-  const aPendiente = a.remainingBalance > 0;
-  const bPendiente = b.remainingBalance > 0;
-  if (aPendiente && !bPendiente) return -1;
-  if (!aPendiente && bPendiente) return 1;
-  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  if (aEntregado && bEntregado) {
+    // Ambos entregados: con saldo pendiente primero, luego por fecha
+    const aPendiente = a.remainingBalance > 0;
+    const bPendiente = b.remainingBalance > 0;
+    if (aPendiente && !bPendiente) return -1;
+    if (!aPendiente && bPendiente) return 1;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  }
+
+  // Ambos cancelados: más recientes primero
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 }
 
 interface OrdersContentProps {
@@ -160,6 +172,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
       (o) => o.status === OrderStatus.PARCIALMENTE_ENTREGADO
     ).length,
     [OrderStatus.ENTREGADO]: orders.filter((o) => o.status === OrderStatus.ENTREGADO).length,
+    [OrderStatus.CANCELADO]: orders.filter((o) => o.status === OrderStatus.CANCELADO).length,
   };
 
   return (
@@ -310,6 +323,13 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
               <div className="h-2 w-2 rounded-full bg-sky-500" />
               Entregados ({statusCounts[OrderStatus.ENTREGADO]})
             </TabsTrigger>
+            <TabsTrigger
+              value={OrderStatus.CANCELADO}
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="h-2 w-2 rounded-full bg-rose-500" />
+              Cancelados ({statusCounts[OrderStatus.CANCELADO]})
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -422,7 +442,9 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {order.isDelayed ? (
+                        {order.status === OrderStatus.CANCELADO ? (
+                          <span className="text-sm text-slate-400">—</span>
+                        ) : order.isDelayed ? (
                           <>
                             <AlertCircle className="h-4 w-4 text-rose-500" />
                             <span className="text-sm font-medium text-rose-600">

@@ -76,6 +76,7 @@ export class DashboardService {
 
     const [
       activeOrders,
+      delayedOrders,
       completedOrders,
       monthlyRevenue,
       prevMonthlyRevenue,
@@ -85,6 +86,7 @@ export class DashboardService {
       pendingToCollect,
     ] = await Promise.all([
       this.ordersRepo.countActive(),
+      this.ordersRepo.countDelayed(),
       this.ordersRepo.countCompleted(),
       this.getMonthlyRevenue(currentYear, currentMonth),
       this.getMonthlyRevenue(prevYear, prevMonth),
@@ -97,6 +99,7 @@ export class DashboardService {
     return {
       activeOrders,
       activeOrdersChange: 0, // No se calcula por ahora
+      delayedOrders,
       monthlyRevenue,
       prevMonthlyRevenue,
       monthlyRevenueChange: 0, // No se calcula por ahora

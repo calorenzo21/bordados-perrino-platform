@@ -261,6 +261,8 @@ export interface ClientFilters {
 export interface DashboardMetrics {
   activeOrders: number;
   activeOrdersChange: number;
+  /** Pedidos activos cuyo due_date ya pasó (is_delayed = true en la vista). */
+  delayedOrders: number;
   monthlyRevenue: number;
   prevMonthlyRevenue?: number;
   monthlyRevenueChange: number;

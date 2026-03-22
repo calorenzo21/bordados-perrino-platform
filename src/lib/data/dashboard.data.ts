@@ -18,6 +18,7 @@ import type {
 const mockMetrics: DashboardMetrics = {
   activeOrders: 27,
   activeOrdersChange: 12,
+  delayedOrders: 0,
   monthlyRevenue: 284500,
   monthlyRevenueChange: 8.2,
   monthlyExpenses: 309500,

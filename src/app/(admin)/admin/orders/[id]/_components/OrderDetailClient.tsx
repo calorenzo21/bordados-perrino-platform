@@ -711,14 +711,26 @@ export function OrderDetailClient({
               </Button>
             </>
           ) : (
-            <Button
-              variant="outline"
-              className="h-10 gap-2 rounded-xl"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit3 className="h-4 w-4" />
-              Editar Pedido
-            </Button>
+            <>
+              {order.status !== OrderStatus.CANCELADO && order.status !== OrderStatus.ENTREGADO && (
+                <Button
+                  variant="outline"
+                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+                  onClick={() => handleStatusChange(OrderStatus.CANCELADO)}
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancelar Pedido
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="h-10 gap-2 rounded-xl"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit3 className="h-4 w-4" />
+                Editar Pedido
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -757,8 +769,10 @@ export function OrderDetailClient({
                   status === OrderStatus.PARCIALMENTE_ENTREGADO &&
                   order.status === OrderStatus.PARCIALMENTE_ENTREGADO;
 
-                // Determinar si es clickeable
-                const isClickable = isFuture || isParcialmenteEntregadoAndCurrent;
+                // Determinar si es clickeable — nunca si el pedido es terminal (cancelado)
+                const isClickable =
+                  order.status !== OrderStatus.CANCELADO &&
+                  (isFuture || isParcialmenteEntregadoAndCurrent);
 
                 // Tooltip personalizado para PARCIALMENTE_ENTREGADO cuando es el estado actual
                 const tooltipText = isParcialmenteEntregadoAndCurrent
@@ -1627,7 +1641,9 @@ export function OrderDetailClient({
               )}
             </DialogTitle>
             <DialogDescription>
-              Añade observaciones y fotos para documentar este cambio de estado.
+              {newStatusData.status === OrderStatus.CANCELADO
+                ? 'Esta acción marcará el pedido como cancelado. No puede revertirse.'
+                : 'Añade observaciones y fotos para documentar este cambio de estado.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -1635,10 +1651,17 @@ export function OrderDetailClient({
             {/* Observaciones */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
-                Observaciones <span className="text-rose-500">*</span>
+                {newStatusData.status === OrderStatus.CANCELADO
+                  ? 'Motivo de cancelación'
+                  : 'Observaciones'}{' '}
+                <span className="text-rose-500">*</span>
               </label>
               <textarea
-                placeholder="Describe el progreso o cualquier detalle importante..."
+                placeholder={
+                  newStatusData.status === OrderStatus.CANCELADO
+                    ? 'Describe el motivo por el que se cancela el pedido...'
+                    : 'Describe el progreso o cualquier detalle importante...'
+                }
                 value={newStatusData.observations}
                 onChange={(e) =>
                   setNewStatusData({ ...newStatusData, observations: e.target.value })
@@ -1672,104 +1695,108 @@ export function OrderDetailClient({
               </div>
             )}
 
-            {/* Subir fotos */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Fotos del Progreso</label>
-              <input
-                ref={statusPhotoInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (files.length === 0) return;
+            {/* Subir fotos — no aplica para cancelaciones */}
+            {newStatusData.status !== OrderStatus.CANCELADO && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Fotos del Progreso</label>
+                <input
+                  ref={statusPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
 
-                  // Agregar archivos
-                  setStatusPhotoFiles((prev) => [...prev, ...files]);
+                    // Agregar archivos
+                    setStatusPhotoFiles((prev) => [...prev, ...files]);
 
-                  // Generar previews
-                  for (const file of files) {
-                    const preview = await fileToBase64(file);
-                    setStatusPhotoPreviews((prev) => [...prev, preview]);
-                  }
+                    // Generar previews
+                    for (const file of files) {
+                      const preview = await fileToBase64(file);
+                      setStatusPhotoPreviews((prev) => [...prev, preview]);
+                    }
 
-                  // Limpiar input
-                  e.target.value = '';
-                }}
-              />
+                    // Limpiar input
+                    e.target.value = '';
+                  }}
+                />
 
-              {/* Zona de drop/click */}
-              <div
-                onClick={() => statusPhotoInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                {/* Zona de drop/click */}
+                <div
+                  onClick={() => statusPhotoInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
 
-                  const files = Array.from(e.dataTransfer.files).filter((f) =>
-                    f.type.startsWith('image/')
-                  );
-                  if (files.length === 0) return;
+                    const files = Array.from(e.dataTransfer.files).filter((f) =>
+                      f.type.startsWith('image/')
+                    );
+                    if (files.length === 0) return;
 
-                  setStatusPhotoFiles((prev) => [...prev, ...files]);
+                    setStatusPhotoFiles((prev) => [...prev, ...files]);
 
-                  for (const file of files) {
-                    const preview = await fileToBase64(file);
-                    setStatusPhotoPreviews((prev) => [...prev, preview]);
-                  }
-                }}
-                className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 p-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/50"
-              >
-                <Upload className="mx-auto h-8 w-8 text-slate-400" />
-                <p className="mt-2 text-sm text-slate-600">Arrastra fotos o haz clic para subir</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  PNG, JPG hasta 10MB (se comprimirán automáticamente)
-                </p>
-              </div>
-
-              {/* Preview de fotos seleccionadas */}
-              {statusPhotoPreviews.length > 0 && (
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  {statusPhotoPreviews.map((preview, index) => (
-                    <div
-                      key={index}
-                      className="group relative aspect-square overflow-hidden rounded-lg"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setStatusPhotoFiles((prev) => prev.filter((_, i) => i !== index));
-                            setStatusPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-center text-[10px] text-white">
-                        {formatFileSize(statusPhotoFiles[index]?.size || 0)}
-                      </div>
-                    </div>
-                  ))}
+                    for (const file of files) {
+                      const preview = await fileToBase64(file);
+                      setStatusPhotoPreviews((prev) => [...prev, preview]);
+                    }
+                  }}
+                  className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 p-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/50"
+                >
+                  <Upload className="mx-auto h-8 w-8 text-slate-400" />
+                  <p className="mt-2 text-sm text-slate-600">
+                    Arrastra fotos o haz clic para subir
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    PNG, JPG hasta 10MB (se comprimirán automáticamente)
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {/* Preview de fotos seleccionadas */}
+                {statusPhotoPreviews.length > 0 && (
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {statusPhotoPreviews.map((preview, index) => (
+                      <div
+                        key={index}
+                        className="group relative aspect-square overflow-hidden rounded-lg"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStatusPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+                              setStatusPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+                            }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-center text-[10px] text-white">
+                          {formatFileSize(statusPhotoFiles[index]?.size || 0)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -1799,13 +1826,19 @@ export function OrderDetailClient({
                   (!newStatusData.quantityDelivered ||
                     parseInt(newStatusData.quantityDelivered, 10) <= 0))
               }
-              className="rounded-xl bg-blue-500 hover:bg-blue-600"
+              className={`rounded-xl ${
+                newStatusData.status === OrderStatus.CANCELADO
+                  ? 'bg-rose-500 hover:bg-rose-600'
+                  : 'bg-blue-500 hover:bg-blue-600'
+              }`}
             >
               {isStatusChanging ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Guardando...
                 </>
+              ) : newStatusData.status === OrderStatus.CANCELADO ? (
+                'Cancelar Pedido'
               ) : (
                 'Confirmar Cambio'
               )}

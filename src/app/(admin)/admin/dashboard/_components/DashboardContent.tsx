@@ -199,16 +199,17 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
   // Gastos recientes
   const recentExpenses = dbRecentExpenses;
 
-  // Métricas de tiempo (calculadas desde pedidos activos)
+  // Métricas de tiempo — usa el conteo del servidor sobre TODOS los pedidos activos,
+  // no sobre la muestra de 5 pedidos recientes que se muestra en la tabla.
   const timeMetrics = useMemo(() => {
-    const delayed = recentOrders.filter((o) => o.isDelayed).length;
     const totalActive = metrics?.activeOrders || 0;
+    const delayed = metrics?.delayedOrders || 0;
     return {
       onTime: totalActive - delayed,
       delayed,
       totalActive,
     };
-  }, [recentOrders, metrics]);
+  }, [metrics]);
 
   // Métricas de gastos
   const expenseMetrics = useMemo(

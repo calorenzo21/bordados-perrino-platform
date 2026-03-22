@@ -473,6 +473,21 @@ export class OrdersRepository {
   }
 
   /**
+   * Count delayed active orders (is_delayed = true and not yet delivered/cancelled).
+   * Uses the orders_with_payments view which computes is_delayed server-side.
+   */
+  async countDelayed(): Promise<number> {
+    const { count, error } = await this.supabase
+      .from('orders_with_payments')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_delayed', true)
+      .in('status', ['RECIBIDO', 'CONFECCION', 'RETIRO', 'PARCIALMENTE_ENTREGADO']);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
+  }
+
+  /**
    * Count completed orders
    */
   async countCompleted(): Promise<number> {
@@ -491,7 +506,8 @@ export class OrdersRepository {
   async getTotalPendingToCollect(): Promise<number> {
     const { data, error } = await this.supabase
       .from('orders_with_payments')
-      .select('remaining_balance');
+      .select('remaining_balance')
+      .not('status', 'eq', 'CANCELADO'); // Cancelled orders are not expected to be collected
 
     if (error) throw new Error(error.message);
     return (data || []).reduce((sum, row) => sum + (Number(row.remaining_balance) || 0), 0);
