@@ -162,17 +162,14 @@ export function AuthProvider({
   // No hacemos redirecciones aquí para evitar loops y parpadeos.
 
   const signOut = useCallback(async () => {
-    // 1. Limpiar estado local inmediatamente — sin dependencia de red.
+    // scope: 'local' limpia la cookie de sesión en el navegador SIN hacer llamada de red.
+    // Esto es crítico: si navegamos antes de limpiar la cookie, el middleware ve la sesión
+    // activa y redirige de vuelta al dashboard. Con 'local' la cookie se limpia de inmediato
+    // y el middleware rechazará cualquier request — sin depender de la red.
+    await supabase.auth.signOut({ scope: 'local' });
     setUser(null);
     setProfile(null);
-    // 2. Navegar a login de inmediato — replace para no acumular historial de rutas protegidas.
     routerRef.current.replace('/login');
-    // 3. Revocar la sesión en el servidor en background (best-effort).
-    //    Si falla (offline, timeout), el JWT expirará naturalmente y el middleware
-    //    rechazará cualquier request futuro con ese token.
-    supabase.auth.signOut().catch((err: unknown) => {
-      console.error('[auth] background signOut error:', err);
-    });
   }, [supabase]);
 
   // isAdmin se computa desde profile que está disponible desde el primer render (SSR)
