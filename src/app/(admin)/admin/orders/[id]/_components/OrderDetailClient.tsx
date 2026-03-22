@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -47,7 +47,6 @@ import {
   OrderStatus,
   OrderStatusLabels,
   type OrderStatusType,
-  SEGMENT_COLORS,
   STATUS_COLOR_MAP,
   STATUS_FLOW,
 } from '@/lib/utils/status';
@@ -110,7 +109,6 @@ const statusIcons = {
 const statusColors = STATUS_COLOR_MAP;
 const statusFlow = STATUS_FLOW;
 const paymentMethods = PAYMENT_METHODS;
-const segmentColors = SEGMENT_COLORS;
 
 const serviceTypes = [
   'Llaveros',
@@ -411,11 +409,6 @@ export function OrderDetailClient({
   const dynamicStatusFlow: OrderStatusType[] = showPartialDeliveryInTimeline
     ? statusFlow
     : statusFlow.filter((s) => s !== OrderStatus.PARCIALMENTE_ENTREGADO);
-
-  // Colores dinámicos para los segmentos
-  const dynamicSegmentColors = showPartialDeliveryInTimeline
-    ? segmentColors
-    : segmentColors.filter((_, i) => i !== 3); // Quitar el color púrpura (índice 3)
 
   const currentStatusIndex = dynamicStatusFlow.indexOf(order.status as OrderStatusType);
 
@@ -735,102 +728,101 @@ export function OrderDetailClient({
         <CardContent className="p-6">
           {/* Texto explicativo */}
 
-          <div className="relative">
-            {/* Línea de progreso única continua (sin gaps): 4 segmentos entre 5 círculos */}
-            <div
-              className="absolute left-7 right-7 top-7 h-1 rounded-full transition-all duration-500"
-              style={{
-                background: (() => {
-                  const numSegments = dynamicStatusFlow.length - 1;
-                  const grey = '#e2e8f0';
-                  const hexForSegment = (seg: number) =>
-                    STATUS_COLOR_MAP[dynamicStatusFlow[seg] as OrderStatusType]?.hex ?? grey;
-                  const stops: string[] = [];
-                  for (let seg = 0; seg < numSegments; seg++) {
-                    const pctStart = (seg / numSegments) * 100;
-                    const pctEnd = ((seg + 1) / numSegments) * 100;
-                    const completed = currentStatusIndex >= seg + 1;
-                    const hex = completed ? hexForSegment(seg) : grey;
-                    stops.push(`${hex} ${pctStart}%`, `${hex} ${pctEnd}%`);
-                  }
-                  return `linear-gradient(to right, ${stops.join(', ')})`;
-                })(),
-              }}
-            />
+          {/* Pasos del progreso — segmentos intercalados entre iconos (layout flex)
+              para que la línea de color NUNCA pueda sobrepasar el límite del icono */}
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-start">
+              {dynamicStatusFlow.map((status, index) => {
+                const grey = '#e2e8f0';
+                const segmentBg =
+                  index > 0
+                    ? currentStatusIndex >= index
+                      ? (STATUS_COLOR_MAP[dynamicStatusFlow[index - 1] as OrderStatusType]?.hex ??
+                        grey)
+                      : grey
+                    : grey;
+                const Icon = statusIcons[status];
+                const isCompleted = index <= currentStatusIndex;
+                const isCurrent = index === currentStatusIndex;
+                const isFuture = index > currentStatusIndex;
+                const colors = statusColors[status];
+                // Si es ENTREGADO y es el estado actual, mostrarlo como completado
+                const isEntregadoFinal = status === OrderStatus.ENTREGADO && isCurrent;
+                const showAsCompleted = (isCompleted && !isCurrent) || isEntregadoFinal;
 
-            {/* Pasos del progreso */}
-            <TooltipProvider delayDuration={200}>
-              <div className="relative flex justify-between">
-                {dynamicStatusFlow.map((status, index) => {
-                  const Icon = statusIcons[status];
-                  const isCompleted = index <= currentStatusIndex;
-                  const isCurrent = index === currentStatusIndex;
-                  const isFuture = index > currentStatusIndex;
-                  const colors = statusColors[status];
-                  // Si es ENTREGADO y es el estado actual, mostrarlo como completado
-                  const isEntregadoFinal = status === OrderStatus.ENTREGADO && isCurrent;
-                  const showAsCompleted = (isCompleted && !isCurrent) || isEntregadoFinal;
+                // Lógica especial para PARCIALMENTE_ENTREGADO:
+                // - Es clickeable si es futuro (para primera entrega parcial)
+                // - Es clickeable si es el estado actual (para agregar más entregas parciales)
+                const isParcialmenteEntregadoAndCurrent =
+                  status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+                  order.status === OrderStatus.PARCIALMENTE_ENTREGADO;
 
-                  // Lógica especial para PARCIALMENTE_ENTREGADO:
-                  // - Es clickeable si es futuro (para primera entrega parcial)
-                  // - Es clickeable si es el estado actual (para agregar más entregas parciales)
-                  const isParcialmenteEntregadoAndCurrent =
-                    status === OrderStatus.PARCIALMENTE_ENTREGADO &&
-                    order.status === OrderStatus.PARCIALMENTE_ENTREGADO;
+                // Determinar si es clickeable
+                const isClickable = isFuture || isParcialmenteEntregadoAndCurrent;
 
-                  // Determinar si es clickeable
-                  const isClickable = isFuture || isParcialmenteEntregadoAndCurrent;
+                // Tooltip personalizado para PARCIALMENTE_ENTREGADO cuando es el estado actual
+                const tooltipText = isParcialmenteEntregadoAndCurrent
+                  ? 'Click para agregar otra entrega parcial'
+                  : 'Click para cambiar estado';
 
-                  // Tooltip personalizado para PARCIALMENTE_ENTREGADO cuando es el estado actual
-                  const tooltipText = isParcialmenteEntregadoAndCurrent
-                    ? 'Click para agregar otra entrega parcial'
-                    : 'Click para cambiar estado';
-
-                  const StatusButton = (
-                    <button
-                      type="button"
-                      onClick={() => isClickable && handleStatusChange(status)}
-                      disabled={!isClickable}
-                      className={`group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                const StatusButton = (
+                  <button
+                    type="button"
+                    onClick={() => isClickable && handleStatusChange(status)}
+                    disabled={!isClickable}
+                    className={`group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                      showAsCompleted
+                        ? `bg-linear-to-br ${colors.gradient} shadow-lg`
+                        : isCurrent
+                          ? `${colors.bgLight} border-2 ${colors.borderDark} ${isParcialmenteEntregadoAndCurrent ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : ''}`
+                          : isClickable
+                            ? 'border-2 border-slate-200 bg-white cursor-pointer hover:border-slate-300 hover:bg-slate-50 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50'
+                            : 'border-2 border-slate-200 bg-white'
+                    }`}
+                  >
+                    <Icon
+                      className={`h-6 w-6 transition-colors duration-300 ${
                         showAsCompleted
-                          ? `bg-linear-to-br ${colors.gradient} shadow-lg`
+                          ? 'text-white'
                           : isCurrent
-                            ? `${colors.bgLight} border-2 ${colors.borderDark} ${isParcialmenteEntregadoAndCurrent ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : ''}`
+                            ? colors.text
                             : isClickable
-                              ? 'border-2 border-slate-200 bg-white cursor-pointer hover:border-slate-300 hover:bg-slate-50 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50'
-                              : 'border-2 border-slate-200 bg-white'
+                              ? `text-slate-300 group-hover:${colors.text}`
+                              : 'text-slate-300'
                       }`}
-                    >
-                      <Icon
-                        className={`h-6 w-6 transition-colors duration-300 ${
-                          showAsCompleted
-                            ? 'text-white'
-                            : isCurrent
-                              ? colors.text
-                              : isClickable
-                                ? `text-slate-300 group-hover:${colors.text}`
-                                : 'text-slate-300'
-                        }`}
+                    />
+
+                    {/* Efecto de pulso solo si es el estado actual y NO es entregado */}
+                    {isCurrent && !isEntregadoFinal && (
+                      <span
+                        className={`absolute inset-0 animate-ping rounded-full ${colors.bgLight} opacity-50`}
                       />
+                    )}
 
-                      {/* Efecto de pulso solo si es el estado actual y NO es entregado */}
-                      {isCurrent && !isEntregadoFinal && (
-                        <span
-                          className={`absolute inset-0 animate-ping rounded-full ${colors.bgLight} opacity-50`}
+                    {/* Indicador de clickeable - aparece en hover */}
+                    {isClickable && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
+                        <span className={`h-2.5 w-2.5 rounded-full ${colors.bg}`} />
+                      </span>
+                    )}
+                  </button>
+                );
+
+                return (
+                  <React.Fragment key={status}>
+                    {/* Segmento conector: flex-1 entre iconos — nunca puede sobrepasar el icono */}
+                    {index > 0 && (
+                      <div className="flex h-14 flex-1 items-center">
+                        <div
+                          className="h-1 w-full transition-all duration-500"
+                          style={{ background: segmentBg }}
                         />
-                      )}
-
-                      {/* Indicador de clickeable - aparece en hover */}
-                      {isClickable && (
-                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
-                          <span className={`h-2.5 w-2.5 rounded-full ${colors.bg}`} />
-                        </span>
-                      )}
-                    </button>
-                  );
-
-                  return (
-                    <div key={status} className="flex min-w-[80px] flex-col items-center">
+                      </div>
+                    )}
+                    <div
+                      className="flex shrink-0 flex-col items-center"
+                      style={{ minWidth: '80px' }}
+                    >
                       {/* Círculo del paso - Interactivo con Tooltip */}
                       {isClickable ? (
                         <Tooltip>
@@ -876,11 +868,11 @@ export function OrderDetailClient({
                         )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </TooltipProvider>
-          </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </TooltipProvider>
 
           {/* Progreso de entrega si hay entregas parciales */}
           {(partialDeliveryCount > 0 || order.status === OrderStatus.PARCIALMENTE_ENTREGADO) && (
