@@ -8,6 +8,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import useSWR, { useSWRConfig } from 'swr';
 
 import { createClient } from '@/lib/supabase/browser';
+import type { OrderForDetail } from '@/lib/types/admin.types';
+
+export type { OrderForDetail };
 
 function getInitials(name: string): string {
   return name
@@ -16,50 +19,6 @@ function getInitials(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2);
-}
-
-export interface OrderForDetail {
-  id: string;
-  uuid: string;
-  client: {
-    id: string;
-    name: string;
-    initials: string;
-    email: string;
-    phone: string;
-    cedula: string;
-    address: string;
-  };
-  description: string;
-  serviceType: string;
-  quantity: number;
-  total: number;
-  status: string;
-  dueDate: string;
-  createdAt: string;
-  isDelayed: boolean;
-  daysRemaining: number;
-  isUrgent: boolean;
-  statusHistory: {
-    id: string;
-    status: string;
-    date: string;
-    time: string;
-    observations: string;
-    photos: string[];
-    user: string;
-    quantityDelivered?: number | null;
-  }[];
-  payments: {
-    id: string;
-    amount: number;
-    date: string;
-    time: string;
-    method: 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
-    notes: string;
-    photos: string[];
-    user: string;
-  }[];
 }
 
 const ADMIN_ORDER_SWR_KEY_PREFIX = 'admin-order' as const;
@@ -181,9 +140,10 @@ const SWR_OPTIONS = {
   revalidateOnFocus: true,
   dedupingInterval: 20000,
   errorRetryCount: 2,
+  keepPreviousData: true,
 } as const;
 
-export function useOrder(orderId: string) {
+export function useOrder(orderId: string, options: { fallbackData?: OrderForDetail | null } = {}) {
   const { mutate: globalMutate } = useSWRConfig();
   const router = useRouter();
   // La ruta está protegida por middleware — si el componente renderiza, la auth está garantizada.
@@ -197,6 +157,7 @@ export function useOrder(orderId: string) {
     mutate,
   } = useSWR(key, adminOrderFetcher, {
     ...SWR_OPTIONS,
+    fallbackData: options.fallbackData ?? undefined,
     onError(err) {
       if (err?.message === 'Unauthorized' || err?.status === 401) {
         router.replace('/login');

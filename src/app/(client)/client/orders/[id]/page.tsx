@@ -1,6 +1,4 @@
-'use client';
-
-import { use } from 'react';
+import { getClientOrderDetail } from '@/lib/services/client-portal.server';
 
 import { OrderDetailContent } from '@/components/client/OrderDetailContent';
 
@@ -8,11 +6,10 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function ClientOrderDetailPage({ params }: PageProps) {
-  const { id } = use(params);
+export const revalidate = 0;
 
-  // Client Component puro - SWR maneja el caché
-  // Primera visita: muestra skeleton mientras carga
-  // Visitas subsecuentes: muestra datos cacheados instantáneamente
-  return <OrderDetailContent orderId={id} />;
+export default async function ClientOrderDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const initialData = (await getClientOrderDetail(id)) ?? undefined;
+  return <OrderDetailContent orderId={id} initialData={initialData} />;
 }

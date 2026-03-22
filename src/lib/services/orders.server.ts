@@ -8,6 +8,7 @@
 import { cache } from 'react';
 
 import { createClient } from '@/lib/supabase/server';
+import type { OrderForDetail } from '@/lib/types/admin.types';
 import { OrderStatus } from '@/lib/utils/status';
 
 /** Fila de la vista orders_with_payments (campos usados en orden + mapeo) */
@@ -130,5 +131,115 @@ export const getOrdersData = cache(async function getOrdersData(): Promise<Order
   return {
     orders,
     lastUpdated: new Date().toISOString(),
+  };
+});
+
+/**
+ * Fetch a single order for the detail view (admin).
+ * Returns null if not found. Mirrors fetchOrderForDetail from use-orders.ts
+ * but uses the server Supabase client for SSR.
+ */
+export const getAdminOrderDetail = cache(async function getAdminOrderDetail(
+  orderIdOrNumber: string
+): Promise<OrderForDetail | null> {
+  const supabase = await createClient();
+
+  let query = supabase.from('orders_with_payments').select('*');
+  if (orderIdOrNumber.startsWith('ORD-') || orderIdOrNumber.startsWith('PED-')) {
+    query = query.eq('order_number', orderIdOrNumber);
+  } else {
+    query = query.eq('id', orderIdOrNumber);
+  }
+
+  const { data: orderData, error: orderError } = await query.single();
+
+  if (orderError) {
+    if (orderError.code === 'PGRST116') return null;
+    throw orderError;
+  }
+
+  const [paymentsRes, historyRes] = await Promise.all([
+    supabase
+      .from('payments')
+      .select(`*, payment_photos (photo_url), profiles:received_by (first_name, last_name)`)
+      .eq('order_id', orderData.id)
+      .order('payment_date', { ascending: false }),
+    supabase
+      .from('order_status_history')
+      .select(`*, order_status_photos (photo_url), profiles:changed_by (first_name, last_name)`)
+      .eq('order_id', orderData.id)
+      .order('changed_at', { ascending: true }),
+  ]);
+
+  const payments: OrderForDetail['payments'] = (paymentsRes.data || []).map(
+    (p: Record<string, unknown>) => {
+      const dateTime = (p.payment_date as string)?.split('T') || ['', ''];
+      const profile = p.profiles as { first_name?: string; last_name?: string } | null;
+      const userName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
+      return {
+        id: String(p.id ?? ''),
+        amount: Number(p.amount) || 0,
+        date: dateTime[0] || '',
+        time: (dateTime[1] as string)?.slice(0, 8) || '00:00:00',
+        method: ((p.method as string)?.toLowerCase() || 'efectivo') as
+          | 'efectivo'
+          | 'transferencia'
+          | 'tarjeta'
+          | 'otro',
+        notes: typeof p.notes === 'string' ? p.notes : '',
+        photos: ((p.payment_photos as { photo_url: string }[]) || []).map((ph) => ph.photo_url),
+        user: userName,
+      };
+    }
+  );
+
+  const statusHistory: OrderForDetail['statusHistory'] = (historyRes.data || []).map(
+    (h: Record<string, unknown>) => {
+      const dateTime = (h.changed_at as string)?.split('T') || ['', ''];
+      const profile = h.profiles as { first_name?: string; last_name?: string } | null;
+      const userName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
+      return {
+        id: String(h.id ?? ''),
+        status: String(h.status ?? ''),
+        date: dateTime[0] || '',
+        time: (dateTime[1] as string)?.slice(0, 8) || '00:00:00',
+        observations: typeof h.observations === 'string' ? h.observations : '',
+        photos: ((h.order_status_photos as { photo_url: string }[]) || []).map(
+          (ph) => ph.photo_url
+        ),
+        user: userName,
+        quantityDelivered: h.quantity_delivered != null ? Number(h.quantity_delivered) : null,
+      };
+    }
+  );
+
+  return {
+    id: orderData.order_number || orderData.id,
+    uuid: orderData.id,
+    client: {
+      id: orderData.client_id,
+      name: orderData.client_name,
+      initials: getInitials(orderData.client_name),
+      email: orderData.client_email,
+      phone: orderData.client_phone || '',
+      cedula: orderData.client_cedula || '',
+      address: orderData.client_address || '',
+    },
+    description: orderData.description,
+    serviceType: orderData.service_type,
+    quantity: orderData.quantity,
+    total: orderData.total,
+    status: orderData.status,
+    dueDate: orderData.due_date,
+    createdAt: orderData.created_at?.split('T')[0] || '',
+    isDelayed: orderData.is_delayed || false,
+    daysRemaining: orderData.days_remaining || 0,
+    isUrgent: orderData.is_urgent || false,
+    statusHistory,
+    payments,
   };
 });

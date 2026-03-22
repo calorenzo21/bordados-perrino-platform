@@ -8,6 +8,7 @@
 import { cache } from 'react';
 
 import { createClient } from '@/lib/supabase/server';
+import type { ClientDetail } from '@/lib/types/admin.types';
 
 export interface ClientOrder {
   id: string;
@@ -112,5 +113,73 @@ export const getClientsData = cache(async function getClientsData(): Promise<Cli
   return {
     clients,
     lastUpdated: new Date().toISOString(),
+  };
+});
+
+/**
+ * Fetch a single client for the detail view (admin).
+ * Returns null if not found. Mirrors adminClientFetcher from use-clients.ts
+ * but uses the server Supabase client for SSR.
+ */
+export const getAdminClientDetail = cache(async function getAdminClientDetail(
+  clientId: string
+): Promise<ClientDetail | null> {
+  const supabase = await createClient();
+
+  const [clientRes, ordersRes] = await Promise.all([
+    supabase.from('clients_with_stats').select('*').eq('id', clientId).single(),
+    supabase
+      .from('orders')
+      .select(
+        'id, order_number, description, service_type, status, total, quantity, created_at, due_date'
+      )
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false }),
+  ]);
+
+  if (clientRes.error) {
+    if (clientRes.error.code === 'PGRST116') return null;
+    throw clientRes.error;
+  }
+
+  const clientData = clientRes.data;
+
+  const orders: ClientDetail['orders'] = (ordersRes.data || []).map(
+    (o: Record<string, unknown>) => ({
+      id: String(o.order_number ?? o.id ?? ''),
+      description: String(o.description ?? ''),
+      serviceType: String(o.service_type ?? ''),
+      status: String(o.status ?? ''),
+      total: Number(o.total) || 0,
+      quantity: Number(o.quantity) || 0,
+      date: (o.created_at as string)?.split('T')[0] || '',
+      dueDate: String(o.due_date ?? ''),
+    })
+  );
+
+  const completedOrders = orders.filter(
+    (o) => o.status === 'ENTREGADO' || o.status === 'CANCELADO'
+  ).length;
+  const totalSpent = clientData.total_spent || 0;
+  const averageOrderValue =
+    clientData.total_orders > 0 ? Math.round(totalSpent / clientData.total_orders) : 0;
+
+  return {
+    id: clientData.id,
+    name: clientData.name,
+    initials: getInitials(clientData.name),
+    email: clientData.email,
+    phone: clientData.phone || '',
+    cedula: clientData.cedula || '',
+    address: clientData.address || '',
+    totalOrders: clientData.total_orders || 0,
+    activeOrders: clientData.active_orders || 0,
+    completedOrders,
+    totalSpent,
+    averageOrderValue,
+    lastOrderDate: clientData.last_order_date?.split('T')[0] || '',
+    createdAt: clientData.created_at?.split('T')[0] || '',
+    notes: clientData.notes || '',
+    orders,
   };
 });

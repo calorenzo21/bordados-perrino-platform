@@ -98,3 +98,52 @@ export const getExpensesData = cache(async function getExpensesData(): Promise<E
     lastUpdated: new Date().toISOString(),
   };
 });
+
+/**
+ * Fetch a single expense + all expense types for the edit view.
+ * Returns null if the expense is not found.
+ */
+export const getAdminExpenseDetail = cache(async function getAdminExpenseDetail(
+  expenseId: string
+): Promise<{ expense: Expense; expenseTypes: ExpenseType[] } | null> {
+  const supabase = await createClient();
+
+  const [typesResult, expenseResult] = await Promise.all([
+    supabase
+      .from('expense_types')
+      .select('*')
+      .order('is_system', { ascending: false })
+      .order('name', { ascending: true }),
+    supabase.from('expenses').select(`*, expense_types (name, color)`).eq('id', expenseId).single(),
+  ]);
+
+  if (expenseResult.error) {
+    if (expenseResult.error.code === 'PGRST116') return null;
+    throw expenseResult.error;
+  }
+
+  if (typesResult.error) {
+    throw new Error('Error al cargar tipos de gastos');
+  }
+
+  const expenseTypes: ExpenseType[] = (typesResult.data || []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color,
+    isCustom: !t.is_system,
+  }));
+
+  const e = expenseResult.data;
+  const expense: Expense = {
+    id: e.id,
+    description: e.description,
+    amount: e.amount,
+    typeId: e.expense_type_id,
+    typeName: (e.expense_types as { name?: string } | null)?.name || '',
+    typeColor: (e.expense_types as { color?: string } | null)?.color || 'bg-slate-500',
+    date: e.date,
+    createdAt: e.created_at?.split('T')[0] || '',
+  };
+
+  return { expense, expenseTypes };
+});

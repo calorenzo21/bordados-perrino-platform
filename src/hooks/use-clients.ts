@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 
 import { createClient } from '@/lib/supabase/browser';
+import type { ClientDetail } from '@/lib/types/admin.types';
+
+export type { ClientDetail };
 
 // Tipos que coinciden con la interfaz existente
 interface Order {
@@ -93,35 +96,6 @@ export function useClients() {
   };
 }
 
-// Interfaz extendida para la página de detalle del cliente (exportada para prefetch)
-export interface ClientDetail {
-  id: string;
-  name: string;
-  initials: string;
-  email: string;
-  phone: string;
-  cedula: string;
-  address: string;
-  totalOrders: number;
-  activeOrders: number;
-  completedOrders: number;
-  totalSpent: number;
-  averageOrderValue: number;
-  lastOrderDate: string;
-  createdAt: string;
-  notes: string;
-  orders: {
-    id: string;
-    description: string;
-    serviceType: string;
-    status: string;
-    total: number;
-    quantity: number;
-    date: string;
-    dueDate: string;
-  }[];
-}
-
 const ADMIN_CLIENT_SWR_KEY_PREFIX = 'admin-client' as const;
 
 export function getAdminClientSwrKey(clientId: string): readonly [string, string] {
@@ -193,9 +167,10 @@ const SWR_OPTIONS = {
   revalidateOnFocus: true,
   dedupingInterval: 20000,
   errorRetryCount: 2,
+  keepPreviousData: true,
 } as const;
 
-export function useClient(clientId: string) {
+export function useClient(clientId: string, options: { fallbackData?: ClientDetail | null } = {}) {
   const router = useRouter();
   // La ruta está protegida por middleware — si el componente renderiza, la auth está garantizada.
   // Eliminamos la dependencia de authUser para que SWR fetchee inmediatamente al montar.
@@ -208,6 +183,7 @@ export function useClient(clientId: string) {
     mutate,
   } = useSWR(key, adminClientFetcher, {
     ...SWR_OPTIONS,
+    fallbackData: options.fallbackData ?? undefined,
     onError(err) {
       if (err?.message === 'Unauthorized' || err?.status === 401) {
         router.replace('/login');
