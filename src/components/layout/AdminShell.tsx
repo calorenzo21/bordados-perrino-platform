@@ -96,13 +96,10 @@ export function AdminShell({ children }: AdminShellProps) {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setIsSigningOut(false);
-    }
+    await signOut();
+    // signOut limpia estado y navega sincrónicamente — si el componente se desmonta
+    // antes de este punto, el estado se descarta y el set no produce efecto.
+    setIsSigningOut(false);
   };
 
   const NavLink = ({ item }: { item: NavItem }) => {

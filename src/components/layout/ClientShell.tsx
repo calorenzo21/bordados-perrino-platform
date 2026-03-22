@@ -73,13 +73,8 @@ export function ClientShell({ children }: ClientShellProps) {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    } finally {
-      setIsSigningOut(false);
-    }
+    await signOut();
+    setIsSigningOut(false);
   };
 
   return (

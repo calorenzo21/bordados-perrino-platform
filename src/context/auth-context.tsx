@@ -43,9 +43,18 @@ export function AuthProvider({
   const [isLoading] = useState(false);
   const router = useRouter();
 
+  // createClient() usa un patrón singleton — siempre retorna el mismo objeto,
+  // por lo que la referencia es estable entre renders sin necesidad de useRef.
   const supabase = createClient();
 
   const isMounted = useRef(true);
+
+  // routerRef permite acceder al router más reciente dentro de efectos y callbacks
+  // sin añadirlo a sus dependency arrays (evita re-registro del listener de auth).
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  });
 
   // Función para obtener el perfil
   const fetchProfile = useCallback(
@@ -133,10 +142,11 @@ export function AuthProvider({
         if (isMounted.current) {
           setUser(null);
           setProfile(null);
-          // Guard mid-session: si la sesión expira mientras el usuario está en la app
-          const pathname = window.location.pathname;
+          // Guard mid-session: cubre la expiración automática de token.
+          // El sign-out manual ya navegó en signOut() antes de que este evento fire.
+          const { pathname } = window.location;
           if (pathname.startsWith('/admin') || pathname.startsWith('/client')) {
-            router.push('/login');
+            routerRef.current.replace('/login');
           }
         }
       }
@@ -146,21 +156,24 @@ export function AuthProvider({
       isMounted.current = false;
       subscription.unsubscribe();
     };
-  }, [supabase, fetchProfile, router]);
+  }, [supabase, fetchProfile]);
 
   // NOTA: La protección de rutas se maneja en el middleware del servidor.
   // No hacemos redirecciones aquí para evitar loops y parpadeos.
 
   const signOut = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setProfile(null);
-      router.push('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  }, [supabase, router]);
+    // 1. Limpiar estado local inmediatamente — sin dependencia de red.
+    setUser(null);
+    setProfile(null);
+    // 2. Navegar a login de inmediato — replace para no acumular historial de rutas protegidas.
+    routerRef.current.replace('/login');
+    // 3. Revocar la sesión en el servidor en background (best-effort).
+    //    Si falla (offline, timeout), el JWT expirará naturalmente y el middleware
+    //    rechazará cualquier request futuro con ese token.
+    supabase.auth.signOut().catch((err: unknown) => {
+      console.error('[auth] background signOut error:', err);
+    });
+  }, [supabase]);
 
   // isAdmin se computa desde profile que está disponible desde el primer render (SSR)
   const isAdmin = profile?.role === 'ADMIN';
