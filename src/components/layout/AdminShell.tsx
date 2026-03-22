@@ -94,12 +94,9 @@ export function AdminShell({ children }: AdminShellProps) {
     return 'Admin';
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     setIsSigningOut(true);
-    await signOut();
-    // signOut limpia estado y navega sincrónicamente — si el componente se desmonta
-    // antes de este punto, el estado se descarta y el set no produce efecto.
-    setIsSigningOut(false);
+    signOut(); // navigates immediately via hard nav — no await needed
   };
 
   const NavLink = ({ item }: { item: NavItem }) => {

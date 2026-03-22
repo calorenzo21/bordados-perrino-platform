@@ -22,7 +22,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
   refreshProfile: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -161,16 +161,14 @@ export function AuthProvider({
   // NOTA: La protección de rutas se maneja en el middleware del servidor.
   // No hacemos redirecciones aquí para evitar loops y parpadeos.
 
-  const signOut = useCallback(async () => {
-    // scope: 'local' limpia la cookie de sesión en el navegador SIN hacer llamada de red.
-    // Esto es crítico: si navegamos antes de limpiar la cookie, el middleware ve la sesión
-    // activa y redirige de vuelta al dashboard. Con 'local' la cookie se limpia de inmediato
-    // y el middleware rechazará cualquier request — sin depender de la red.
-    await supabase.auth.signOut({ scope: 'local' });
-    setUser(null);
-    setProfile(null);
-    routerRef.current.replace('/login');
-  }, [supabase]);
+  // Hard navigation to the server-side sign-out handler. The route clears the
+  // session cookie in the HTTP response BEFORE redirecting to /login, so the
+  // middleware never sees a stale cookie. This also avoids the Supabase client's
+  // internal lock — if a token refresh is in flight, signOut() would wait
+  // indefinitely for the lock, leaving isSigningOut stuck forever.
+  const signOut = useCallback(() => {
+    window.location.href = '/auth/signout';
+  }, []);
 
   // isAdmin se computa desde profile que está disponible desde el primer render (SSR)
   const isAdmin = profile?.role === 'ADMIN';

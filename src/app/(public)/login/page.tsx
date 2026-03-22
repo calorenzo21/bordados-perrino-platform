@@ -101,6 +101,11 @@ function LoginForm() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          // Force the Google account selector to appear on every sign-in.
+          // Without this, Google silently reuses the last active account.
+          prompt: 'select_account',
+        },
       },
     });
 

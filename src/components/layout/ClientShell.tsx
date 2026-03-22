@@ -71,10 +71,9 @@ export function ClientShell({ children }: ClientShellProps) {
     return 'Cliente';
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     setIsSigningOut(true);
-    await signOut();
-    setIsSigningOut(false);
+    signOut(); // navigates immediately via hard nav — no await needed
   };
 
   return (
