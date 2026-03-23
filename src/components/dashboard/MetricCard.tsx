@@ -23,37 +23,37 @@ interface MetricCardProps {
 const iconStyles = {
   blue: {
     bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
-    shadow: 'shadow-blue-200',
-    ring: 'ring-blue-100',
-    accent: 'bg-blue-50',
+    shadow: 'shadow-blue-200 dark:shadow-blue-900/50',
+    ring: 'ring-blue-100 dark:ring-blue-900/50',
+    accent: 'bg-blue-50 dark:bg-blue-900/30',
     dot: 'bg-blue-400',
   },
   green: {
     bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-    shadow: 'shadow-emerald-200',
-    ring: 'ring-emerald-100',
-    accent: 'bg-emerald-50',
+    shadow: 'shadow-emerald-200 dark:shadow-emerald-900/50',
+    ring: 'ring-emerald-100 dark:ring-emerald-900/50',
+    accent: 'bg-emerald-50 dark:bg-emerald-900/30',
     dot: 'bg-emerald-400',
   },
   amber: {
     bg: 'bg-gradient-to-br from-amber-500 to-amber-600',
-    shadow: 'shadow-amber-200',
-    ring: 'ring-amber-100',
-    accent: 'bg-amber-50',
+    shadow: 'shadow-amber-200 dark:shadow-amber-900/50',
+    ring: 'ring-amber-100 dark:ring-amber-900/50',
+    accent: 'bg-amber-50 dark:bg-amber-900/30',
     dot: 'bg-amber-400',
   },
   purple: {
     bg: 'bg-gradient-to-br from-purple-500 to-purple-600',
-    shadow: 'shadow-purple-200',
-    ring: 'ring-purple-100',
-    accent: 'bg-purple-50',
+    shadow: 'shadow-purple-200 dark:shadow-purple-900/50',
+    ring: 'ring-purple-100 dark:ring-purple-900/50',
+    accent: 'bg-purple-50 dark:bg-purple-900/30',
     dot: 'bg-purple-400',
   },
   rose: {
     bg: 'bg-gradient-to-br from-rose-500 to-rose-600',
-    shadow: 'shadow-rose-200',
-    ring: 'ring-rose-100',
-    accent: 'bg-rose-50',
+    shadow: 'shadow-rose-200 dark:shadow-rose-900/50',
+    ring: 'ring-rose-100 dark:ring-rose-900/50',
+    accent: 'bg-rose-50 dark:bg-rose-900/30',
     dot: 'bg-rose-400',
   },
 };
@@ -72,7 +72,7 @@ export function MetricCard({
 
   if (loading) {
     return (
-      <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
+      <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-slate-800 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-3">
@@ -88,7 +88,7 @@ export function MetricCard({
   }
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white dark:bg-slate-800 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
       {/* Decorative background element */}
       <div
         className={cn(
@@ -106,14 +106,14 @@ export function MetricCard({
             {/* Title with dot indicator */}
             <div className="flex items-center gap-2">
               <div className={cn('h-2 w-2 shrink-0 rounded-full', styles.dot)} />
-              <p className="text-sm font-medium text-slate-500">{title}</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
             </div>
 
             {/* Value */}
             <div className="pt-2">
               <p
                 className={cn(
-                  'font-bold tracking-tight text-slate-900',
+                  'font-bold tracking-tight text-slate-900 dark:text-white',
                   valueClassName ?? 'text-4xl'
                 )}
               >
@@ -122,7 +122,9 @@ export function MetricCard({
             </div>
 
             {/* Description */}
-            {description && <p className="pt-1 text-sm text-slate-400">{description}</p>}
+            {description && (
+              <p className="pt-1 text-sm text-slate-400 dark:text-slate-500">{description}</p>
+            )}
           </div>
 
           <div className="flex flex-col items-end justify-between h-full">

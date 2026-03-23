@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types/database';
 
 import { SerwistProvider } from '@/components/SerwistProvider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/sonner';
 
 import './globals.css';
@@ -70,12 +71,14 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        <SerwistProvider swUrl="/serwist/sw.js">
-          <AuthProvider initialProfile={initialProfile}>
-            {children}
-            <Toaster position="top-right" richColors />
-          </AuthProvider>
-        </SerwistProvider>
+        <ThemeProvider>
+          <SerwistProvider swUrl="/serwist/sw.js">
+            <AuthProvider initialProfile={initialProfile}>
+              {children}
+              <Toaster position="top-right" richColors />
+            </AuthProvider>
+          </SerwistProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

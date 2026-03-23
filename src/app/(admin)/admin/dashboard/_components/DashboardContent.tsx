@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 
 import {
@@ -118,6 +119,8 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
   } = initialData;
 
   const [chartPeriod, setChartPeriod] = useState<6 | 12>(6);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date(initialLastUpdated));
   const [timeAgoText, setTimeAgoText] = useState<string>('justo ahora');
 
@@ -276,8 +279,8 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
       {/* ============================================ */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Resumen general del negocio • Actualizado {timeAgoText}
           </p>
         </div>
@@ -342,10 +345,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-base font-semibold text-slate-900">
+              <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                 Pedidos por Estado
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-500">Distribución actual de pedidos activos</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Distribución actual de pedidos activos
+              </p>
             </div>
             <Link href="/admin/orders">
               <Button variant="ghost" size="sm" className="gap-1 text-blue-500 hover:text-blue-600">
@@ -357,19 +362,25 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Recibido */}
-              <div className="group relative overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-200 hover:shadow-md">
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-100/50" />
+              <div className="group relative overflow-hidden rounded-xl border border-blue-100 dark:border-blue-700/50 bg-gradient-to-br from-blue-50 dark:from-blue-900/45 to-white dark:to-slate-800 p-5 transition-all hover:border-blue-200 dark:hover:border-blue-600 hover:shadow-md">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-100/50 dark:bg-blue-700/25" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-600">Recibidos</span>
-                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Nuevo</Badge>
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      Recibidos
+                    </span>
+                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                      Nuevo
+                    </Badge>
                   </div>
-                  <p className="mt-3 text-4xl font-bold text-slate-900">
+                  <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-slate-50">
                     {ordersByStatus[OrderStatus.RECIBIDO]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">Esperando inicio</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Esperando inicio
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-blue-100">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/40">
                       <div
                         className="h-full rounded-full bg-blue-500"
                         style={{
@@ -377,7 +388,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         }}
                       />
                     </div>
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       {safePercentage(ordersByStatus[OrderStatus.RECIBIDO], totalActiveOrders)}%
                     </span>
                   </div>
@@ -385,21 +396,25 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
               </div>
 
               {/* En Confección */}
-              <div className="group relative overflow-hidden rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-5 transition-all hover:border-amber-200 hover:shadow-md">
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-100/50" />
+              <div className="group relative overflow-hidden rounded-xl border border-amber-100 dark:border-amber-700/50 bg-gradient-to-br from-amber-50 dark:from-amber-900/45 to-white dark:to-slate-800 p-5 transition-all hover:border-amber-200 dark:hover:border-amber-600 hover:shadow-md">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-100/50 dark:bg-amber-700/25" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-amber-600">En Confección</span>
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      En Confección
+                    </span>
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900/50">
                       En proceso
                     </Badge>
                   </div>
-                  <p className="mt-3 text-4xl font-bold text-slate-900">
+                  <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-slate-50">
                     {ordersByStatus[OrderStatus.CONFECCION]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">Producción activa</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Producción activa
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-amber-100">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-amber-100 dark:bg-amber-900/40">
                       <div
                         className="h-full rounded-full bg-amber-500"
                         style={{
@@ -407,7 +422,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         }}
                       />
                     </div>
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       {safePercentage(ordersByStatus[OrderStatus.CONFECCION], totalActiveOrders)}%
                     </span>
                   </div>
@@ -415,21 +430,25 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
               </div>
 
               {/* Listo para Retiro */}
-              <div className="group relative overflow-hidden rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-200 hover:shadow-md">
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-100/50" />
+              <div className="group relative overflow-hidden rounded-xl border border-emerald-100 dark:border-emerald-700/50 bg-gradient-to-br from-emerald-50 dark:from-emerald-900/45 to-white dark:to-slate-800 p-5 transition-all hover:border-emerald-200 dark:hover:border-emerald-600 hover:shadow-md">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-100/50 dark:bg-emerald-700/25" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-emerald-600">Listo para Retiro</span>
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      Listo para Retiro
+                    </span>
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
                       Completado
                     </Badge>
                   </div>
-                  <p className="mt-3 text-4xl font-bold text-slate-900">
+                  <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-slate-50">
                     {ordersByStatus[OrderStatus.RETIRO]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">Pendiente de entrega</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Pendiente de entrega
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-emerald-100">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/40">
                       <div
                         className="h-full rounded-full bg-emerald-500"
                         style={{
@@ -437,7 +456,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         }}
                       />
                     </div>
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       {safePercentage(ordersByStatus[OrderStatus.RETIRO], totalActiveOrders)}%
                     </span>
                   </div>
@@ -445,23 +464,25 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
               </div>
 
               {/* Parcialmente Entregado */}
-              <div className="group relative overflow-hidden rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-5 transition-all hover:border-purple-200 hover:shadow-md">
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-purple-100/50" />
+              <div className="group relative overflow-hidden rounded-xl border border-purple-100 dark:border-purple-700/50 bg-gradient-to-br from-purple-50 dark:from-purple-900/45 to-white dark:to-slate-800 p-5 transition-all hover:border-purple-200 dark:hover:border-purple-600 hover:shadow-md">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-purple-100/50 dark:bg-purple-700/25" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-purple-600">
+                    <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
                       Parcialmente Entregado
                     </span>
-                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-900/50">
                       Parcial
                     </Badge>
                   </div>
-                  <p className="mt-3 text-4xl font-bold text-slate-900">
+                  <p className="mt-3 text-4xl font-bold text-slate-900 dark:text-slate-50">
                     {ordersByStatus[OrderStatus.PARCIALMENTE_ENTREGADO]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">Entregas parciales</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Entregas parciales
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-purple-100">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
                       <div
                         className="h-full rounded-full bg-purple-500"
                         style={{
@@ -469,7 +490,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         }}
                       />
                     </div>
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       {safePercentage(
                         ordersByStatus[OrderStatus.PARCIALMENTE_ENTREGADO],
                         totalActiveOrders
@@ -486,42 +507,46 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
         {/* Métricas de Tiempo */}
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-slate-900">
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
               Cumplimiento de Tiempos
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* En tiempo */}
-            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-800/40">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1">
-                <p className="text-2xl font-bold text-slate-900">{timeMetrics.onTime}</p>
-                <p className="text-sm text-emerald-600">En tiempo</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                  {timeMetrics.onTime}
+                </p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">En tiempo</p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-800/60 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                 {safePercentage(timeMetrics.onTime, timeMetrics.totalActive)}%
               </span>
             </div>
 
             {/* Retrasados */}
-            <div className="flex items-center gap-3 rounded-xl bg-rose-50 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100">
-                <AlertCircle className="h-5 w-5 text-rose-600" />
+            <div className="flex items-center gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-800/40">
+                <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
               </div>
               <div className="flex-1">
-                <p className="text-2xl font-bold text-slate-900">{timeMetrics.delayed}</p>
-                <p className="text-sm text-rose-600">Retrasados</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                  {timeMetrics.delayed}
+                </p>
+                <p className="text-sm text-rose-600 dark:text-rose-400">Retrasados</p>
               </div>
-              <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">
+              <span className="rounded-full bg-rose-100 dark:bg-rose-800/60 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300">
                 {safePercentage(timeMetrics.delayed, timeMetrics.totalActive)}%
               </span>
             </div>
 
             {/* Barra de progreso */}
             <div className="pt-2">
-              <div className="flex h-3 overflow-hidden rounded-full bg-slate-100">
+              <div className="flex h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                 <div
                   className="bg-emerald-500"
                   style={{
@@ -535,7 +560,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                   }}
                 />
               </div>
-              <p className="mt-2 text-center text-xs text-slate-500">
+              <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
                 {timeMetrics.totalActive} pedidos activos
               </p>
             </div>
@@ -551,10 +576,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-base font-semibold text-slate-900">
+              <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                 Volumen por Servicio
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-500">Distribución de trabajos</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Distribución de trabajos
+              </p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -578,25 +605,29 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`h-3 w-3 rounded-full ${service.color}`} />
-                    <span className="text-sm font-medium text-slate-700">{service.type}</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {service.type}
+                    </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-semibold text-slate-900">{service.count}</span>
-                    <span className="ml-1 text-xs text-slate-400">pedidos</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                      {service.count}
+                    </span>
+                    <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">pedidos</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                     <div
                       className={`h-full rounded-full ${service.color}`}
                       style={{ width: `${service.percentage}%` }}
                     />
                   </div>
-                  <span className="w-10 text-right text-xs font-medium text-slate-500">
+                  <span className="w-10 text-right text-xs font-medium text-slate-500 dark:text-slate-400">
                     {service.percentage}%
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   ${service.revenue.toLocaleString()} en ingresos
                 </p>
               </div>
@@ -610,17 +641,21 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
-                <CardTitle className="text-base font-semibold text-slate-900">
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                   Pedidos por Período
                 </CardTitle>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-slate-900">{totalOrdersInPeriod}</span>
-                  <span className="text-sm text-slate-500">pedidos totales</span>
+                  <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                    {totalOrdersInPeriod}
+                  </span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    pedidos totales
+                  </span>
                   <span
                     className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${
                       parseFloat(percentageChange) >= 0
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : 'bg-rose-50 text-rose-600'
+                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
                     }`}
                   >
                     {parseFloat(percentageChange) >= 0 ? '↑' : '↓'}{' '}
@@ -633,7 +668,9 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                   variant={chartPeriod === 6 ? 'default' : 'outline'}
                   size="sm"
                   className={`h-8 rounded-lg text-xs ${
-                    chartPeriod === 6 ? 'bg-blue-500 hover:bg-blue-600' : 'border-slate-200'
+                    chartPeriod === 6
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'border-slate-200 dark:border-slate-600 dark:text-slate-300'
                   }`}
                   onClick={() => setChartPeriod(6)}
                 >
@@ -643,7 +680,9 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                   variant={chartPeriod === 12 ? 'default' : 'outline'}
                   size="sm"
                   className={`h-8 rounded-lg text-xs ${
-                    chartPeriod === 12 ? 'bg-blue-500 hover:bg-blue-600' : 'border-slate-200'
+                    chartPeriod === 12
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'border-slate-200 dark:border-slate-600 dark:text-slate-300'
                   }`}
                   onClick={() => setChartPeriod(12)}
                 >
@@ -664,13 +703,17 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                     bottom: 12,
                   }}
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid
+                    vertical={false}
+                    strokeDasharray="3 3"
+                    stroke={isDark ? '#334155' : '#e2e8f0'}
+                  />
                   <XAxis
                     dataKey="month"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    tick={{ fontSize: 12, fill: '#64748b' }}
+                    tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }}
                   />
                   <ChartTooltip
                     cursor={false}
@@ -679,7 +722,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         formatter={(value, name) => (
                           <div className="flex items-center gap-2">
                             <span className="font-semibold">{value}</span>
-                            <span className="text-slate-500">pedidos</span>
+                            <span className="text-slate-500 dark:text-slate-400">pedidos</span>
                           </div>
                         )}
                         hideLabel
@@ -709,19 +752,25 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
 
               {/* Resumen */}
               <div className="mt-4 grid grid-cols-3 gap-4">
-                <div className="rounded-xl bg-blue-50 p-3 text-center">
-                  <p className="text-lg font-bold text-blue-600">{averageMonthly}</p>
-                  <p className="text-xs text-slate-500">Promedio mensual</p>
+                <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center">
+                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {averageMonthly}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Promedio mensual</p>
                 </div>
-                <div className="rounded-xl bg-emerald-50 p-3 text-center">
-                  <p className="text-lg font-bold text-emerald-600">{bestMonth.orders}</p>
-                  <p className="text-xs text-slate-500">Mejor mes ({bestMonth.monthFull})</p>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 text-center">
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {bestMonth.orders}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Mejor mes ({bestMonth.monthFull})
+                  </p>
                 </div>
-                <div className="rounded-xl bg-amber-50 p-3 text-center">
-                  <p className="text-lg font-bold text-amber-600">
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 text-center">
+                  <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
                     ${(totalRevenue / 1000).toFixed(0)}K
                   </p>
-                  <p className="text-xs text-slate-500">Ingresos totales</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Ingresos totales</p>
                 </div>
               </div>
             </CardContent>
@@ -731,10 +780,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           <Card className="rounded-2xl border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base font-semibold text-slate-900">
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                   Últimos Gastos
                 </CardTitle>
-                <p className="mt-1 text-sm text-slate-500">Registros más recientes</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Registros más recientes
+                </p>
               </div>
               <Link href="/admin/expenses">
                 <Button
@@ -751,23 +802,26 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
+                    <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                       Tipo
                     </TableHead>
-                    <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                    <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                       Descripción
                     </TableHead>
-                    <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                    <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                       Fecha
                     </TableHead>
-                    <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400">
+                    <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                       Monto
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recentExpenses.slice(0, 5).map((expense) => (
-                    <TableRow key={expense.id} className="hover:bg-slate-50">
+                    <TableRow
+                      key={expense.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                    >
                       <TableCell className="pl-6">
                         <Badge
                           variant="outline"
@@ -777,13 +831,17 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-slate-600">{expense.description}</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                          {expense.description}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-slate-500">{expense.date}</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                          {expense.date}
+                        </span>
                       </TableCell>
                       <TableCell className="pr-6 text-right">
-                        <span className="font-semibold text-rose-600">
+                        <span className="font-semibold text-rose-600 dark:text-rose-400">
                           -${expense.amount.toLocaleString()}
                         </span>
                       </TableCell>
@@ -804,10 +862,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
         <Card className="rounded-2xl border-0 shadow-sm lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base font-semibold text-slate-900">
+              <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                 Pedidos Recientes
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-500">Últimos pedidos con acciones rápidas</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Últimos pedidos con acciones rápidas
+              </p>
             </div>
             <div className="flex gap-2">
               <Link href="/admin/orders">
@@ -821,49 +881,58 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Pedido
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Cliente
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Servicio
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Estado
                   </TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Entrega
                   </TableHead>
-                  <TableHead className="text-right text-xs font-semibold uppercase text-slate-400">
+                  <TableHead className="text-right text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
                     Acciones
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentOrders.map((order) => (
-                  <TableRow key={order.id} className="group hover:bg-slate-50">
+                  <TableRow
+                    key={order.id}
+                    className="group hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                  >
                     <TableCell>
                       <div>
-                        <span className="font-medium text-slate-900">{order.id}</span>
-                        <p className="text-xs text-slate-500">{order.quantity} unidades</p>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {order.id}
+                        </span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {order.quantity} unidades
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8 border border-slate-100">
+                        <Avatar className="h-8 w-8 border border-slate-100 dark:border-slate-700">
                           <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-xs text-white">
                             {order.client.initials}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-slate-700">{order.client.name}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-200">
+                          {order.client.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className="border-slate-200 bg-slate-50 font-normal text-slate-600"
+                        className="border-slate-200 bg-slate-50 font-normal text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
                       >
                         {order.serviceType}
                       </Badge>
@@ -876,24 +945,28 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                         {order.status === OrderStatus.ENTREGADO ? (
                           <>
                             <CheckCircle2 className="h-4 w-4 text-sky-500" />
-                            <span className="text-sm text-sky-600">Completado</span>
+                            <span className="text-sm text-sky-600 dark:text-sky-400">
+                              Completado
+                            </span>
                           </>
                         ) : order.isDelayed ? (
                           <>
-                            <AlertCircle className="h-4 w-4 text-rose-500" />
-                            <span className="text-sm font-medium text-rose-600">
+                            <AlertCircle className="h-4 w-4 text-rose-500 dark:text-rose-400" />
+                            <span className="text-sm font-medium text-rose-600 dark:text-rose-400">
                               {Math.abs(order.daysRemaining)}d tarde
                             </span>
                           </>
                         ) : order.daysRemaining === 0 ? (
                           <>
-                            <Clock className="h-4 w-4 text-amber-500" />
-                            <span className="text-sm font-medium text-amber-600">Hoy</span>
+                            <Clock className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                              Hoy
+                            </span>
                           </>
                         ) : (
                           <>
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            <span className="text-sm text-slate-600">
+                            <span className="text-sm text-slate-600 dark:text-slate-300">
                               {order.daysRemaining}d restantes
                             </span>
                           </>
@@ -938,10 +1011,12 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
         <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-base font-semibold text-slate-900">
+              <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
                 Clientes Destacados
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-500">Por volumen de pedidos</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Por volumen de pedidos
+              </p>
             </div>
             <Link href="/admin/clients">
               <Button variant="ghost" size="sm" className="gap-1 text-blue-500 hover:text-blue-600">
@@ -954,14 +1029,18 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
             {topClients.map((client, index) => (
               <div
                 key={client.name}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition-all hover:border-blue-100 hover:bg-blue-50/50"
+                className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-700 p-3 transition-all hover:border-blue-100 hover:bg-blue-50/50 dark:hover:border-blue-700 dark:hover:bg-blue-900/20"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white">
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium text-slate-900">{client.name}</p>
-                  <p className="text-xs text-slate-500">{client.orders} pedidos</p>
+                  <p className="truncate font-medium text-slate-900 dark:text-slate-100">
+                    {client.name}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {client.orders} pedidos
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-emerald-600">
@@ -978,7 +1057,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
             <Link href="/admin/clients">
               <Button
                 variant="outline"
-                className="mt-4 w-full rounded-xl border-slate-200 text-slate-600"
+                className="mt-4 w-full rounded-xl border-slate-200 text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
               >
                 <Users className="mr-2 h-4 w-4" />
                 Gestionar Clientes

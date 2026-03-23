@@ -128,11 +128,9 @@
 
 /*
  * ============================================
- * DARK THEME (Optional)
+ * DARK THEME
  * ============================================
- * Uncomment and customize if you need dark mode
  */
-/*
 .dark {
   --background: #0f172a;
   --foreground: #f8fafc;
@@ -147,13 +145,29 @@
   --muted: #334155;
   --muted-foreground: #94a3b8;
   --accent: #1e3a5f;
-  --accent-foreground: #3b82f6;
-  --destructive: #ef4444;
+  --accent-foreground: #60a5fa;
+  --destructive: #f87171;
   --border: #334155;
-  --input: #334155;
+  --input: #1e293b;
   --ring: #3b82f6;
+
+  /* Chart colors — brighter for dark backgrounds */
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #f472b6;
+
+  /* Sidebar */
+  --sidebar: #1e293b;
+  --sidebar-foreground: #94a3b8;
+  --sidebar-primary: #60a5fa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e3a5f;
+  --sidebar-accent-foreground: #60a5fa;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3b82f6;
 }
-*/
 
 /*
  * ============================================
@@ -210,13 +224,20 @@
   background: #94a3b8;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /*
  * ============================================
  * UTILITY CLASSES
  * ============================================
  */
 @layer utilities {
-
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;

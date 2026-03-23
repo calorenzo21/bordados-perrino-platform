@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -13,9 +14,11 @@ import {
   Loader2,
   LogOut,
   Menu,
+  Moon,
   Receipt,
   Settings,
   ShoppingCart,
+  Sun,
   Users,
   X,
 } from 'lucide-react';
@@ -65,6 +68,8 @@ export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, isLoading, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
 
   // Client-side fallback guard: the middleware already enforces role-based access,
   // but if the auth context resolves with no user (e.g. session expired mid-session),
@@ -108,14 +113,17 @@ export function AdminShell({ children }: AdminShellProps) {
         className={cn(
           'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
           isActive
-            ? 'bg-blue-50 text-blue-600'
-            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+            ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200',
           sidebarCollapsed && 'justify-center px-2'
         )}
         onClick={() => setSidebarOpen(false)}
       >
         <item.icon
-          className={cn('h-5 w-5 shrink-0', isActive ? 'text-blue-600' : 'text-slate-400')}
+          className={cn(
+            'h-5 w-5 shrink-0',
+            isActive ? 'text-blue-600 dark:text-blue-200' : 'text-slate-400 dark:text-slate-500'
+          )}
         />
         {!sidebarCollapsed && (
           <>
@@ -151,7 +159,7 @@ export function AdminShell({ children }: AdminShellProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -163,7 +171,7 @@ export function AdminShell({ children }: AdminShellProps) {
         {/* Sidebar */}
         <aside
           className={cn(
-            'fixed inset-y-0 left-0 z-50 flex h-screen flex-col bg-white transition-all duration-300 lg:sticky lg:top-0 lg:translate-x-0',
+            'fixed inset-y-0 left-0 z-50 flex h-screen flex-col bg-white dark:bg-slate-800 transition-all duration-300 lg:sticky lg:top-0 lg:translate-x-0',
             sidebarCollapsed ? 'w-[72px]' : 'w-64',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           )}
@@ -171,7 +179,7 @@ export function AdminShell({ children }: AdminShellProps) {
           {/* Logo */}
           <div
             className={cn(
-              'flex h-16 items-center border-b border-slate-100',
+              'flex h-16 items-center border-b border-slate-100 dark:border-slate-700',
               sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'
             )}
           >
@@ -187,7 +195,7 @@ export function AdminShell({ children }: AdminShellProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 lg:flex"
+                className="hidden h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300 lg:flex"
                 onClick={() => setSidebarCollapsed(true)}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -207,11 +215,11 @@ export function AdminShell({ children }: AdminShellProps) {
 
           {/* Expand button when collapsed */}
           {sidebarCollapsed && (
-            <div className="hidden border-b border-slate-100 p-2 lg:block">
+            <div className="hidden border-b border-slate-100 dark:border-slate-700 p-2 lg:block">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-full rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                className="h-8 w-full rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                 onClick={() => setSidebarCollapsed(false)}
               >
                 <ChevronLeft className="h-4 w-4 rotate-180" />
@@ -229,7 +237,7 @@ export function AdminShell({ children }: AdminShellProps) {
           </nav>
 
           {/* Bottom section - Fixed at bottom */}
-          <div className="mt-auto shrink-0 border-t border-slate-100 px-3 py-4">
+          <div className="mt-auto shrink-0 border-t border-slate-100 dark:border-slate-700 px-3 py-4">
             <div className="space-y-1">
               {bottomNavItems.map((item) => (
                 <NavLink key={item.href} item={item} />
@@ -241,7 +249,7 @@ export function AdminShell({ children }: AdminShellProps) {
         {/* Main content */}
         <div className="flex flex-1 flex-col">
           {/* Topbar */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-100 bg-white px-4 lg:px-6">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 lg:px-6">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -258,10 +266,22 @@ export function AdminShell({ children }: AdminShellProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-10 w-10 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                className="relative h-10 w-10 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
               >
                 <Bell className="h-5 w-5" />
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+              </Button>
+
+              {/* Theme toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                onClick={toggleTheme}
+                title="Cambiar tema"
+              >
+                <Sun className="h-5 w-5 dark:hidden" />
+                <Moon className="hidden h-5 w-5 dark:block" />
               </Button>
 
               {/* User menu */}
@@ -269,9 +289,9 @@ export function AdminShell({ children }: AdminShellProps) {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 rounded-xl px-2 hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-xl px-2 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                   >
-                    <Avatar className="h-8 w-8 border-2 border-slate-100">
+                    <Avatar className="h-8 w-8 border-2 border-slate-100 dark:border-slate-600">
                       <AvatarImage src="/avatar.png" />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-xs font-semibold text-white">
                         {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : getInitials()}
@@ -283,7 +303,7 @@ export function AdminShell({ children }: AdminShellProps) {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{getDisplayName()}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {user?.email || 'admin@bordados.com'}
                       </p>
                     </div>
@@ -298,7 +318,7 @@ export function AdminShell({ children }: AdminShellProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
+                    className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/50"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >
