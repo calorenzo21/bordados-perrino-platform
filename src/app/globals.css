@@ -124,6 +124,9 @@
   --sidebar-accent-foreground: #3b82f6;
   --sidebar-border: #f1f5f9;
   --sidebar-ring: #3b82f6;
+
+  /* Timeline connector inactive color */
+  --timeline-connector-inactive: #e2e8f0;
 }
 
 /*
@@ -167,6 +170,9 @@
   --sidebar-accent-foreground: #60a5fa;
   --sidebar-border: #334155;
   --sidebar-ring: #3b82f6;
+
+  /* Timeline connector inactive color */
+  --timeline-connector-inactive: #334155;
 }
 
 /*

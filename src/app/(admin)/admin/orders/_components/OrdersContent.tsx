@@ -180,7 +180,9 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestión de Pedidos</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+            Gestión de Pedidos
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             Administra y da seguimiento a todos los pedidos
           </p>
@@ -188,7 +190,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="h-10 gap-2 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50"
             disabled
             title="Próximamente"
           >
@@ -213,7 +215,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
           {/* Indicador de cliente seleccionado */}
           {selectedClient !== 'all' && selectedClientData && (
             <div className="absolute left-10 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-              <span className="flex items-center gap-1.5 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              <span className="flex items-center gap-1.5 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                 <User className="h-3 w-3" />
                 {selectedClientData.name}
                 <button
@@ -223,7 +225,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                     setSearchQuery('');
                     setCurrentPage(1);
                   }}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-blue-200"
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800/50"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -241,16 +243,16 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
             onChange={handleSearchChange}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setTimeout(() => setInputFocused(false), 200)}
-            className={`h-10 rounded-xl border-slate-200 bg-slate-50 text-sm placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-blue-500 ${
+            className={`h-10 rounded-xl border-slate-200 bg-slate-50 text-sm placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus-visible:bg-slate-700 ${
               selectedClient !== 'all' ? 'pl-[180px]' : 'pl-10'
             }`}
           />
 
           {/* Dropdown de sugerencias de clientes */}
           {showClientSuggestions && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-              <div className="border-b border-slate-100 px-3 py-2">
-                <p className="text-xs font-medium text-slate-400">
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+              <div className="border-b border-slate-100 dark:border-slate-700 px-3 py-2">
+                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                   Clientes encontrados ({matchingClients.length})
                 </p>
               </div>
@@ -260,7 +262,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                     key={client.id}
                     type="button"
                     onClick={() => handleClientSelect(client.id)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-blue-50"
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-600 text-xs font-medium text-white">
                       {client.name
@@ -269,7 +271,9 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         .join('')}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{client.name}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {client.name}
+                      </p>
                       <p className="text-xs text-slate-400">Ver todos sus pedidos</p>
                     </div>
                   </button>
@@ -281,51 +285,51 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
 
         {/* Tabs de estado */}
         <Tabs value={selectedStatus} onValueChange={handleStatusChange} className="w-auto">
-          <TabsList className="h-10 rounded-xl bg-slate-100 p-1">
+          <TabsList className="h-10 rounded-xl bg-slate-100 dark:bg-slate-700/50 p-1">
             <TabsTrigger
               value="all"
-              className="rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               Todos ({statusCounts.all})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.RECIBIDO}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-blue-500" />
               Recibidos ({statusCounts[OrderStatus.RECIBIDO]})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.CONFECCION}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-amber-500" />
               Confección ({statusCounts[OrderStatus.CONFECCION]})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.RETIRO}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
               Retiro ({statusCounts[OrderStatus.RETIRO]})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.PARCIALMENTE_ENTREGADO}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-purple-500" />
               Parcial ({statusCounts[OrderStatus.PARCIALMENTE_ENTREGADO]})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.ENTREGADO}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-sky-500" />
               Entregados ({statusCounts[OrderStatus.ENTREGADO]})
             </TabsTrigger>
             <TabsTrigger
               value={OrderStatus.CANCELADO}
-              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
             >
               <div className="h-2 w-2 rounded-full bg-rose-500" />
               Cancelados ({statusCounts[OrderStatus.CANCELADO]})
@@ -336,12 +340,12 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
 
       {/* Tabla de Pedidos */}
       <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
           <div>
-            <CardTitle className="text-base font-semibold text-slate-900">
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
               Lista de Pedidos
             </CardTitle>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {filteredOrders.length} pedido{filteredOrders.length !== 1 ? 's' : ''} encontrado
               {filteredOrders.length !== 1 ? 's' : ''}
             </p>
@@ -378,8 +382,8 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                 return (
                   <TableRow
                     key={order.id}
-                    className={`group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 ${
-                      hasPendingBalance ? 'border-l-4 border-l-amber-400 bg-amber-50/40' : ''
+                    className={`group cursor-pointer border-slate-100 dark:border-slate-700 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/10 ${
+                      hasPendingBalance ? 'bg-amber-50/30 dark:bg-transparent' : ''
                     }`}
                   >
                     <TableCell className="pl-6">
@@ -390,11 +394,11 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         onFocus={() => prefetchOrder(order.id)}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">
+                          <span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                             {order.id}
                           </span>
                           {order.isUrgent && order.status !== OrderStatus.ENTREGADO && (
-                            <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600">
+                            <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
                               <AlertTriangle className="h-3 w-3" />
                               URGENTE
                             </span>
@@ -410,13 +414,15 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         onMouseEnter={() => prefetchOrder(order.id)}
                         onFocus={() => prefetchOrder(order.id)}
                       >
-                        <Avatar className="h-8 w-8 border border-slate-100">
+                        <Avatar className="h-8 w-8 border border-slate-100 dark:border-slate-700">
                           <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-xs text-white">
                             {order.client.initials}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-slate-900">{order.client.name}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">
+                            {order.client.name}
+                          </p>
                           <p className="text-xs text-slate-400">{order.client.email}</p>
                         </div>
                       </Link>
@@ -428,10 +434,12 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         onMouseEnter={() => prefetchOrder(order.id)}
                         onFocus={() => prefetchOrder(order.id)}
                       >
-                        <p className="truncate text-sm text-slate-700">{order.description}</p>
+                        <p className="truncate text-sm text-slate-700 dark:text-slate-300">
+                          {order.description}
+                        </p>
                         <Badge
                           variant="outline"
-                          className="mt-1 border-slate-200 bg-slate-50 text-xs font-normal text-slate-500"
+                          className="mt-1 border-slate-200 bg-slate-50 text-xs font-normal text-slate-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400"
                         >
                           {order.serviceType}
                         </Badge>
@@ -447,24 +455,30 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         ) : order.isDelayed ? (
                           <>
                             <AlertCircle className="h-4 w-4 text-rose-500" />
-                            <span className="text-sm font-medium text-rose-600">
+                            <span className="text-sm font-medium text-rose-600 dark:text-rose-400">
                               {Math.abs(order.daysRemaining)}d tarde
                             </span>
                           </>
                         ) : order.daysRemaining === 0 ? (
                           <>
                             <Clock className="h-4 w-4 text-amber-500" />
-                            <span className="text-sm font-medium text-amber-600">Hoy</span>
+                            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                              Hoy
+                            </span>
                           </>
                         ) : order.status === OrderStatus.ENTREGADO ? (
                           <>
                             <CheckCircle2 className="h-4 w-4 text-sky-500" />
-                            <span className="text-sm text-sky-600">Completado</span>
+                            <span className="text-sm text-sky-600 dark:text-sky-400">
+                              Completado
+                            </span>
                           </>
                         ) : (
                           <>
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            <span className="text-sm text-slate-600">{order.daysRemaining}d</span>
+                            <span className="text-sm text-slate-600 dark:text-slate-300">
+                              {order.daysRemaining}d
+                            </span>
                           </>
                         )}
                       </div>
@@ -476,7 +490,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                         </span>
                         {hasPendingBalance && (
                           <span
-                            className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+                            className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
                             title="Saldo pendiente por cobrar"
                           >
                             ${(order.remainingBalance ?? 0).toLocaleString()} pend.
@@ -492,10 +506,12 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
 
           {filteredOrders.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-slate-100 p-4">
+              <div className="rounded-full bg-slate-100 dark:bg-slate-700/50 p-4">
                 <Search className="h-8 w-8 text-slate-400" />
               </div>
-              <p className="mt-4 text-sm font-medium text-slate-600">No se encontraron pedidos</p>
+              <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                No se encontraron pedidos
+              </p>
               <p className="mt-1 text-sm text-slate-400">
                 Intenta con otros filtros o crea un nuevo pedido
               </p>

@@ -658,26 +658,34 @@ export function OrderDetailClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/orders">
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">Pedido {order.id}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                Pedido {order.id}
+              </h1>
               <Badge
                 className={`${statusColors[order.status as OrderStatusType].light} ${statusColors[order.status as OrderStatusType].text} ${statusColors[order.status as OrderStatusType].border} border`}
               >
                 {OrderStatusLabels[order.status as OrderStatusType]}
               </Badge>
               {order.isUrgent && order.status !== OrderStatus.ENTREGADO && (
-                <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700">
+                <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-800/50 dark:bg-rose-900/30 dark:text-rose-400">
                   <AlertTriangle className="h-3 w-3" />
                   URGENTE
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-slate-500">Creado el {order.createdAt}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Creado el {order.createdAt}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -715,7 +723,7 @@ export function OrderDetailClient({
               {order.status !== OrderStatus.CANCELADO && order.status !== OrderStatus.ENTREGADO && (
                 <Button
                   variant="outline"
-                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
                   onClick={() => handleStatusChange(OrderStatus.CANCELADO)}
                 >
                   <XCircle className="h-4 w-4" />
@@ -745,7 +753,7 @@ export function OrderDetailClient({
           <TooltipProvider delayDuration={200}>
             <div className="flex items-start">
               {dynamicStatusFlow.map((status, index) => {
-                const grey = '#e2e8f0';
+                const grey = 'var(--timeline-connector-inactive)';
                 const segmentBg =
                   index > 0
                     ? currentStatusIndex >= index
@@ -790,8 +798,8 @@ export function OrderDetailClient({
                         : isCurrent
                           ? `${colors.bgLight} border-2 ${colors.borderDark} ${isParcialmenteEntregadoAndCurrent ? 'cursor-pointer hover:scale-110 hover:shadow-lg' : ''}`
                           : isClickable
-                            ? 'border-2 border-slate-200 bg-white cursor-pointer hover:border-slate-300 hover:bg-slate-50 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50'
-                            : 'border-2 border-slate-200 bg-white'
+                            ? 'border-2 border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700 cursor-pointer hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-600 hover:scale-110 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50'
+                            : 'border-2 border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'
                     }`}
                   >
                     <Icon
@@ -815,7 +823,7 @@ export function OrderDetailClient({
 
                     {/* Indicador de clickeable - aparece en hover */}
                     {isClickable && (
-                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white dark:bg-slate-700 shadow-md opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110">
                         <span className={`h-2.5 w-2.5 rounded-full ${colors.bg}`} />
                       </span>
                     )}
@@ -861,10 +869,10 @@ export function OrderDetailClient({
                         <p
                           className={`text-sm font-medium transition-colors duration-300 ${
                             isCompleted || isCurrent
-                              ? 'text-slate-900'
+                              ? 'text-slate-900 dark:text-slate-100'
                               : isClickable
-                                ? 'text-slate-400'
-                                : 'text-slate-400'
+                                ? 'text-slate-400 dark:text-slate-500'
+                                : 'text-slate-400 dark:text-slate-500'
                           }`}
                         >
                           {OrderStatusLabels[status]}
@@ -890,14 +898,14 @@ export function OrderDetailClient({
 
           {/* Progreso de entrega si hay entregas parciales */}
           {(partialDeliveryCount > 0 || order.status === OrderStatus.PARCIALMENTE_ENTREGADO) && (
-            <div className="mt-6 flex flex-col gap-3 rounded-xl border-2 border-purple-200 bg-purple-50 p-4">
+            <div className="mt-6 flex flex-col gap-3 rounded-xl border-2 border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 p-4">
               <div className="flex items-center justify-center gap-3">
                 <PackageCheck className="h-5 w-5 text-purple-600" />
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-purple-900">
+                  <p className="text-sm font-semibold text-purple-900 dark:text-purple-300">
                     {totalDelivered} de {order.quantity} unidades entregadas
                   </p>
-                  <p className="mt-1 text-xs text-purple-600">
+                  <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
                     {remainingToDeliver} pendientes • {partialDeliveryCount} entrega
                     {partialDeliveryCount > 1 ? 's' : ''} parcial
                     {partialDeliveryCount > 1 ? 'es' : ''} registrada
@@ -905,7 +913,7 @@ export function OrderDetailClient({
                   </p>
                 </div>
               </div>
-              <div className="relative h-2.5 w-full rounded-full bg-purple-200 overflow-hidden">
+              <div className="relative h-2.5 w-full rounded-full bg-purple-200 dark:bg-purple-800/40 overflow-hidden">
                 <div
                   className="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-purple-400 to-purple-500 transition-all duration-500"
                   style={{ width: `${Math.min((totalDelivered / order.quantity) * 100, 100)}%` }}
@@ -934,48 +942,54 @@ export function OrderDetailClient({
             </div>
 
             <CardContent className="pt-14 text-center">
-              <h3 className="text-lg font-semibold text-slate-900">{order.client.name}</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {order.client.name}
+              </h3>
 
               <div className="mt-6 space-y-3 text-left">
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
+                <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
                     <Mail className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Email</p>
-                    <p className="text-sm font-medium text-slate-700">{order.client.email}</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {order.client.email}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100">
+                <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
                     <IdCard className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Cédula / DNI</p>
-                    <p className="text-sm font-medium text-slate-700">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       {order.client.cedula || '-'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100">
+                <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
                     <Phone className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Teléfono</p>
-                    <p className="text-sm font-medium text-slate-700">{order.client.phone}</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {order.client.phone}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100">
+                <div className="flex items-start gap-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40">
                     <MapPin className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Dirección</p>
-                    <p className="text-sm font-medium text-slate-700">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       {order.client.address || 'Sin dirección registrada'}
                     </p>
                   </div>
@@ -998,23 +1012,23 @@ export function OrderDetailClient({
         <div className="space-y-6 lg:col-span-2">
           {/* Tabs */}
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100 p-1">
+            <TabsList className="grid w-full grid-cols-3 rounded-xl bg-slate-100 dark:bg-slate-700/50 p-1">
               <TabsTrigger
                 value="details"
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
               >
                 Detalles del Pedido
               </TabsTrigger>
               <TabsTrigger
                 value="payments"
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
               >
                 <DollarSign className="mr-1.5 h-4 w-4" />
                 Abonos
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm dark:text-slate-300"
               >
                 Historial de Estados
               </TabsTrigger>
@@ -1024,7 +1038,7 @@ export function OrderDetailClient({
             <TabsContent value="details" className="mt-4 space-y-4">
               {/* Estado del tiempo */}
               <Card
-                className={`rounded-2xl border-0 shadow-sm ${order.isDelayed ? 'bg-linear-to-r from-rose-50 to-rose-100' : 'bg-linear-to-r from-emerald-50 to-emerald-100'}`}
+                className={`rounded-2xl border-0 shadow-sm ${order.isDelayed ? 'bg-linear-to-r from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/30' : 'bg-linear-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30'}`}
               >
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
@@ -1039,12 +1053,12 @@ export function OrderDetailClient({
                     )}
                     <div>
                       <p
-                        className={`font-medium ${order.isDelayed ? 'text-rose-700' : 'text-emerald-700'}`}
+                        className={`font-medium ${order.isDelayed ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}
                       >
                         {order.isDelayed ? 'Pedido con Retraso' : 'Pedido en Tiempo'}
                       </p>
                       <p
-                        className={`text-sm ${order.isDelayed ? 'text-rose-600' : 'text-emerald-600'}`}
+                        className={`text-sm ${order.isDelayed ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}
                       >
                         {order.isDelayed
                           ? `${Math.abs(order.daysRemaining)} días de retraso`
@@ -1055,9 +1069,9 @@ export function OrderDetailClient({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-slate-500">Fecha de entrega</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Fecha de entrega</p>
                     <p
-                      className={`font-semibold ${order.isDelayed ? 'text-rose-600' : 'text-emerald-600'}`}
+                      className={`font-semibold ${order.isDelayed ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}
                     >
                       {order.dueDate}
                     </p>
@@ -1067,7 +1081,7 @@ export function OrderDetailClient({
 
               {/* Detalles del pedido */}
               <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/20">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Package className="h-5 w-5 text-blue-500" />
                     Información del Pedido
@@ -1084,7 +1098,7 @@ export function OrderDetailClient({
                         className="h-11 rounded-xl"
                       />
                     ) : (
-                      <p className="rounded-xl bg-slate-50 p-3 text-slate-700">
+                      <p className="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3 text-slate-700 dark:text-slate-300">
                         {order.description}
                       </p>
                     )}
@@ -1120,10 +1134,10 @@ export function OrderDetailClient({
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (
-                        <div className="flex h-11 items-center rounded-xl bg-slate-50 px-3">
+                        <div className="flex h-11 items-center rounded-xl bg-slate-50 dark:bg-slate-700/40 px-3">
                           <Badge
                             variant="outline"
-                            className="border-slate-200 bg-white text-slate-600"
+                            className="border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
                           >
                             {order.serviceType}
                           </Badge>
@@ -1144,7 +1158,7 @@ export function OrderDetailClient({
                           className="h-11 rounded-xl border-slate-200"
                         />
                       ) : (
-                        <div className="flex h-11 items-center rounded-xl bg-slate-50 px-3 font-semibold text-slate-700">
+                        <div className="flex h-11 items-center rounded-xl bg-slate-50 dark:bg-slate-700/40 px-3 font-semibold text-slate-700 dark:text-slate-300">
                           {order.quantity} unidades
                         </div>
                       )}
@@ -1168,7 +1182,7 @@ export function OrderDetailClient({
                           />
                         </div>
                       ) : (
-                        <div className="flex h-11 items-center rounded-xl bg-slate-50 px-3 text-xl font-semibold text-emerald-700">
+                        <div className="flex h-11 items-center rounded-xl bg-slate-50 dark:bg-slate-700/40 px-3 text-xl font-semibold text-emerald-700 dark:text-emerald-400">
                           ${order.total.toLocaleString()}
                         </div>
                       )}
@@ -1188,7 +1202,7 @@ export function OrderDetailClient({
                           />
                         </div>
                       ) : (
-                        <div className="flex h-11 items-center gap-2 rounded-xl bg-slate-50 px-3 font-medium text-slate-700">
+                        <div className="flex h-11 items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-700/40 px-3 font-medium text-slate-700 dark:text-slate-300">
                           <Calendar className="h-4 w-4 text-slate-400" />
                           {order.dueDate}
                         </div>
@@ -1198,11 +1212,11 @@ export function OrderDetailClient({
 
                   {/* Toggle Urgente */}
                   <div
-                    className={`mt-5 flex items-center justify-between rounded-xl border-2 p-4 transition-all ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}
+                    className={`mt-5 flex items-center justify-between rounded-xl border-2 p-4 transition-all ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'border-rose-300 bg-rose-50 dark:border-rose-800/50 dark:bg-rose-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-700/30'}`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'bg-rose-100' : 'bg-slate-200'}`}
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'bg-rose-100 dark:bg-rose-900/40' : 'bg-slate-200 dark:bg-slate-600'}`}
                       >
                         <AlertTriangle
                           className={`h-5 w-5 ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-600' : 'text-slate-400'}`}
@@ -1210,12 +1224,12 @@ export function OrderDetailClient({
                       </div>
                       <div>
                         <p
-                          className={`font-medium ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-900' : 'text-slate-700'}`}
+                          className={`font-medium ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-900 dark:text-rose-300' : 'text-slate-700 dark:text-slate-200'}`}
                         >
                           Pedido Urgente
                         </p>
                         <p
-                          className={`text-xs ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-600' : 'text-slate-500'}`}
+                          className={`text-xs ${(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent) ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}
                         >
                           {(isEditing && editData.isUrgent) || (!isEditing && order.isUrgent)
                             ? 'Este pedido tiene prioridad alta'
@@ -1233,7 +1247,7 @@ export function OrderDetailClient({
                       />
                     ) : (
                       <span
-                        className={`rounded-full px-3 py-1 text-sm font-medium ${order.isUrgent ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-500'}`}
+                        className={`rounded-full px-3 py-1 text-sm font-medium ${order.isUrgent ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300'}`}
                       >
                         {order.isUrgent ? 'Sí' : 'No'}
                       </span>
@@ -1246,8 +1260,8 @@ export function OrderDetailClient({
             {/* Tab: Abonos */}
             <TabsContent value="payments" className="mt-4 space-y-4">
               {/* Resumen de Pagos */}
-              <Card className="overflow-hidden rounded-2xl border-0 shadow-sm bg-linear-to-r from-emerald-50 to-teal-50">
-                <CardHeader className="border-b border-slate-100 bg-linear-to-r from-emerald-50 to-teal-50">
+              <Card className="overflow-hidden rounded-2xl border-0 shadow-sm bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -1268,11 +1282,11 @@ export function OrderDetailClient({
                   <div className="mb-6">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-slate-500">Progreso de pago</span>
-                      <span className="font-semibold text-emerald-600">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                         {paymentProgress.toFixed(0)}%
                       </span>
                     </div>
-                    <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-700/50 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-linear-to-r from-emerald-400 to-emerald-600 transition-all duration-500"
                         style={{ width: `${Math.min(paymentProgress, 100)}%` }}
@@ -1283,16 +1297,18 @@ export function OrderDetailClient({
                   {/* Tarjetas de totales */}
                   <div className="grid gap-4 sm:grid-cols-3">
                     {/* Total del Pedido */}
-                    <div className="rounded-2xl bg-linear-to-r from-slate-50 to-slate-100 p-5 shadow-md border border-slate-200">
+                    <div className="rounded-2xl bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-700/50 dark:to-slate-700/60 p-5 shadow-md border border-slate-200 dark:border-slate-600">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-slate-500">Total del Pedido</p>
-                          <p className="mt-2 text-3xl font-bold text-slate-900">
+                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Total del Pedido
+                          </p>
+                          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
                             ${order.total.toLocaleString()}
                           </p>
                         </div>
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                          <Package className="h-7 w-7 text-slate-600" />
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-600">
+                          <Package className="h-7 w-7 text-slate-600 dark:text-slate-300" />
                         </div>
                       </div>
                     </div>
@@ -1346,9 +1362,9 @@ export function OrderDetailClient({
 
                   {/* Estado del pago */}
                   {remainingBalance <= 0 && (
-                    <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-100 p-3">
+                    <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 p-3">
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      <span className="font-medium text-emerald-700">
+                      <span className="font-medium text-emerald-700 dark:text-emerald-400">
                         Pedido pagado en su totalidad
                       </span>
                     </div>
@@ -1358,7 +1374,7 @@ export function OrderDetailClient({
 
               {/* Historial de Abonos */}
               <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/20">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Wallet className="h-5 w-5 text-slate-500" />
                     Historial de Abonos ({order.payments.length})
@@ -1367,10 +1383,10 @@ export function OrderDetailClient({
                 <CardContent className="p-6">
                   {order.payments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
                         <Banknote className="h-8 w-8 text-slate-400" />
                       </div>
-                      <p className="mt-4 text-sm font-medium text-slate-900">
+                      <p className="mt-4 text-sm font-medium text-slate-900 dark:text-white">
                         No hay abonos registrados
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
@@ -1387,7 +1403,7 @@ export function OrderDetailClient({
                   ) : (
                     <div className="relative">
                       {/* Línea vertical del timeline */}
-                      <div className="absolute bottom-0 left-6 top-0 w-0.5 bg-emerald-200" />
+                      <div className="absolute bottom-0 left-6 top-0 w-0.5 bg-emerald-200 dark:bg-emerald-800/50" />
 
                       <div className="space-y-6">
                         {order.payments
@@ -1410,19 +1426,19 @@ export function OrderDetailClient({
                                 </div>
 
                                 {/* Contenido del abono */}
-                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 transition-all duration-300 hover:shadow-md">
+                                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-900/10 p-4 transition-all duration-300 hover:shadow-md">
                                   {/* Header */}
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-3">
                                       <span className="text-2xl font-bold text-emerald-600">
                                         ${payment.amount.toLocaleString()}
                                       </span>
-                                      <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
+                                      <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/30 dark:text-emerald-400">
                                         {paymentMethods.find((m) => m.id === payment.method)
                                           ?.label || 'Otro'}
                                       </Badge>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                       <Calendar className="h-3.5 w-3.5" />
                                       <span>{payment.date}</span>
                                       <span>•</span>
@@ -1437,7 +1453,9 @@ export function OrderDetailClient({
                                       <p className="text-xs font-medium uppercase text-slate-400">
                                         Observaciones
                                       </p>
-                                      <p className="mt-1 text-sm text-slate-700">{payment.notes}</p>
+                                      <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                                        {payment.notes}
+                                      </p>
                                     </div>
                                   )}
 
@@ -1453,7 +1471,7 @@ export function OrderDetailClient({
                                             key={photoIndex}
                                             type="button"
                                             onClick={() => openGallery(payment.photos, photoIndex)}
-                                            className="group relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                                            className="group relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-700 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                                           >
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
@@ -1471,13 +1489,13 @@ export function OrderDetailClient({
                                   )}
 
                                   {/* Usuario que registró */}
-                                  <div className="mt-3 flex items-center gap-2 border-t border-emerald-200/50 pt-3">
+                                  <div className="mt-3 flex items-center gap-2 border-t border-emerald-200/50 dark:border-emerald-800/30 pt-3">
                                     <Avatar className="h-6 w-6">
-                                      <AvatarFallback className="bg-emerald-200 text-xs text-emerald-700">
+                                      <AvatarFallback className="bg-emerald-200 text-xs text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-400">
                                         {payment.user.charAt(0)}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
                                       Registrado por <strong>{payment.user}</strong>
                                     </span>
                                   </div>
@@ -1495,7 +1513,7 @@ export function OrderDetailClient({
             {/* Tab: Historial */}
             <TabsContent value="history" className="mt-4">
               <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/20">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Clock className="h-5 w-5 text-slate-500" />
                     Historial de Cambios de Estado
@@ -1504,7 +1522,7 @@ export function OrderDetailClient({
                 <CardContent className="p-6">
                   <div className="relative">
                     {/* Línea vertical del timeline */}
-                    <div className="absolute bottom-0 left-6 top-0 w-0.5 bg-slate-200" />
+                    <div className="absolute bottom-0 left-6 top-0 w-0.5 bg-slate-200 dark:bg-slate-600" />
 
                     <div className="space-y-8">
                       {statusHistoryItems
@@ -1538,7 +1556,7 @@ export function OrderDetailClient({
                                   <Badge className={`${colors.bg} border-0 text-white`}>
                                     {OrderStatusLabels[item.status as OrderStatusType]}
                                   </Badge>
-                                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                     <Calendar className="h-3.5 w-3.5" />
                                     <span>{item.date}</span>
                                     <span>•</span>
@@ -1555,7 +1573,7 @@ export function OrderDetailClient({
                                       <p className="text-xs font-medium uppercase text-slate-400">
                                         Unidades entregadas
                                       </p>
-                                      <p className="mt-1 text-sm font-semibold text-purple-600">
+                                      <p className="mt-1 text-sm font-semibold text-purple-600 dark:text-purple-400">
                                         {item.quantityDelivered} unidad
                                         {item.quantityDelivered !== 1 ? 'es' : ''}
                                       </p>
@@ -1568,7 +1586,7 @@ export function OrderDetailClient({
                                     <p className="text-xs font-medium uppercase text-slate-400">
                                       Observaciones
                                     </p>
-                                    <p className="mt-1 text-sm text-slate-700">
+                                    <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                                       {item.observations}
                                     </p>
                                   </div>
@@ -1586,7 +1604,7 @@ export function OrderDetailClient({
                                           key={photoIndex}
                                           type="button"
                                           onClick={() => openGallery(item.photos, photoIndex)}
-                                          className="group relative h-16 w-16 overflow-hidden rounded-lg bg-slate-100 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                          className="group relative h-16 w-16 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-700 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                         >
                                           {/* eslint-disable-next-line @next/next/no-img-element */}
                                           <img
@@ -1605,9 +1623,9 @@ export function OrderDetailClient({
                                 )}
 
                                 {/* Usuario que hizo el cambio */}
-                                <div className="mt-3 flex items-center gap-2 border-t border-slate-200/50 pt-3">
+                                <div className="mt-3 flex items-center gap-2 border-t border-slate-200/50 dark:border-slate-600/50 pt-3">
                                   <Avatar className="h-6 w-6">
-                                    <AvatarFallback className="bg-slate-200 text-xs">
+                                    <AvatarFallback className="bg-slate-200 text-xs dark:bg-slate-600">
                                       {item.user.charAt(0)}
                                     </AvatarFallback>
                                   </Avatar>
@@ -1650,7 +1668,7 @@ export function OrderDetailClient({
           <div className="space-y-4 py-4">
             {/* Observaciones */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 {newStatusData.status === OrderStatus.CANCELADO
                   ? 'Motivo de cancelación'
                   : 'Observaciones'}{' '}
@@ -1667,14 +1685,14 @@ export function OrderDetailClient({
                   setNewStatusData({ ...newStatusData, observations: e.target.value })
                 }
                 rows={4}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Cantidad entregada - solo para PARCIALMENTE_ENTREGADO */}
             {newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Cantidad entregada <span className="text-rose-500">*</span>
                 </label>
                 <Input
@@ -1688,7 +1706,7 @@ export function OrderDetailClient({
                   }
                   className="rounded-xl border-slate-200"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {totalDelivered} de {order?.quantity || 0} unidades entregadas •{' '}
                   {remainingToDeliver} pendientes
                 </p>
@@ -1698,7 +1716,9 @@ export function OrderDetailClient({
             {/* Subir fotos — no aplica para cancelaciones */}
             {newStatusData.status !== OrderStatus.CANCELADO && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Fotos del Progreso</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Fotos del Progreso
+                </label>
                 <input
                   ref={statusPhotoInputRef}
                   type="file"
@@ -1750,10 +1770,10 @@ export function OrderDetailClient({
                       setStatusPhotoPreviews((prev) => [...prev, preview]);
                     }
                   }}
-                  className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 p-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/50"
+                  className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-600 p-6 text-center transition-colors hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
                 >
                   <Upload className="mx-auto h-8 w-8 text-slate-400" />
-                  <p className="mt-2 text-sm text-slate-600">
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                     Arrastra fotos o haz clic para subir
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
@@ -1966,7 +1986,7 @@ export function OrderDetailClient({
           <div className="space-y-4 py-4">
             {/* Monto */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Monto del Abono <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -2008,7 +2028,7 @@ export function OrderDetailClient({
                   onClick={() =>
                     setNewPaymentData({ ...newPaymentData, amount: remainingBalance.toString() })
                   }
-                  className="h-8 rounded-lg text-xs bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                  className="h-8 rounded-lg text-xs bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                 >
                   Pagar todo (${remainingBalance.toLocaleString()})
                 </Button>
@@ -2017,7 +2037,7 @@ export function OrderDetailClient({
 
             {/* Método de pago */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Método de Pago <span className="text-rose-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -2035,8 +2055,8 @@ export function OrderDetailClient({
                       }
                       className={`flex items-center gap-2 rounded-xl border-2 p-3 transition-all ${
                         isSelected
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-600'
                       }`}
                     >
                       <method.icon
@@ -2052,7 +2072,7 @@ export function OrderDetailClient({
 
             {/* Notas */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Observaciones <span className="text-slate-400">(opcional)</span>
               </label>
               <textarea
@@ -2060,13 +2080,13 @@ export function OrderDetailClient({
                 value={newPaymentData.notes}
                 onChange={(e) => setNewPaymentData({ ...newPaymentData, notes: e.target.value })}
                 rows={2}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Comprobantes */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Comprobantes <span className="text-slate-400">(opcional)</span>
               </label>
 
@@ -2122,7 +2142,7 @@ export function OrderDetailClient({
 
               {/* Botón para agregar imagen */}
               <div
-                className="rounded-xl border-2 border-dashed border-slate-200 p-4 text-center transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 cursor-pointer"
+                className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-600 p-4 text-center transition-colors hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 cursor-pointer"
                 onClick={() => paymentPhotoInputRef.current?.click()}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -2150,7 +2170,7 @@ export function OrderDetailClient({
                 }}
               >
                 <ImagePlus className="mx-auto h-6 w-6 text-slate-400" />
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   Click o arrastra para agregar comprobante
                 </p>
                 <p className="text-xs text-slate-400">PNG, JPG hasta 10MB (se comprimirán)</p>
