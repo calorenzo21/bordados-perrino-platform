@@ -174,6 +174,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setTypeError(null);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       const { error } = await supabase.from('expense_types').insert({
         name: newTypeName.trim(),
         color: newTypeColor,
@@ -185,7 +190,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setNewTypeName('');
       setNewTypeColor('bg-slate-500');
       // Revalidar caché del servidor
-      await revalidateExpenseTypes();
+      revalidateExpenseTypes().catch(console.error);
       // Trigger server re-render with fresh data
       router.refresh();
     } catch (err: unknown) {
@@ -230,7 +235,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setEditTypeName('');
       setEditTypeColor('');
       // Revalidar caché del servidor
-      await revalidateExpenseTypes();
+      revalidateExpenseTypes().catch(console.error);
       // Trigger server re-render with fresh data
       router.refresh();
     } catch (err: unknown) {
@@ -254,12 +259,17 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setTypeError(null);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       const { error } = await supabase.from('expense_types').delete().eq('id', typeId);
 
       if (error) throw error;
 
       // Revalidar caché del servidor
-      await revalidateExpenseTypes();
+      revalidateExpenseTypes().catch(console.error);
       // Trigger server re-render with fresh data
       router.refresh();
     } catch (err: unknown) {
@@ -318,6 +328,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setExpenseError(null);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       if (editingExpense) {
         // Editar gasto existente
         const { error } = await supabase
@@ -346,7 +361,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       handleCloseExpenseDialog();
       // Revalidar caché del servidor
-      await revalidateExpenses();
+      revalidateExpenses().catch(console.error);
       // Trigger server re-render with fresh data
       router.refresh();
     } catch (err: unknown) {
@@ -368,6 +383,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
     setIsDeletingExpense(true);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       const { error } = await supabase.from('expenses').delete().eq('id', expenseToDelete.id);
 
       if (error) throw error;
@@ -375,7 +395,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       setIsDeleteExpenseDialogOpen(false);
       setExpenseToDelete(null);
       // Revalidar caché del servidor
-      await revalidateExpenses();
+      revalidateExpenses().catch(console.error);
       // Trigger server re-render with fresh data
       router.refresh();
     } catch (err: unknown) {
@@ -407,15 +427,17 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestión de Gastos</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Gestión de Gastos
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Administra y da seguimiento a todos los gastos del negocio
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200"
+            className="h-10 gap-2 rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
             onClick={() => setIsTypeDialogOpen(true)}
           >
             <Settings className="h-4 w-4" />
@@ -423,7 +445,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
           </Button>
           <Button
             variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200"
+            className="h-10 gap-2 rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
             disabled
             title="Próximamente"
           >
@@ -449,16 +471,16 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
             placeholder="Buscar por descripción, tipo o ID..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-10"
+            className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
           />
         </div>
 
         {/* Type Filter */}
         <Tabs value={selectedType} onValueChange={handleTypeChange} className="w-auto">
-          <TabsList className="h-10 rounded-xl bg-slate-100 p-1">
+          <TabsList className="h-10 rounded-xl bg-slate-100 p-1 dark:bg-slate-700/50">
             <TabsTrigger
               value="all"
-              className="rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-600 dark:text-slate-300"
             >
               Todos ({typeCounts.all})
             </TabsTrigger>
@@ -466,7 +488,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
               <TabsTrigger
                 key={type.id}
                 value={type.id}
-                className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                className="flex items-center gap-1.5 rounded-lg px-3 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-600 dark:text-slate-300"
               >
                 <div className={`h-2 w-2 rounded-full ${type.color}`} />
                 {type.name} ({typeCounts[type.id] || 0})
@@ -498,11 +520,16 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       </div>
 
       {/* Table */}
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="border-b border-slate-100 pb-4">
+      <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+        <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">Registro de Gastos</CardTitle>
-            <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+            <CardTitle className="text-base font-semibold dark:text-slate-100">
+              Registro de Gastos
+            </CardTitle>
+            <Badge
+              variant="outline"
+              className="border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
+            >
               {filteredExpenses.length} gasto{filteredExpenses.length !== 1 ? 's' : ''}
             </Badge>
           </div>
@@ -510,17 +537,17 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 hover:bg-transparent">
-                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
+              <TableRow className="border-slate-100 hover:bg-transparent dark:border-slate-700">
+                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Descripción
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Tipo
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Fecha
                 </TableHead>
-                <TableHead className="text-right text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-right text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Monto
                 </TableHead>
                 <TableHead className="w-12 text-right pr-6"></TableHead>
@@ -530,10 +557,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
               {paginatedExpenses.map((expense) => (
                 <TableRow
                   key={expense.id}
-                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50"
+                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 dark:border-slate-700 dark:hover:bg-slate-700/50"
                 >
                   <TableCell className="pl-6">
-                    <p className="truncate text-sm text-slate-700 max-w-[250px]">
+                    <p className="truncate text-sm text-slate-700 max-w-62.5 dark:text-slate-200">
                       {expense.description || 'Sin descripción'}
                     </p>
                   </TableCell>
@@ -543,13 +570,13 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                       {expense.date}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="font-semibold text-blue-600">
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
                       -${expense.amount.toLocaleString()}
                     </span>
                   </TableCell>
@@ -590,11 +617,13 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
           {filteredExpenses.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-slate-100 p-4">
-                <Receipt className="h-8 w-8 text-slate-400" />
+              <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-700">
+                <Receipt className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
-              <p className="mt-4 text-sm font-medium text-slate-600">No se encontraron gastos</p>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                No se encontraron gastos
+              </p>
+              <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
                 Intenta con otra búsqueda o registra un nuevo gasto
               </p>
               <Button
@@ -631,27 +660,31 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
           }
         }}
       >
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
           <DialogHeader>
-            <DialogTitle>Gestionar Tipos de Gasto</DialogTitle>
+            <DialogTitle className="dark:text-slate-100">Gestionar Tipos de Gasto</DialogTitle>
             <DialogDescription>
               Agrega, edita o elimina categorías para organizar mejor tus gastos
             </DialogDescription>
           </DialogHeader>
 
           {typeError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{typeError}</div>
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border dark:border-red-800/50">
+              {typeError}
+            </div>
           )}
 
           <div className="space-y-4 py-4">
             {/* Lista de tipos existentes */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Tipos Existentes</label>
-              <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Tipos Existentes
+              </label>
+              <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3 dark:border-slate-600">
                 {expenseTypes.map((type) => (
                   <div
                     key={type.id}
-                    className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-700/50"
                   >
                     {editingTypeId === type.id ? (
                       // Modo edición
@@ -659,7 +692,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
-                              className={`h-6 w-6 rounded-full ${editTypeColor} ring-2 ring-offset-1 ring-slate-300`}
+                              className={`h-6 w-6 rounded-full ${editTypeColor} ring-2 ring-offset-1 ring-slate-300 dark:ring-offset-slate-700`}
                             />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="rounded-xl p-2">
@@ -670,7 +703,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                                   onClick={() => setEditTypeColor(color)}
                                   className={`h-5 w-5 rounded-full ${color} transition-all ${
                                     editTypeColor === color
-                                      ? 'ring-2 ring-offset-1 ring-slate-400 scale-110'
+                                      ? 'ring-2 ring-offset-1 ring-slate-400 scale-110 dark:ring-offset-slate-800'
                                       : 'hover:scale-110'
                                   }`}
                                 />
@@ -687,7 +720,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                         <button
                           onClick={handleSaveEditType}
                           disabled={isSavingType || !editTypeName.trim()}
-                          className="rounded-md p-1.5 text-emerald-600 transition-colors hover:bg-emerald-100 disabled:opacity-50"
+                          className="rounded-md p-1.5 text-emerald-600 transition-colors hover:bg-emerald-100 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                           title="Guardar"
                         >
                           {isSavingType ? (
@@ -698,7 +731,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                         </button>
                         <button
                           onClick={handleCancelEditType}
-                          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-200"
+                          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600"
                           title="Cancelar"
                         >
                           <X className="h-4 w-4" />
@@ -709,7 +742,9 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                       <>
                         <div className="flex items-center gap-2">
                           <div className={`h-3 w-3 rounded-full ${type.color}`} />
-                          <span className="text-sm font-medium text-slate-700">{type.name}</span>
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {type.name}
+                          </span>
                           {type.isCustom && (
                             <Badge variant="outline" className="text-[10px] border-slate-200">
                               Personalizado
@@ -724,7 +759,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                             <>
                               <button
                                 onClick={() => handleStartEditType(type)}
-                                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600"
+                                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
                                 title="Editar tipo"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
@@ -732,7 +767,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                               <button
                                 onClick={() => handleDeleteType(type.id)}
                                 disabled={isDeletingType === type.id}
-                                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50"
+                                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
                                 title="Eliminar tipo"
                               >
                                 {isDeletingType === type.id ? (
@@ -752,8 +787,10 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
             </div>
 
             {/* Agregar nuevo tipo */}
-            <div className="space-y-3 rounded-xl border border-dashed border-slate-300 p-4">
-              <label className="text-sm font-medium text-slate-700">Agregar Nuevo Tipo</label>
+            <div className="space-y-3 rounded-xl border border-dashed border-slate-300 p-4 dark:border-slate-600">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Agregar Nuevo Tipo
+              </label>
               <Input
                 placeholder="Ej: María (Costurera), Servicios, etc."
                 value={newTypeName}
@@ -761,7 +798,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                 className="h-10 rounded-xl"
               />
               <div className="space-y-2">
-                <label className="text-xs text-slate-500">Color</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400">Color</label>
                 <div className="flex flex-wrap gap-2">
                   {availableColors.map((color) => (
                     <button
@@ -769,7 +806,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                       onClick={() => setNewTypeColor(color)}
                       className={`h-6 w-6 rounded-full ${color} transition-all ${
                         newTypeColor === color
-                          ? 'ring-2 ring-offset-2 ring-slate-400'
+                          ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800'
                           : 'hover:scale-110'
                       }`}
                     />
@@ -813,9 +850,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
         open={isExpenseDialogOpen}
         onOpenChange={(open) => !open && handleCloseExpenseDialog()}
       >
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
           <DialogHeader>
-            <DialogTitle>{editingExpense ? 'Editar Gasto' : 'Nuevo Gasto'}</DialogTitle>
+            <DialogTitle className="dark:text-slate-100">
+              {editingExpense ? 'Editar Gasto' : 'Nuevo Gasto'}
+            </DialogTitle>
             <DialogDescription>
               {editingExpense
                 ? 'Modifica los datos del gasto'
@@ -824,7 +863,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
           </DialogHeader>
 
           {expenseError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50">
               {expenseError}
             </div>
           )}
@@ -832,12 +871,14 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
           <div className="grid gap-4 py-4">
             {/* Tipo de Gasto */}
             <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">Tipo de Gasto *</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Tipo de Gasto *
+              </label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-10 w-full justify-between rounded-xl border-slate-200"
+                    className="h-10 w-full justify-between rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                   >
                     {expenseForm.typeId ? (
                       <div className="flex items-center gap-2">
@@ -869,9 +910,11 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
             {/* Monto */}
             <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">Monto *</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Monto *
+              </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -886,21 +929,23 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
             {/* Fecha */}
             <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">Fecha *</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Fecha *
+              </label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <Input
                   type="date"
                   value={expenseForm.date}
                   onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
-                  className="h-10 rounded-xl pl-10"
+                  className="h-10 rounded-xl pl-10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 />
               </div>
             </div>
 
             {/* Descripción */}
             <div className="grid gap-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Descripción
                 <span className="ml-1 text-xs font-normal text-slate-400">(Opcional)</span>
               </label>
@@ -909,7 +954,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                 value={expenseForm.description}
                 onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
                 rows={3}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -948,16 +993,16 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
 
       {/* Modal Confirmar Eliminación */}
       <Dialog open={isDeleteExpenseDialogOpen} onOpenChange={setIsDeleteExpenseDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl dark:bg-slate-800">
           <DialogHeader>
-            <DialogTitle>¿Eliminar este gasto?</DialogTitle>
+            <DialogTitle className="dark:text-slate-100">¿Eliminar este gasto?</DialogTitle>
             <DialogDescription>
               Esta acción no se puede deshacer. El gasto será eliminado permanentemente.
             </DialogDescription>
           </DialogHeader>
 
           {expenseToDelete && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 my-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 my-4 dark:border-slate-700 dark:bg-slate-700/50">
               <div className="flex items-center gap-3">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-lg ${getTypeColor(expenseToDelete.typeId)}`}
@@ -965,15 +1010,15 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                   <Receipt className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 truncate">
+                  <p className="font-medium text-slate-900 truncate dark:text-slate-100">
                     {expenseToDelete.description || 'Sin descripción'}
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     {expenseToDelete.typeName} • {expenseToDelete.date}
                   </p>
                 </div>
                 <div>
-                  <span className="font-bold text-blue-600">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
                     -${expenseToDelete.amount.toLocaleString()}
                   </span>
                 </div>

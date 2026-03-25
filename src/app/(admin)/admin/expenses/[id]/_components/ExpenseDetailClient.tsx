@@ -78,6 +78,11 @@ export function ExpenseDetailClient({
 
     try {
       const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       const { error: updateError } = await supabase
         .from('expenses')
         .update({
@@ -117,6 +122,11 @@ export function ExpenseDetailClient({
 
     try {
       const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+
       const { error: deleteError } = await supabase.from('expenses').delete().eq('id', expenseId);
 
       if (deleteError) throw deleteError;
@@ -135,9 +145,11 @@ export function ExpenseDetailClient({
   if (!expense) {
     return (
       <div className="flex h-96 flex-col items-center justify-center">
-        <Receipt className="h-16 w-16 text-slate-300" />
-        <h2 className="mt-4 text-xl font-semibold text-slate-900">Gasto no encontrado</h2>
-        <p className="mt-2 text-slate-500">El gasto que buscas no existe.</p>
+        <Receipt className="h-16 w-16 text-slate-300 dark:text-slate-600" />
+        <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Gasto no encontrado
+        </h2>
+        <p className="mt-2 text-slate-500 dark:text-slate-400">El gasto que buscas no existe.</p>
         <Link href="/admin/expenses">
           <Button className="mt-4 rounded-xl bg-blue-500 hover:bg-blue-600">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -152,7 +164,7 @@ export function ExpenseDetailClient({
     <div className="space-y-6">
       {/* Mensaje de error */}
       {error && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-600">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-600 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50">
           {error}
         </div>
       )}
@@ -161,19 +173,25 @@ export function ExpenseDetailClient({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/expenses">
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Editar Gasto</h1>
-            <p className="text-sm text-slate-500">Modifica los detalles del gasto</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Editar Gasto</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Modifica los detalles del gasto
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="h-10 gap-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="h-10 gap-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800/50 dark:hover:bg-blue-900/20"
             onClick={() => setIsDeleteDialogOpen(true)}
           >
             <Trash2 className="h-4 w-4" />
@@ -209,7 +227,7 @@ export function ExpenseDetailClient({
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Columna izquierda - Tipo de gasto */}
         <div className="lg:col-span-2">
-          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
+          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             {/* Header visual */}
             <div
               className={`h-24 bg-gradient-to-br ${selectedType?.color || 'from-blue-500 to-blue-600'} ${!selectedType?.color ? '' : selectedType.color.replace('bg-', 'from-') + ' to-' + selectedType.color.replace('bg-', '').replace('-500', '-600')}`}
@@ -218,7 +236,7 @@ export function ExpenseDetailClient({
             <CardContent className="relative px-6 pb-6">
               {/* Icono */}
               <div
-                className={`absolute -top-8 left-6 flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg ${selectedType?.color || 'bg-blue-500'}`}
+                className={`absolute -top-8 left-6 flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg dark:border-slate-800 ${selectedType?.color || 'bg-blue-500'}`}
               >
                 <Receipt className="h-7 w-7 text-white" />
               </div>
@@ -226,10 +244,15 @@ export function ExpenseDetailClient({
               <div className="pt-10">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-slate-900">Tipo de Gasto</h3>
-                    <p className="text-xs text-slate-500">Requerido</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                      Tipo de Gasto
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Requerido</p>
                   </div>
-                  <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600">
+                  <Badge
+                    variant="outline"
+                    className="border-blue-200 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800/50 dark:text-blue-400"
+                  >
                     Requerido
                   </Badge>
                 </div>
@@ -239,7 +262,7 @@ export function ExpenseDetailClient({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
-                      className="h-12 w-full justify-between rounded-xl border-slate-200 text-left"
+                      className="h-12 w-full justify-between rounded-xl border-slate-200 text-left dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                     >
                       {selectedType ? (
                         <div className="flex items-center gap-2">
@@ -249,7 +272,7 @@ export function ExpenseDetailClient({
                       ) : (
                         <span className="text-slate-400">Seleccionar tipo...</span>
                       )}
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                      <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[280px] rounded-xl" align="start">
@@ -296,7 +319,7 @@ export function ExpenseDetailClient({
 
                 {/* Vista previa del tipo seleccionado */}
                 {selectedType && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-lg ${selectedType.color}`}
@@ -304,8 +327,10 @@ export function ExpenseDetailClient({
                         <Receipt className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">{selectedType.name}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {selectedType.name}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           {selectedType.isCustom ? 'Tipo personalizado' : 'Tipo predefinido'}
                         </p>
                       </div>
@@ -319,11 +344,11 @@ export function ExpenseDetailClient({
 
         {/* Columna derecha - Detalles del gasto */}
         <div className="space-y-6 lg:col-span-3">
-          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
+          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/50">
+              <CardTitle className="flex items-center gap-2 text-base dark:text-slate-100">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 Detalles del Gasto
               </CardTitle>
@@ -331,9 +356,11 @@ export function ExpenseDetailClient({
             <CardContent className="grid gap-5 p-6">
               {/* Monto */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Monto *</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Monto *
+                </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-400">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-400 dark:text-slate-500">
                     $
                   </span>
                   <Input
@@ -341,28 +368,30 @@ export function ExpenseDetailClient({
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="h-14 rounded-xl border-slate-200 pl-8 text-2xl font-bold transition-all focus:ring-2 focus:ring-blue-500/20"
+                    className="h-14 rounded-xl border-slate-200 pl-8 text-2xl font-bold transition-all focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   />
                 </div>
               </div>
 
               {/* Fecha */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Fecha *</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Fecha *
+                </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <Input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 pl-10"
+                    className="h-11 rounded-xl border-slate-200 pl-10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                   />
                 </div>
               </div>
 
               {/* Descripción */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Descripción
                   <span className="ml-1 text-xs font-normal text-slate-400">(Opcional)</span>
                 </label>
@@ -371,16 +400,16 @@ export function ExpenseDetailClient({
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Información adicional */}
-          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
+          <Card className="overflow-hidden rounded-2xl border-0 shadow-sm dark:bg-slate-800">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between text-sm text-slate-500">
+              <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
                 <span>Fecha de creación:</span>
                 <span>{expense.createdAt}</span>
               </div>
@@ -391,15 +420,15 @@ export function ExpenseDetailClient({
 
       {/* Dialog de confirmación de eliminación */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl dark:bg-slate-800">
           <DialogHeader>
-            <DialogTitle>¿Eliminar este gasto?</DialogTitle>
+            <DialogTitle className="dark:text-slate-100">¿Eliminar este gasto?</DialogTitle>
             <DialogDescription>
               Esta acción no se puede deshacer. El gasto será eliminado permanentemente.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 my-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 my-4 dark:border-slate-700 dark:bg-slate-700/50">
             <div className="flex items-center gap-3">
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-lg ${expense.typeColor}`}
@@ -407,13 +436,17 @@ export function ExpenseDetailClient({
                 <Receipt className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="font-medium text-slate-900">{expense.description}</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-slate-900 dark:text-slate-100">
+                  {expense.description}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {expense.typeName} • {expense.date}
                 </p>
               </div>
               <div className="ml-auto">
-                <span className="font-bold text-blue-600">-${expense.amount.toLocaleString()}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  -${expense.amount.toLocaleString()}
+                </span>
               </div>
             </div>
           </div>

@@ -8,7 +8,6 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { useAuth } from '@/hooks/use-auth';
 import {
-  Bell,
   ChevronLeft,
   LayoutDashboard,
   Loader2,
@@ -262,16 +261,6 @@ export function AdminShell({ children }: AdminShellProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-10 w-10 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-              </Button>
-
               {/* Theme toggle */}
               <Button
                 variant="ghost"

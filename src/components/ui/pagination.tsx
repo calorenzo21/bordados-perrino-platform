@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 
 interface PaginationProps {
@@ -62,7 +63,9 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className={`flex items-center justify-between px-6 py-4 border-t border-slate-100 ${className}`}>
+    <div
+      className={`flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-700 ${className}`}
+    >
       <div className="text-sm text-slate-500">
         Mostrando <span className="font-medium text-slate-700">{startItem}</span> a{' '}
         <span className="font-medium text-slate-700">{endItem}</span> de{' '}

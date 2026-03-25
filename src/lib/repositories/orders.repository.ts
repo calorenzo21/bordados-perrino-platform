@@ -507,7 +507,7 @@ export class OrdersRepository {
     const { data, error } = await this.supabase
       .from('orders_with_payments')
       .select('remaining_balance')
-      .not('status', 'eq', 'CANCELADO'); // Cancelled orders are not expected to be collected
+      .not('status', 'in', '("ENTREGADO","CANCELADO")');
 
     if (error) throw new Error(error.message);
     return (data || []).reduce((sum, row) => sum + (Number(row.remaining_balance) || 0), 0);

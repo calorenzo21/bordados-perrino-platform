@@ -154,13 +154,17 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestión de Clientes</h1>
-          <p className="mt-1 text-sm text-slate-500">Administra tu cartera de clientes</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Gestión de Clientes
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Administra tu cartera de clientes
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200"
+            className="h-10 gap-2 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
             disabled
             title="Próximamente"
           >
@@ -179,21 +183,26 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
         <Input
           placeholder="Buscar por nombre, email o teléfono..."
           value={searchQuery}
           onChange={handleSearchChange}
-          className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-10"
+          className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
         />
       </div>
 
       {/* Table */}
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="border-b border-slate-100 pb-4">
+      <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+        <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">Lista de Clientes</CardTitle>
-            <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+            <CardTitle className="text-base font-semibold dark:text-slate-100">
+              Lista de Clientes
+            </CardTitle>
+            <Badge
+              variant="outline"
+              className="border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
+            >
               {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
             </Badge>
           </div>
@@ -201,20 +210,20 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 hover:bg-transparent">
-                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
+              <TableRow className="border-slate-100 hover:bg-transparent dark:border-slate-700">
+                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Cliente
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Contacto
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Pedidos
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Facturación
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Última Actividad
                 </TableHead>
               </TableRow>
@@ -223,7 +232,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
               {paginatedClients.map((client) => (
                 <TableRow
                   key={client.id}
-                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50"
+                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 dark:border-slate-700 dark:hover:bg-slate-700/50"
                 >
                   <TableCell className="pl-6">
                     <Link
@@ -233,19 +242,19 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       onFocus={() => prefetchClient(client.id)}
                     >
                       <div className="relative">
-                        <Avatar className="h-11 w-11 border-2 border-white shadow-md transition-transform group-hover:scale-105">
+                        <Avatar className="h-11 w-11 border-2 border-white shadow-md transition-transform group-hover:scale-105 dark:border-slate-600">
                           <AvatarFallback className="bg-linear-to-br from-blue-500 to-indigo-600 text-sm font-semibold text-white">
                             {client.initials}
                           </AvatarFallback>
                         </Avatar>
                         {client.activeOrders > 0 && (
-                          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-white">
+                          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
                             {client.activeOrders}
                           </span>
                         )}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900 group-hover:text-blue-600">
+                        <p className="font-semibold text-slate-900 group-hover:text-blue-600 dark:text-slate-100">
                           {client.name}
                         </p>
                       </div>
@@ -259,12 +268,12 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       onFocus={() => prefetchClient(client.id)}
                     >
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <Mail className="h-3.5 w-3.5 text-slate-400" />
+                        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                          <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                           {client.email}
                         </div>
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <Phone className="h-3.5 w-3.5 text-slate-400" />
+                        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                          <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                           {client.phone}
                         </div>
                       </div>
@@ -278,7 +287,9 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       onFocus={() => prefetchClient(client.id)}
                     >
                       <div>
-                        <p className="font-semibold text-slate-900">{client.totalOrders}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {client.totalOrders}
+                        </p>
                       </div>
                     </Link>
                   </TableCell>
@@ -289,7 +300,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       onMouseEnter={() => prefetchClient(client.id)}
                       onFocus={() => prefetchClient(client.id)}
                     >
-                      <p className="font-semibold text-emerald-600">
+                      <p className="font-semibold text-emerald-600 dark:text-emerald-400">
                         ${client.totalSpent.toLocaleString()}
                       </p>
                     </Link>
@@ -302,8 +313,10 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       onFocus={() => prefetchClient(client.id)}
                     >
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-sm text-slate-600">{client.lastOrderDate}</span>
+                        <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                          {client.lastOrderDate}
+                        </span>
                       </div>
                     </Link>
                   </TableCell>
@@ -314,11 +327,13 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
 
           {filteredClients.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-slate-100 p-4">
-                <User className="h-8 w-8 text-slate-400" />
+              <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-700">
+                <User className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
-              <p className="mt-4 text-sm font-medium text-slate-600">No se encontraron clientes</p>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                No se encontraron clientes
+              </p>
+              <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
                 Intenta con otra búsqueda o crea un nuevo cliente
               </p>
             </div>
@@ -339,7 +354,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={handleCloseCreateDialog}>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
           <DialogHeader>
             <DialogTitle>{createdPassword ? 'Cliente Creado' : 'Nuevo Cliente'}</DialogTitle>
             <DialogDescription>
@@ -350,14 +365,16 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
           </DialogHeader>
 
           {createError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{createError}</div>
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border dark:border-red-800/50">
+              {createError}
+            </div>
           )}
 
           {createdPassword ? (
             // Vista de éxito con credenciales
             <div className="space-y-4 py-4">
-              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4">
-                <div className="flex items-center gap-2 text-emerald-700">
+              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4 dark:bg-green-900/20 dark:border-green-800/50">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-green-400">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
@@ -371,24 +388,26 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   El cliente ahora puede acceder al sistema con las siguientes credenciales:
                 </p>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 dark:border-slate-600 dark:bg-slate-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Email:</span>
-                    <span className="font-mono text-sm font-medium text-slate-900">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Email:</span>
+                    <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
                       {createdClientEmail}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Contraseña temporal:</span>
-                    <span className="font-mono text-sm font-bold text-blue-600">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                      Contraseña temporal:
+                    </span>
+                    <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
                       {createdPassword}
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg dark:bg-amber-900/20 dark:text-amber-400 dark:border dark:border-amber-800/50">
                   Comunica estas credenciales al cliente de forma segura. Se recomienda que cambie
                   la contraseña en su primer acceso.
                 </p>
@@ -398,50 +417,50 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
             // Formulario de creación
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Nombre *</label>
+                <label className="text-sm font-medium dark:text-slate-300">Nombre *</label>
                 <Input
                   placeholder="Nombre completo"
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   value={newClient.name}
                   onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium">Email *</label>
+                  <label className="text-sm font-medium dark:text-slate-300">Email *</label>
                   <Input
                     type="email"
                     placeholder="email@ejemplo.com"
-                    className="h-10 rounded-xl"
+                    className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                     value={newClient.email}
                     onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium">Teléfono *</label>
+                  <label className="text-sm font-medium dark:text-slate-300">Teléfono *</label>
                   <Input
                     type="tel"
                     placeholder="+54 9 11 1234-5678"
-                    className="h-10 rounded-xl"
+                    className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                     value={newClient.phone}
                     onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
                   />
                 </div>
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Cédula / DNI</label>
+                <label className="text-sm font-medium dark:text-slate-300">Cédula / DNI</label>
                 <Input
                   placeholder="Ej: 27.456.789-0"
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   value={newClient.cedula}
                   onChange={(e) => setNewClient({ ...newClient, cedula: e.target.value })}
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Dirección</label>
+                <label className="text-sm font-medium dark:text-slate-300">Dirección</label>
                 <Input
                   placeholder="Dirección completa"
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   value={newClient.address}
                   onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
                 />

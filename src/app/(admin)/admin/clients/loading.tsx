@@ -8,50 +8,53 @@ export default function ClientsLoading() {
       {/* Header skeleton */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
-          <div className="mt-2 h-4 w-56 animate-pulse rounded bg-slate-100" />
+          <div className="h-8 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
+          <div className="mt-2 h-4 w-56 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-10 w-28 animate-pulse rounded-xl bg-slate-200" />
-          <div className="h-10 w-36 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-10 w-28 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700/60" />
+          <div className="h-10 w-36 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700/60" />
         </div>
       </div>
 
       {/* Search skeleton */}
-      <div className="h-10 animate-pulse rounded-xl bg-slate-100" />
+      <div className="h-10 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700/40" />
 
       {/* Table skeleton */}
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="border-b border-slate-100 pb-4">
+      <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+        <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
-            <div className="h-6 w-24 animate-pulse rounded-full bg-slate-100" />
+            <div className="h-5 w-32 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
+            <div className="h-6 w-24 animate-pulse rounded-full bg-slate-100 dark:bg-slate-700/40" />
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {/* Table header */}
-          <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-3">
-            <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-100" />
+          <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-3 dark:border-slate-700">
+            <div className="h-4 w-24 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
+            <div className="h-4 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
+            <div className="h-4 w-20 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
+            <div className="h-4 w-24 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
+            <div className="h-4 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
           </div>
 
           {/* Table rows */}
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 border-b border-slate-50 px-6 py-4">
+            <div
+              key={i}
+              className="flex items-center gap-4 border-b border-slate-50 px-6 py-4 dark:border-slate-700/50"
+            >
               <div className="flex items-center gap-3 w-48">
-                <div className="h-11 w-11 animate-pulse rounded-full bg-slate-200" />
-                <div className="h-5 w-28 animate-pulse rounded bg-slate-200" />
+                <div className="h-11 w-11 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700/60" />
+                <div className="h-5 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
               </div>
               <div className="w-44 space-y-1">
-                <div className="h-4 w-36 animate-pulse rounded bg-slate-200" />
-                <div className="h-4 w-28 animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
+                <div className="h-4 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/40" />
               </div>
-              <div className="h-5 w-8 animate-pulse rounded bg-slate-200" />
-              <div className="h-5 w-20 animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+              <div className="h-5 w-8 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
+              <div className="h-5 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
+              <div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700/60" />
             </div>
           ))}
         </CardContent>

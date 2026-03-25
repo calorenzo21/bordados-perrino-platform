@@ -15,6 +15,7 @@ import {
   Loader2,
   Package,
   Plus,
+  RotateCcw,
   Save,
   User,
   X,
@@ -208,6 +209,23 @@ export default function NewOrderContent() {
     localStorage.removeItem(STORAGE_KEY + '_clientId');
   };
 
+  // Limpiar todos los campos y el cliente seleccionado
+  const handleClearAll = () => {
+    setSelectedClient(null);
+    setFormData({
+      description: '',
+      serviceType: '',
+      serviceTypeId: '',
+      quantity: '',
+      total: '',
+      dueDate: '',
+      observations: '',
+      isUrgent: false,
+    });
+    setError(null);
+    clearDraft();
+  };
+
   // Validar formulario
   const isFormValid = () => {
     return (
@@ -251,6 +269,14 @@ export default function NewOrderContent() {
     setError(null);
 
     try {
+      // Warm up Supabase browser session (reads cookies, no server round-trip)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+      }
+
       // Generar número de orden
       const orderNumber = await generateOrderNumber();
 
@@ -415,6 +441,10 @@ export default function NewOrderContent() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" className="h-10 gap-2 rounded-xl" onClick={handleClearAll}>
+            <RotateCcw className="h-4 w-4" />
+            Limpiar
+          </Button>
           <Button
             variant="outline"
             className="h-10 gap-2 rounded-xl"

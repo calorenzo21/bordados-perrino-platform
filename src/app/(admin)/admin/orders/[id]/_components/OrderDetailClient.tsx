@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAuth } from '@/context/auth-context';
 import { useOrder } from '@/hooks/use-orders';
 import {
   AlertCircle,
@@ -128,6 +129,7 @@ export function OrderDetailClient({
   initialOrder: OrderForDetail | null;
 }) {
   const supabase = createClient();
+  const { user: authUser, profile: authProfile } = useAuth();
 
   const {
     order,
@@ -245,24 +247,16 @@ export function OrderDetailClient({
     setPaymentError('');
 
     try {
-      // 0. Obtener el usuario actual y su nombre
+      // 0. Warm up Supabase browser session (reads cookies, no server round-trip)
       const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-
-      let userName = 'Admin';
-      if (currentUser?.id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', currentUser.id)
-          .single();
-
-        if (profileData) {
-          userName =
-            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
-        }
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
       }
+      const userName = authProfile
+        ? `${authProfile.first_name || ''} ${authProfile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
 
       // 1. Subir fotos a Supabase Storage (si hay)
       let uploadedPhotoUrls: string[] = [];
@@ -284,7 +278,7 @@ export function OrderDetailClient({
           amount: finalAmount,
           method: newPaymentData.method.toLowerCase(),
           notes: newPaymentData.notes || null,
-          received_by: currentUser?.id || null,
+          received_by: session.user.id,
         })
         .select()
         .single();
@@ -330,7 +324,7 @@ export function OrderDetailClient({
       });
 
       // Revalidar caché del servidor
-      await revalidateOrder(order.uuid);
+      revalidateOrder(order.uuid).catch(console.error);
       refetch();
 
       // 4.5 Enviar notificación por email (fire-and-forget)
@@ -418,6 +412,14 @@ export function OrderDetailClient({
     setIsSavingEdit(true);
 
     try {
+      // Warm up Supabase browser session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
+      }
+
       // Actualizar en Supabase
       const { error: updateError } = await supabase
         .from('orders')
@@ -448,7 +450,7 @@ export function OrderDetailClient({
       });
 
       // Revalidar caché del servidor
-      await revalidateOrder(order.uuid);
+      revalidateOrder(order.uuid).catch(console.error);
       refetch();
 
       setIsEditing(false);
@@ -485,25 +487,16 @@ export function OrderDetailClient({
     setIsStatusChanging(true);
 
     try {
-      // 0. Obtener el usuario actual
+      // 0. Warm up Supabase browser session (reads cookies, no server round-trip)
       const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-
-      // Obtener el nombre del usuario desde el perfil
-      let userName = 'Admin';
-      if (currentUser?.id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', currentUser.id)
-          .single();
-
-        if (profileData) {
-          userName =
-            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || 'Admin';
-        }
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
       }
+      const userName = authProfile
+        ? `${authProfile.first_name || ''} ${authProfile.last_name || ''}`.trim() || 'Admin'
+        : 'Admin';
 
       // 1. Subir fotos a Supabase Storage (si hay)
       let uploadedPhotoUrls: string[] = [];
@@ -533,7 +526,7 @@ export function OrderDetailClient({
         order_id: order.uuid,
         status: newStatusData.status,
         observations: newStatusData.observations,
-        changed_by: currentUser?.id || null,
+        changed_by: session.user.id,
       };
       if (
         newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
@@ -596,7 +589,7 @@ export function OrderDetailClient({
       });
 
       // Revalidar caché del servidor
-      await revalidateOrder(order.uuid);
+      revalidateOrder(order.uuid).catch(console.error);
       refetch();
 
       // 5.5 Enviar notificación por email (fire-and-forget)

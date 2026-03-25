@@ -1,33 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { useAuth } from '@/hooks/use-auth';
 import {
-  User,
-  Lock,
-  Users,
-  Save,
-  Loader2,
+  AlertCircle,
+  Check,
+  Copy,
   Eye,
   EyeOff,
+  Loader2,
+  Lock,
   Plus,
+  Save,
   Trash2,
-  Copy,
-  Check,
-  AlertCircle,
+  User,
+  Users,
 } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { createClient } from '@/lib/supabase/browser';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +30,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/hooks/use-auth';
-import { createClient } from '@/lib/supabase/browser';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Admin {
   id: string;
@@ -53,9 +55,10 @@ interface Admin {
 // Función para traducir errores de Supabase al español
 function translateSupabaseError(error: any): string {
   const message = error?.message || error?.toString() || '';
-  
+
   const translations: Record<string, string> = {
-    'New password should be different from the old password.': 'La nueva contraseña debe ser diferente a la anterior.',
+    'New password should be different from the old password.':
+      'La nueva contraseña debe ser diferente a la anterior.',
     'Password should be at least 6 characters.': 'La contraseña debe tener al menos 6 caracteres.',
     'Password is too weak': 'La contraseña es muy débil.',
     'Invalid login credentials': 'Credenciales inválidas.',
@@ -92,7 +95,10 @@ export default function SettingsPage() {
     phone: '',
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profileMessage, setProfileMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // Estado de contraseña
   const [passwordData, setPasswordData] = useState({
@@ -106,7 +112,10 @@ export default function SettingsPage() {
     confirm: false,
   });
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // Estado de administradores
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -118,7 +127,10 @@ export default function SettingsPage() {
     lastName: '',
   });
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
-  const [createdAdminInfo, setCreatedAdminInfo] = useState<{ email: string; password: string } | null>(null);
+  const [createdAdminInfo, setCreatedAdminInfo] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<Admin | null>(null);
   const [isDeletingAdmin, setIsDeletingAdmin] = useState(false);
@@ -166,7 +178,7 @@ export default function SettingsPage() {
 
     try {
       const supabase = createClient();
-      
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -215,14 +227,14 @@ export default function SettingsPage() {
 
     try {
       const supabase = createClient();
-      
+
       // Usar Promise.race con timeout para evitar que se quede colgado
       // debido a eventos de auth state change
       const updatePromise = supabase.auth.updateUser({
         password: passwordData.newPassword,
       });
-      
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) => 
+
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 10000)
       );
 
@@ -245,9 +257,9 @@ export default function SettingsPage() {
         setTimeout(() => setPasswordMessage(null), 3000);
       } else {
         console.error('Error al cambiar contraseña:', error);
-        setPasswordMessage({ 
-          type: 'error', 
-          text: translateSupabaseError(error)
+        setPasswordMessage({
+          type: 'error',
+          text: translateSupabaseError(error),
         });
       }
     } finally {
@@ -329,8 +341,10 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
-        <p className="text-slate-500">Administra tu perfil y configuración del sistema</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Configuración</h1>
+        <p className="text-slate-500 dark:text-slate-400">
+          Administra tu perfil y configuración del sistema
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -350,9 +364,11 @@ export default function SettingsPage() {
                 id="email"
                 value={user?.email || ''}
                 disabled
-                className="bg-slate-50"
+                className="bg-slate-50 dark:bg-slate-700 dark:text-slate-400"
               />
-              <p className="text-xs text-slate-500">El correo no se puede cambiar</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                El correo no se puede cambiar
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -387,11 +403,13 @@ export default function SettingsPage() {
             </div>
 
             {profileMessage && (
-              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
-                profileMessage.type === 'success' 
-                  ? 'bg-green-50 text-green-700' 
-                  : 'bg-red-50 text-red-700'
-              }`}>
+              <div
+                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                  profileMessage.type === 'success'
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                    : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                }`}
+              >
                 {profileMessage.type === 'success' ? (
                   <Check className="h-4 w-4" />
                 ) : (
@@ -429,13 +447,15 @@ export default function SettingsPage() {
                   id="newPassword"
                   type={showPasswords.new ? 'text' : 'password'}
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, newPassword: e.target.value })
+                  }
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -449,25 +469,35 @@ export default function SettingsPage() {
                   id="confirmPassword"
                   type={showPasswords.confirm ? 'text' : 'password'}
                   value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                  }
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  onClick={() =>
+                    setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
-                  {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPasswords.confirm ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
 
             {passwordMessage && (
-              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
-                passwordMessage.type === 'success' 
-                  ? 'bg-green-50 text-green-700' 
-                  : 'bg-red-50 text-red-700'
-              }`}>
+              <div
+                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                  passwordMessage.type === 'success'
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                    : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                }`}
+              >
                 {passwordMessage.type === 'success' ? (
                   <Check className="h-4 w-4" />
                 ) : (
@@ -477,9 +507,11 @@ export default function SettingsPage() {
               </div>
             )}
 
-            <Button 
-              onClick={handleChangePassword} 
-              disabled={isSavingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            <Button
+              onClick={handleChangePassword}
+              disabled={
+                isSavingPassword || !passwordData.newPassword || !passwordData.confirmPassword
+              }
               variant="outline"
               className="w-full"
             >
@@ -514,38 +546,38 @@ export default function SettingsPage() {
         <CardContent>
           {isLoadingAdmins ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400 dark:text-slate-500" />
             </div>
           ) : admins.length === 0 ? (
-            <div className="py-8 text-center text-slate-500">
+            <div className="py-8 text-center text-slate-500 dark:text-slate-400">
               No hay administradores registrados
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
               {admins.map((admin) => (
                 <div key={admin.id} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-medium text-slate-600">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {admin.first_name?.[0]?.toUpperCase() || admin.email[0].toUpperCase()}
                       {admin.last_name?.[0]?.toUpperCase() || ''}
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
                         {admin.first_name} {admin.last_name}
                       </p>
-                      <p className="text-sm text-slate-500">{admin.email}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{admin.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {admin.id === user?.id ? (
-                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                         Tú
                       </span>
                     ) : (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
                         onClick={() => setAdminToDelete(admin)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -568,7 +600,7 @@ export default function SettingsPage() {
               Ingresa los datos del nuevo administrador. Se generará una contraseña automáticamente.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="adminEmail">Correo electrónico *</Label>
@@ -627,28 +659,27 @@ export default function SettingsPage() {
               Administrador Creado
             </DialogTitle>
             <DialogDescription>
-              El administrador ha sido creado exitosamente. Comparte estas credenciales de forma segura.
+              El administrador ha sido creado exitosamente. Comparte estas credenciales de forma
+              segura.
             </DialogDescription>
           </DialogHeader>
-          
+
           {createdAdminInfo && (
             <div className="space-y-4 py-4">
-              <div className="rounded-lg bg-slate-50 p-4 space-y-3">
+              <div className="rounded-lg bg-slate-50 p-4 space-y-3 dark:bg-slate-700/50">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Correo</p>
-                  <p className="text-slate-900">{createdAdminInfo.email}</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Correo</p>
+                  <p className="text-slate-900 dark:text-slate-100">{createdAdminInfo.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Contraseña temporal</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    Contraseña temporal
+                  </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded bg-white px-3 py-2 font-mono text-sm">
+                    <code className="flex-1 rounded bg-white px-3 py-2 font-mono text-sm dark:bg-slate-800 dark:text-slate-100">
                       {createdAdminInfo.password}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyPassword}
-                    >
+                    <Button variant="outline" size="sm" onClick={handleCopyPassword}>
                       {copiedPassword ? (
                         <Check className="h-4 w-4 text-green-600" />
                       ) : (
@@ -658,21 +689,23 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  Guarda esta contraseña de forma segura. El nuevo administrador deberá cambiarla 
-                  en su primer inicio de sesión desde la sección de configuración.
+                  Guarda esta contraseña de forma segura. El nuevo administrador deberá cambiarla en
+                  su primer inicio de sesión desde la sección de configuración.
                 </p>
               </div>
             </div>
           )}
 
           <DialogFooter>
-            <Button onClick={() => {
-              setCreatedAdminInfo(null);
-              setIsAddAdminDialogOpen(false);
-            }}>
+            <Button
+              onClick={() => {
+                setCreatedAdminInfo(null);
+                setIsAddAdminDialogOpen(false);
+              }}
+            >
               Entendido
             </Button>
           </DialogFooter>
@@ -686,7 +719,9 @@ export default function SettingsPage() {
             <AlertDialogTitle>¿Eliminar administrador?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminará permanentemente la cuenta de{' '}
-              <strong>{adminToDelete?.first_name} {adminToDelete?.last_name}</strong>{' '}
+              <strong>
+                {adminToDelete?.first_name} {adminToDelete?.last_name}
+              </strong>{' '}
               ({adminToDelete?.email}).
             </AlertDialogDescription>
           </AlertDialogHeader>

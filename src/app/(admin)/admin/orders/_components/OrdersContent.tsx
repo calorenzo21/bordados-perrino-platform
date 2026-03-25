@@ -354,7 +354,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 hover:bg-transparent">
+              <TableRow className="border-slate-100 dark:border-slate-700 hover:bg-transparent">
                 <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
                   Pedido
                 </TableHead>

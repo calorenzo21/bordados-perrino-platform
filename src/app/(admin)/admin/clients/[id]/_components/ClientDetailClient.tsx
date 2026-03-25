@@ -155,7 +155,7 @@ export function ClientDetailClient({
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-          <p className="mt-4 text-sm text-slate-500">Cargando cliente...</p>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Cargando cliente...</p>
         </div>
       </div>
     );
@@ -164,9 +164,11 @@ export function ClientDetailClient({
   if (!client) {
     return (
       <div className="flex h-96 flex-col items-center justify-center">
-        <User className="h-16 w-16 text-slate-300" />
-        <h2 className="mt-4 text-xl font-semibold text-slate-900">Cliente no encontrado</h2>
-        <p className="mt-2 text-slate-500">El cliente {clientId} no existe.</p>
+        <User className="h-16 w-16 text-slate-300 dark:text-slate-600" />
+        <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Cliente no encontrado
+        </h2>
+        <p className="mt-2 text-slate-500 dark:text-slate-400">El cliente {clientId} no existe.</p>
         <Link href="/admin/clients">
           <Button className="mt-4 rounded-xl bg-blue-500 hover:bg-blue-600">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -194,21 +196,27 @@ export function ClientDetailClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/clients">
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14 border-2 border-white shadow-lg">
+            <Avatar className="h-14 w-14 border-2 border-white shadow-lg dark:border-slate-600">
               <AvatarFallback className="bg-linear-to-br from-blue-500 to-indigo-600 text-lg font-bold text-white">
                 {client.initials}
               </AvatarFallback>
             </Avatar>
             <div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">{client.name}</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {client.name}
+                </h1>
               </div>
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                 Cliente desde{' '}
                 {new Date(client.createdAt).toLocaleDateString('es-AR', {
                   year: 'numeric',
@@ -294,40 +302,54 @@ export function ClientDetailClient({
 
       {/* Información de contacto */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-24">
-        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-100/70 px-4 py-3 sm:col-span-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-200">
-            <Mail className="h-4 w-4 text-blue-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-100/70 px-4 py-3 sm:col-span-6 dark:border-blue-800/50 dark:bg-blue-900/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-200 dark:bg-blue-800/40">
+            <Mail className="h-4 w-4 text-blue-700 dark:text-blue-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium uppercase text-blue-500">Email</p>
-            <p className="truncate text-sm font-medium text-slate-800">{client.email}</p>
+            <p className="text-[10px] font-medium uppercase text-blue-500 dark:text-blue-400">
+              Email
+            </p>
+            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+              {client.email}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-100/70 px-4 py-3 sm:col-span-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-200">
-            <IdCard className="h-4 w-4 text-amber-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-100/70 px-4 py-3 sm:col-span-3 dark:border-amber-800/50 dark:bg-amber-900/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-200 dark:bg-amber-800/40">
+            <IdCard className="h-4 w-4 text-amber-700 dark:text-amber-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium uppercase text-amber-500">Cédula / DNI</p>
-            <p className="truncate text-sm font-medium text-slate-800">{client.cedula || '-'}</p>
+            <p className="text-[10px] font-medium uppercase text-amber-500 dark:text-amber-400">
+              Cédula / DNI
+            </p>
+            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+              {client.cedula || '-'}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-100/70 px-4 py-3 sm:col-span-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-200">
-            <Phone className="h-4 w-4 text-emerald-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-100/70 px-4 py-3 sm:col-span-4 dark:border-emerald-800/50 dark:bg-emerald-900/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-200 dark:bg-emerald-800/40">
+            <Phone className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium uppercase text-emerald-500">Teléfono</p>
-            <p className="truncate text-sm font-medium text-slate-800">{client.phone}</p>
+            <p className="text-[10px] font-medium uppercase text-emerald-500 dark:text-emerald-400">
+              Teléfono
+            </p>
+            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+              {client.phone}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-purple-200 bg-purple-100/70 px-4 py-3 sm:col-span-11">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-200">
-            <MapPin className="h-4 w-4 text-purple-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-purple-200 bg-purple-100/70 px-4 py-3 sm:col-span-11 dark:border-purple-800/50 dark:bg-purple-900/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-200 dark:bg-purple-800/40">
+            <MapPin className="h-4 w-4 text-purple-700 dark:text-purple-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium uppercase text-purple-500">Dirección</p>
-            <p className="truncate text-sm font-medium text-slate-800">
+            <p className="text-[10px] font-medium uppercase text-purple-500 dark:text-purple-400">
+              Dirección
+            </p>
+            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
               {client.address || 'Sin dirección registrada'}
             </p>
           </div>
@@ -335,14 +357,14 @@ export function ClientDetailClient({
       </div>
 
       {/* Historial de Pedidos */}
-      <Card className="rounded-2xl border-0 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+      <Card className="rounded-2xl border-0 shadow-sm dark:bg-slate-800">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-700">
           <div>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold dark:text-slate-100">
               <ShoppingCart className="h-5 w-5 text-blue-500" />
               Historial de Pedidos
             </CardTitle>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {client.orders.length} pedido{client.orders.length !== 1 ? 's' : ''} en total
             </p>
           </div>
@@ -356,23 +378,23 @@ export function ClientDetailClient({
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100 hover:bg-transparent">
-                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
+              <TableRow className="border-slate-100 hover:bg-transparent dark:border-slate-700">
+                <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Pedido
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Descripción
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Servicio
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Estado
                 </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Fecha
                 </TableHead>
-                <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400">
+                <TableHead className="pr-6 text-right text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">
                   Total
                 </TableHead>
               </TableRow>
@@ -381,7 +403,7 @@ export function ClientDetailClient({
               {client.orders.map((order) => (
                 <TableRow
                   key={order.id}
-                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50"
+                  className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 dark:border-slate-700 dark:hover:bg-slate-700/50"
                 >
                   <TableCell className="pl-6">
                     <Link href={`/admin/orders/${order.id}`} className="block">
@@ -392,23 +414,27 @@ export function ClientDetailClient({
                           <Package className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600">
+                          <p className="font-mono text-sm font-semibold text-slate-900 group-hover:text-blue-600 dark:text-slate-100">
                             {order.id}
                           </p>
-                          <p className="text-xs text-slate-400">{order.quantity} unidades</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
+                            {order.quantity} unidades
+                          </p>
                         </div>
                       </div>
                     </Link>
                   </TableCell>
                   <TableCell>
                     <Link href={`/admin/orders/${order.id}`} className="block max-w-[200px]">
-                      <p className="truncate text-sm text-slate-700">{order.description}</p>
+                      <p className="truncate text-sm text-slate-700 dark:text-slate-300">
+                        {order.description}
+                      </p>
                     </Link>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className="border-slate-200 bg-slate-50 text-slate-600"
+                      className="border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
                     >
                       {order.serviceType}
                     </Badge>
@@ -417,13 +443,13 @@ export function ClientDetailClient({
                     <OrderStatusBadge status={order.status as OrderStatusType} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                       {order.date}
                     </div>
                   </TableCell>
                   <TableCell className="pr-6 text-right">
-                    <p className="text-sm font-semibold text-emerald-600">
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       ${order.total.toLocaleString()}
                     </p>
                   </TableCell>
@@ -434,8 +460,10 @@ export function ClientDetailClient({
 
           {client.orders.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <ShoppingBag className="h-12 w-12 text-slate-300" />
-              <p className="mt-4 text-sm font-medium text-slate-600">Sin pedidos aún</p>
+              <ShoppingBag className="h-12 w-12 text-slate-300 dark:text-slate-600" />
+              <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                Sin pedidos aún
+              </p>
               <Link href={`/admin/orders/new?client=${client.id}`}>
                 <Button className="mt-4 rounded-xl bg-blue-500 hover:bg-blue-600">
                   <Plus className="mr-2 h-4 w-4" />
@@ -455,7 +483,7 @@ export function ClientDetailClient({
           setIsEditDialogOpen(open);
         }}
       >
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
           <DialogHeader>
             <DialogTitle>Editar Datos del Cliente</DialogTitle>
             <DialogDescription>
@@ -464,61 +492,63 @@ export function ClientDetailClient({
           </DialogHeader>
 
           {editError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{editError}</div>
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border dark:border-red-800/50">
+              {editError}
+            </div>
           )}
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Nombre Completo</label>
+              <label className="text-sm font-medium dark:text-slate-300">Nombre Completo</label>
               <Input
                 type="text"
                 value={editData.name}
                 onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                className="h-10 rounded-xl"
+                className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                 placeholder="Nombre del cliente"
                 disabled={isSaving}
               />
             </div>
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium dark:text-slate-300">Email</label>
               <Input
                 type="email"
                 value={editData.email}
                 onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                className="h-10 rounded-xl"
+                className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                 placeholder="email@ejemplo.com"
                 disabled={isSaving}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Cédula / DNI</label>
+                <label className="text-sm font-medium dark:text-slate-300">Cédula / DNI</label>
                 <Input
                   value={editData.cedula}
                   onChange={(e) => setEditData({ ...editData, cedula: e.target.value })}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   placeholder="Ej: 27.456.789-0"
                   disabled={isSaving}
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Teléfono</label>
+                <label className="text-sm font-medium dark:text-slate-300">Teléfono</label>
                 <Input
                   type="tel"
                   value={editData.phone}
                   onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                  className="h-10 rounded-xl"
+                  className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   placeholder="+54 9 11 1234-5678"
                   disabled={isSaving}
                 />
               </div>
             </div>
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Dirección</label>
+              <label className="text-sm font-medium dark:text-slate-300">Dirección</label>
               <Input
                 value={editData.address}
                 onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                className="h-10 rounded-xl"
+                className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                 placeholder="Dirección completa"
                 disabled={isSaving}
               />
