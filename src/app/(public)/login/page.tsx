@@ -49,11 +49,11 @@ function LoginForm() {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200 dark:shadow-blue-900/50">
             <span className="text-lg font-bold text-white">BP</span>
           </div>
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {user ? 'Redirigiendo...' : 'Verificando sesión...'}
           </p>
         </div>
@@ -127,25 +127,32 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg">
+      <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg dark:bg-slate-800 dark:shadow-slate-900/50">
         <CardHeader className="text-center">
           {/* Logo */}
           <div className="mx-auto mb-4">
             <PerrinoLogo size="lg" rounded="2xl" />
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Bienvenido</CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Bienvenido
+          </CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
             Ingresa a tu cuenta de Bordados Perrino
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {displayError && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{displayError}</div>
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                {displayError}
+              </div>
             )}
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
                 Correo electrónico
               </label>
               <Input
@@ -155,15 +162,21 @@ function LoginForm() {
                 placeholder="tu@email.com"
                 required
                 disabled={isPending}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Contraseña
                 </label>
-                <Link href="/forgot-password" className="text-sm text-blue-500 hover:text-blue-600">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                >
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -174,7 +187,7 @@ function LoginForm() {
                 placeholder="••••••••"
                 required
                 disabled={isPending}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
               />
             </div>
             <Button
@@ -196,10 +209,12 @@ function LoginForm() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
+                <span className="w-full border-t border-slate-200 dark:border-slate-600" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-400">O continúa con</span>
+                <span className="bg-white px-2 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                  O continúa con
+                </span>
               </div>
             </div>
 
@@ -208,7 +223,7 @@ function LoginForm() {
               variant="outline"
               onClick={handleGoogleSignIn}
               disabled={isPending || isGooglePending}
-              className="mt-4 h-11 w-full rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+              className="mt-4 h-11 w-full rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               {isGooglePending ? (
                 <>
@@ -241,9 +256,12 @@ function LoginForm() {
             </Button>
           </div>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             ¿No tienes cuenta?{' '}
-            <Link href="/register" className="font-medium text-blue-500 hover:text-blue-600">
+            <Link
+              href="/register"
+              className="font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               Regístrate aquí
             </Link>
           </p>
@@ -259,7 +277,7 @@ function LoginFallback() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <p className="text-sm text-slate-500">Cargando...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
       </div>
     </div>
   );

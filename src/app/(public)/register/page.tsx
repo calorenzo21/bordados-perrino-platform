@@ -37,7 +37,7 @@ export default function RegisterPage() {
         <div className="flex flex-col items-center gap-4">
           <PerrinoLogo size="md" />
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {user ? 'Redirigiendo...' : 'Verificando sesión...'}
           </p>
         </div>
@@ -74,28 +74,39 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg">
+      <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg dark:bg-slate-800 dark:shadow-slate-900/50">
         <CardHeader className="text-center">
           {/* Logo */}
           <div className="mx-auto mb-4">
             <PerrinoLogo size="lg" rounded="2xl" />
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Crear Cuenta</CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Crear Cuenta
+          </CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
             Regístrate para comenzar a usar Bordados Perrino
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            {error && (
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                {error}
+              </div>
+            )}
 
             {success && (
-              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</div>
+              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                {success}
+              </div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="firstName" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="firstName"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Nombre
                 </label>
                 <Input
@@ -105,11 +116,14 @@ export default function RegisterPage() {
                   placeholder="Juan"
                   required
                   disabled={isPending}
-                  className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                  className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="lastName" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="lastName"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Apellido
                 </label>
                 <Input
@@ -119,12 +133,15 @@ export default function RegisterPage() {
                   placeholder="Pérez"
                   required
                   disabled={isPending}
-                  className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                  className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
                 Correo electrónico
               </label>
               <Input
@@ -134,11 +151,14 @@ export default function RegisterPage() {
                 placeholder="tu@email.com"
                 required
                 disabled={isPending}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium text-slate-700">
+              <label
+                htmlFor="phone"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
                 Teléfono
               </label>
               <Input
@@ -147,11 +167,14 @@ export default function RegisterPage() {
                 type="tel"
                 placeholder="+54 9 XXX XXX-XXXX"
                 disabled={isPending}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-slate-700">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
                 Contraseña
               </label>
               <Input
@@ -162,9 +185,9 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 disabled={isPending}
-                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500"
+                className="h-11 rounded-xl border-slate-200 bg-slate-50 focus-visible:bg-white focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus-visible:bg-slate-700"
               />
-              <p className="text-xs text-slate-400">Mínimo 6 caracteres</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Mínimo 6 caracteres</p>
             </div>
             <Button
               type="submit"
@@ -182,20 +205,29 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             ¿Ya tienes cuenta?{' '}
-            <Link href="/login" className="font-medium text-blue-500 hover:text-blue-600">
+            <Link
+              href="/login"
+              className="font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               Inicia sesión
             </Link>
           </p>
 
-          <p className="mt-4 text-center text-xs text-slate-400">
+          <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
             Al registrarte, aceptas nuestros{' '}
-            <Link href="/terms" className="text-blue-500 hover:text-blue-600">
+            <Link
+              href="/terms"
+              className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               Términos de servicio
             </Link>{' '}
             y{' '}
-            <Link href="/privacy" className="text-blue-500 hover:text-blue-600">
+            <Link
+              href="/privacy"
+              className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               Política de privacidad
             </Link>
           </p>

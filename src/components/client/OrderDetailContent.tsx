@@ -228,12 +228,21 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                         showAsCompleted
                           ? `bg-linear-to-br ${colors.gradient} shadow-lg`
                           : isCurrent
-                            ? `${colors.bgLight} border-2 ${colors.border}`
+                            ? `bg-white dark:bg-slate-800 border-2 ${colors.border} shadow-lg`
                             : 'border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                       }`}
+                      style={
+                        isCurrent && !showAsCompleted
+                          ? { boxShadow: `0 0 20px ${colors.hex}40, 0 0 6px ${colors.hex}30` }
+                          : undefined
+                      }
                     >
+                      {/* Inner colored fill for current step */}
+                      {isCurrent && !showAsCompleted && (
+                        <div className={`absolute inset-0.75 rounded-full ${colors.bgLight}`} />
+                      )}
                       <Icon
-                        className={`h-6 w-6 ${
+                        className={`relative h-6 w-6 ${
                           showAsCompleted
                             ? 'text-white'
                             : isCurrent
@@ -243,7 +252,7 @@ export function OrderDetailContent({ orderId, initialData }: OrderDetailContentP
                       />
                       {isCurrent && !isEntregadoFinal && (
                         <span
-                          className={`absolute inset-0 animate-ping rounded-full ${colors.bgLight} opacity-50`}
+                          className={`absolute -inset-1 animate-pulse rounded-full border-2 ${colors.border} opacity-60`}
                         />
                       )}
                     </div>
