@@ -1,10 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
-import { updateSession, type UserRole } from '@/lib/supabase/middleware';
+import { type UserRole, updateSession } from '@/lib/supabase/middleware';
 
 /**
  * Route protection middleware for Next.js
- * 
+ *
  * This middleware implements a robust authentication system:
  * 1. Refreshes the Supabase session on every request
  * 2. Protects admin routes - only accessible by ADMIN users
@@ -22,7 +22,7 @@ const PUBLIC_ROUTES = ['/auth/callback'];
 
 // Helper to check if pathname starts with any of the routes
 const matchesRoute = (pathname: string, routes: string[]) =>
-  routes.some(route => pathname === route || pathname.startsWith(`${route}/`));
+  routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
 // Get the appropriate dashboard based on user role
 const getDashboardByRole = (role: UserRole): string => {
@@ -41,11 +41,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Skip middleware for API routes and static files
-  if (
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/_next') ||
-    pathname.includes('.')
-  ) {
+  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('.')) {
     return supabaseResponse;
   }
 
@@ -94,7 +90,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============================================
-  // CASE 3: Role-based route protection
+  // CASE 3: INACTIVE users — fully blocked
+  // ============================================
+  if (role === 'INACTIVE') {
+    // Clear the role cookie and redirect to login
+    supabaseResponse.cookies.delete('x-user-role');
+    return NextResponse.redirect(new URL('/login?error=account_disabled', request.url));
+  }
+
+  // ============================================
+  // CASE 4: Role-based route protection
   // ============================================
 
   // Admin routes - only ADMIN users can access

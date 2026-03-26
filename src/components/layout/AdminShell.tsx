@@ -307,7 +307,7 @@ export function AdminShell({ children }: AdminShellProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950/50"
+                    className="cursor-pointer rounded-lg text-red-500 focus:bg-red-50 focus:text-red-500 dark:text-red-400 dark:focus:bg-red-950/50 dark:focus:text-red-400"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >

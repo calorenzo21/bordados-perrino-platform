@@ -42,6 +42,12 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     .eq('id', data.user.id)
     .single();
 
+  // Block INACTIVE users — sign them out immediately
+  if (profile?.role === 'INACTIVE') {
+    await supabase.auth.signOut();
+    return { success: false, error: 'Esta cuenta ha sido desactivada. Contacta al administrador.' };
+  }
+
   revalidatePath('/', 'layout');
 
   const redirectTo = profile?.role === 'ADMIN' ? '/admin/dashboard' : '/client/panel';
@@ -182,6 +188,7 @@ function getErrorMessage(message: string): string {
     'Email rate limit exceeded': 'Demasiados intentos. Intenta de nuevo más tarde.',
     'New password should be different from the old password':
       'La nueva contraseña debe ser diferente a la anterior.',
+    'User is banned': 'Esta cuenta ha sido desactivada. Contacta al administrador.',
   };
 
   return errorMap[message] || message;

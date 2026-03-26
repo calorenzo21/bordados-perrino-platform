@@ -354,7 +354,7 @@ export function NewExpenseClient({ initialExpenseTypes }: { initialExpenseTypes:
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="h-14 rounded-xl border-slate-200 pl-8 text-2xl font-bold transition-all focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
+                    className="h-11 rounded-xl border-slate-200 pl-8 text-base font-semibold transition-all dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                   />
                 </div>
               </div>

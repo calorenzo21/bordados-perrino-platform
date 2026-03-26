@@ -26,12 +26,15 @@ function LoginForm() {
   const redirectTo = searchParams.get('redirectTo');
   const { user, isLoading, isAdmin } = useAuth();
 
-  // Error de OAuth derivado de la URL (ej. login?error=auth_error)
-  const oauthErrorMessage =
-    searchParams.get('error') === 'auth_error'
+  // Errores derivados de la URL (ej. login?error=auth_error)
+  const urlError = searchParams.get('error');
+  const urlErrorMessage =
+    urlError === 'auth_error'
       ? 'No se pudo iniciar sesión con Google. Intenta de nuevo o usa email y contraseña.'
-      : null;
-  const displayError = error ?? oauthErrorMessage;
+      : urlError === 'account_disabled'
+        ? 'Esta cuenta ha sido desactivada. Contacta al administrador.'
+        : null;
+  const displayError = error ?? urlErrorMessage;
 
   // Redirigir si el usuario ya está autenticado
   useEffect(() => {

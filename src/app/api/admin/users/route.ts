@@ -209,19 +209,43 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 });
     }
 
-    // Eliminar perfil
-    const { error: profileError } = await adminClient.from('profiles').delete().eq('id', userId);
+    // Verificar que quede al menos un admin activo después de desactivar
+    const { count } = await adminClient
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'ADMIN');
 
-    if (profileError) {
-      console.error('Error al eliminar perfil:', profileError);
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json(
+        { error: 'No se puede eliminar. Debe existir al menos un administrador en el sistema' },
+        { status: 400 }
+      );
     }
 
-    // Eliminar usuario de auth
-    const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
+    // Soft-delete: cambiar rol a INACTIVE (preserva FKs en historial de pedidos/pagos)
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({ role: 'INACTIVE', updated_at: new Date().toISOString() })
+      .eq('id', userId);
 
-    if (authError) {
-      console.error('Error al eliminar usuario:', authError);
-      return NextResponse.json({ error: 'Error al eliminar administrador' }, { status: 500 });
+    if (profileError) {
+      console.error('Error al desactivar perfil:', profileError);
+      return NextResponse.json({ error: 'Error al desactivar administrador' }, { status: 500 });
+    }
+
+    // Banear usuario en Supabase Auth: no puede hacer login ni crear cuenta con ese email
+    const { error: banError } = await adminClient.auth.admin.updateUserById(userId, {
+      ban_duration: '876600h', // ~100 años
+    });
+
+    if (banError) {
+      // Rollback: restaurar rol si el ban falla
+      console.error('Error al banear usuario:', banError);
+      await adminClient
+        .from('profiles')
+        .update({ role: 'ADMIN', updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      return NextResponse.json({ error: 'Error al desactivar administrador' }, { status: 500 });
     }
 
     // Revalidar páginas de configuración
@@ -229,7 +253,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Administrador eliminado exitosamente',
+      message: 'Administrador desactivado exitosamente',
     });
   } catch (error) {
     console.error('Error al eliminar administrador:', error);

@@ -130,10 +130,14 @@ export function AuthProvider({
         if (session?.user) {
           // Establecer el User de Supabase (tipo correcto, viene del cliente browser)
           setUser(session.user);
-          // Re-fetch del profile en background para mantener datos frescos.
-          // El profile ya se muestra desde initialProfile (SSR), esto solo actualiza si cambió.
-          const profileData = await fetchProfile(session.user.id);
-          if (isMounted.current) setProfile(profileData);
+          // Re-fetch del profile en background (fire-and-forget).
+          // NO usar await aquí: el Supabase client mantiene un lock interno
+          // durante updateUser/signIn. Await crea un deadlock porque fetchProfile
+          // necesita el mismo client. El profile ya viene hydratado desde SSR,
+          // esto solo actualiza si cambió.
+          fetchProfile(session.user.id).then((profileData) => {
+            if (isMounted.current) setProfile(profileData);
+          });
         } else {
           setUser(null);
           setProfile(null);

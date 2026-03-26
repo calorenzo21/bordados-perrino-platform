@@ -134,6 +134,7 @@ export default function SettingsPage() {
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<Admin | null>(null);
   const [isDeletingAdmin, setIsDeletingAdmin] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Cargar datos del perfil
   useEffect(() => {
@@ -228,21 +229,16 @@ export default function SettingsPage() {
     try {
       const supabase = createClient();
 
-      // Usar Promise.race con timeout para evitar que se quede colgado
-      // debido a eventos de auth state change
-      const updatePromise = supabase.auth.updateUser({
+      // Inicializar sesión desde cookies antes de mutar (evita cold client hang)
+      await supabase.auth.getSession();
+
+      const { error } = await supabase.auth.updateUser({
         password: passwordData.newPassword,
       });
 
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 10000)
-      );
-
-      const result = await Promise.race([updatePromise, timeoutPromise]);
-
-      if (result.error) {
-        console.error('Error de Supabase Auth:', result.error);
-        throw result.error;
+      if (error) {
+        console.error('Error de Supabase Auth:', error);
+        throw error;
       }
 
       // Limpiar campos y mostrar éxito
@@ -250,18 +246,11 @@ export default function SettingsPage() {
       setPasswordMessage({ type: 'success', text: 'Contraseña actualizada correctamente' });
       setTimeout(() => setPasswordMessage(null), 3000);
     } catch (error: any) {
-      // Si es timeout, la contraseña probablemente se cambió pero el evento auth causó el cuelgue
-      if (error.message === 'timeout') {
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setPasswordMessage({ type: 'success', text: 'Contraseña actualizada correctamente' });
-        setTimeout(() => setPasswordMessage(null), 3000);
-      } else {
-        console.error('Error al cambiar contraseña:', error);
-        setPasswordMessage({
-          type: 'error',
-          text: translateSupabaseError(error),
-        });
-      }
+      console.error('Error al cambiar contraseña:', error);
+      setPasswordMessage({
+        type: 'error',
+        text: translateSupabaseError(error),
+      });
     } finally {
       setIsSavingPassword(false);
     }
@@ -316,6 +305,7 @@ export default function SettingsPage() {
     if (!adminToDelete) return;
 
     setIsDeletingAdmin(true);
+    setDeleteError(null);
 
     try {
       const response = await fetch(`/api/admin/users?id=${adminToDelete.id}`, {
@@ -331,7 +321,7 @@ export default function SettingsPage() {
       fetchAdmins();
     } catch (error: any) {
       console.error('Error al eliminar administrador:', error);
-      alert(error.message || 'Error al eliminar administrador');
+      setDeleteError(error.message || 'Error al eliminar administrador');
     } finally {
       setIsDeletingAdmin(false);
     }
@@ -379,6 +369,8 @@ export default function SettingsPage() {
                   value={profileData.firstName}
                   onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                   placeholder="Tu nombre"
+                  autoComplete="given-name"
+                  className="border-slate-300 dark:border-slate-500 focus-visible:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -388,6 +380,8 @@ export default function SettingsPage() {
                   value={profileData.lastName}
                   onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                   placeholder="Tu apellido"
+                  autoComplete="family-name"
+                  className="border-slate-300 dark:border-slate-500 focus-visible:ring-blue-500"
                 />
               </div>
             </div>
@@ -399,6 +393,8 @@ export default function SettingsPage() {
                 value={profileData.phone}
                 onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                 placeholder="+58 412 123 4567"
+                autoComplete="tel"
+                className="border-slate-300 dark:border-slate-500 focus-visible:ring-blue-500"
               />
             </div>
 
@@ -451,6 +447,7 @@ export default function SettingsPage() {
                     setPasswordData({ ...passwordData, newPassword: e.target.value })
                   }
                   placeholder="••••••••"
+                  className="border-slate-300 dark:border-slate-500 focus-visible:ring-amber-500"
                 />
                 <button
                   type="button"
@@ -473,6 +470,7 @@ export default function SettingsPage() {
                     setPasswordData({ ...passwordData, confirmPassword: e.target.value })
                   }
                   placeholder="••••••••"
+                  className="border-slate-300 dark:border-slate-500 focus-visible:ring-amber-500"
                 />
                 <button
                   type="button"
@@ -512,8 +510,7 @@ export default function SettingsPage() {
               disabled={
                 isSavingPassword || !passwordData.newPassword || !passwordData.confirmPassword
               }
-              variant="outline"
-              className="w-full"
+              className="w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500"
             >
               {isSavingPassword ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -601,15 +598,20 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-4 py-4">
+            {/* Hidden fields trick: confuse browser autocomplete heuristics */}
+            <input type="text" name="username" style={{ display: 'none' }} readOnly />
+            <input type="password" name="password" style={{ display: 'none' }} readOnly />
             <div className="space-y-2">
               <Label htmlFor="adminEmail">Correo electrónico *</Label>
               <Input
                 id="adminEmail"
                 type="email"
+                name="adminEmail"
                 value={newAdminData.email}
                 onChange={(e) => setNewAdminData({ ...newAdminData, email: e.target.value })}
                 placeholder="admin@ejemplo.com"
+                autoComplete="new-password"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -617,22 +619,26 @@ export default function SettingsPage() {
                 <Label htmlFor="adminFirstName">Nombre</Label>
                 <Input
                   id="adminFirstName"
+                  name="adminFirstName"
                   value={newAdminData.firstName}
                   onChange={(e) => setNewAdminData({ ...newAdminData, firstName: e.target.value })}
                   placeholder="Nombre"
+                  autoComplete="new-password"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="adminLastName">Apellido</Label>
                 <Input
                   id="adminLastName"
+                  name="adminLastName"
                   value={newAdminData.lastName}
                   onChange={(e) => setNewAdminData({ ...newAdminData, lastName: e.target.value })}
                   placeholder="Apellido"
+                  autoComplete="new-password"
                 />
               </div>
             </div>
-          </div>
+          </form>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddAdminDialogOpen(false)}>
@@ -713,24 +719,49 @@ export default function SettingsPage() {
       </Dialog>
 
       {/* Alert dialog para confirmar eliminación */}
-      <AlertDialog open={!!adminToDelete} onOpenChange={() => setAdminToDelete(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={!!adminToDelete}
+        onOpenChange={() => {
+          setAdminToDelete(null);
+          setDeleteError(null);
+        }}
+      >
+        <AlertDialogContent className="dark:bg-slate-800 dark:border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar administrador?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="dark:text-slate-100">
+              ¿Eliminar administrador?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="dark:text-slate-400">
               Esta acción no se puede deshacer. Se eliminará permanentemente la cuenta de{' '}
-              <strong>
+              <strong className="dark:text-slate-200">
                 {adminToDelete?.first_name} {adminToDelete?.last_name}
               </strong>{' '}
               ({adminToDelete?.email}).
+              {admins.length <= 2 && (
+                <span className="mt-2 block rounded-md bg-amber-50 p-2 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                  <AlertCircle className="mr-1 inline h-4 w-4" />
+                  Solo quedan {admins.length} administradores. El sistema necesita al menos uno.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {deleteError}
+            </div>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingAdmin}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel
+              disabled={isDeletingAdmin}
+              className="dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+            >
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAdmin}
               disabled={isDeletingAdmin}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500"
             >
               {isDeletingAdmin ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
