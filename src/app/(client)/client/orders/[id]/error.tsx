@@ -24,21 +24,23 @@ export default function ClientOrderDetailError({
     <div className="flex min-h-[400px] items-center justify-center p-6">
       <Card className="w-full max-w-md rounded-2xl border-0 shadow-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
-            <AlertCircle className="h-6 w-6 text-rose-600" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/20">
+            <AlertCircle className="h-6 w-6 text-rose-600 dark:text-rose-400" />
           </div>
-          <CardTitle className="text-xl font-semibold text-slate-900">
+          <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             Error al cargar el pedido
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-center">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             No se pudo cargar el detalle del pedido. Intenta de nuevo.
           </p>
 
           {error.message && (
-            <div className="rounded-lg bg-slate-50 p-3">
-              <p className="font-mono text-xs text-slate-600">{error.message}</p>
+            <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-700/50">
+              <p className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                {error.message}
+              </p>
             </div>
           )}
 

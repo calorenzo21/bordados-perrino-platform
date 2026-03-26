@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2, LogOut, Menu, Package, User, X } from 'lucide-react';
+import { Loader2, LogOut, Menu, Moon, Package, Sun, User, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -43,10 +44,21 @@ export function ClientShell({ children }: ClientShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { user, profile, isLoading, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+
+  // Restaurar tema del cliente al montar (independiente del panel admin)
+  useEffect(() => {
+    const stored = localStorage.getItem('client-theme');
+    if (stored === 'dark' || stored === 'light') setTheme(stored);
+  }, [setTheme]);
+
+  const toggleTheme = () => {
+    const next = resolvedTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('client-theme', next);
+    setTheme(next);
+  };
 
   // Client-side fallback guard: the middleware already enforces role-based access.
-  // Only redirect when the session is definitively gone; role validation is left
-  // to the middleware to avoid race conditions with profile loading.
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/login');
@@ -77,15 +89,17 @@ export function ClientShell({ children }: ClientShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white">
+      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white dark:border-slate-700 dark:bg-slate-800">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
           {/* Logo */}
           <Link href="/client/panel" className="flex items-center gap-2.5">
             <PerrinoLogo size="md" />
             <div className="hidden sm:block">
-              <span className="text-lg font-semibold text-slate-800">Bordados Perrino</span>
+              <span className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                Bordados Perrino
+              </span>
             </div>
           </Link>
 
@@ -100,8 +114,8 @@ export function ClientShell({ children }: ClientShellProps) {
                   className={cn(
                     'flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
                     isActive
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -113,11 +127,23 @@ export function ClientShell({ children }: ClientShellProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+              onClick={toggleTheme}
+              title="Cambiar tema"
+            >
+              <Sun className="h-4 w-4 dark:hidden" />
+              <Moon className="hidden h-4 w-4 dark:block" />
+            </Button>
+
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-xl md:hidden"
+              className="h-9 w-9 rounded-xl md:hidden dark:text-slate-400 dark:hover:bg-slate-700"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -128,28 +154,33 @@ export function ClientShell({ children }: ClientShellProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center gap-2 rounded-xl px-2 hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-xl px-2 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <Avatar className="h-8 w-8 border-2 border-slate-100">
+                  <Avatar className="h-8 w-8 border-2 border-slate-100 dark:border-slate-600">
                     <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-xs font-semibold text-white">
                       {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : getInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden text-sm font-medium text-slate-700 md:inline">
+                  <span className="hidden text-sm font-medium text-slate-700 md:inline dark:text-slate-200">
                     {getDisplayName()}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-xl">
+              <DropdownMenuContent
+                align="end"
+                className="w-56 rounded-xl dark:bg-slate-800 dark:border-slate-700"
+              >
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{getDisplayName()}</p>
-                    <p className="text-xs text-slate-500">{user?.email || 'cliente@email.com'}</p>
+                    <p className="text-sm font-medium dark:text-slate-100">{getDisplayName()}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {user?.email || 'cliente@email.com'}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
+                  className="cursor-pointer rounded-lg text-red-500 focus:bg-red-50 focus:text-red-500 dark:text-red-400 dark:focus:bg-red-950/50 dark:focus:text-red-400"
                   onClick={handleSignOut}
                   disabled={isSigningOut}
                 >
@@ -167,7 +198,7 @@ export function ClientShell({ children }: ClientShellProps) {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="border-t border-slate-100 bg-white px-4 py-3 md:hidden">
+          <div className="border-t border-slate-100 bg-white px-4 py-3 md:hidden dark:border-slate-700 dark:bg-slate-800">
             <nav className="space-y-1">
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -178,7 +209,9 @@ export function ClientShell({ children }: ClientShellProps) {
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
                       'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all',
-                      isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
+                      isActive
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
+                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'
                     )}
                   >
                     <item.icon className="h-5 w-5" />

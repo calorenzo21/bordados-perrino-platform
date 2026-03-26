@@ -68,7 +68,18 @@ export function AdminShell({ children }: AdminShellProps) {
   const router = useRouter();
   const { user, profile, isLoading, signOut } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
-  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+
+  // Restaurar tema del admin al montar (independiente del panel cliente)
+  useEffect(() => {
+    const stored = localStorage.getItem('admin-theme');
+    if (stored === 'dark' || stored === 'light') setTheme(stored);
+  }, [setTheme]);
+
+  const toggleTheme = () => {
+    const next = resolvedTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('admin-theme', next);
+    setTheme(next);
+  };
 
   // Client-side fallback guard: the middleware already enforces role-based access,
   // but if the auth context resolves with no user (e.g. session expired mid-session),

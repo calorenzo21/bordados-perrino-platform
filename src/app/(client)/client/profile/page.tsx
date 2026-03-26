@@ -48,24 +48,24 @@ interface ProfileData {
 // Estilos sutiles con borde izquierdo de color
 const colorStyles = {
   blue: {
-    card: 'bg-white border border-slate-200/50 border-l-4 border-l-amber-400',
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
+    card: 'bg-white border border-slate-200/50 border-l-4 border-l-amber-400 dark:bg-slate-800 dark:border-slate-700 dark:border-l-amber-400',
+    iconBg: 'bg-amber-50 dark:bg-amber-900/20',
+    iconColor: 'text-amber-600 dark:text-amber-400',
   },
   emerald: {
-    card: 'bg-white border border-slate-200/50 border-l-4 border-l-purple-400',
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
+    card: 'bg-white border border-slate-200/50 border-l-4 border-l-purple-400 dark:bg-slate-800 dark:border-slate-700 dark:border-l-purple-400',
+    iconBg: 'bg-purple-50 dark:bg-purple-900/20',
+    iconColor: 'text-purple-600 dark:text-purple-400',
   },
   purple: {
-    card: 'bg-white border border-slate-200/50 border-l-4 border-l-emerald-400',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
+    card: 'bg-white border border-slate-200/50 border-l-4 border-l-emerald-400 dark:bg-slate-800 dark:border-slate-700 dark:border-l-emerald-400',
+    iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   amber: {
-    card: 'bg-white border border-slate-200/50 border-l-4 border-l-purple-400',
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
+    card: 'bg-white border border-slate-200/50 border-l-4 border-l-purple-400 dark:bg-slate-800 dark:border-slate-700 dark:border-l-purple-400',
+    iconBg: 'bg-purple-50 dark:bg-purple-900/20',
+    iconColor: 'text-purple-600 dark:text-purple-400',
   },
 };
 
@@ -311,7 +311,7 @@ export default function ClientProfilePage() {
   if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-slate-500">No se pudo cargar el perfil</p>
+        <p className="text-slate-500 dark:text-slate-400">No se pudo cargar el perfil</p>
         <Link href="/client/panel">
           <Button className="mt-4" variant="outline">
             Volver al panel
@@ -369,12 +369,12 @@ export default function ClientProfilePage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-xl backdrop-blur-sm bg-white/50 border border-slate-200/50 hover:bg-white/80 transition-all"
+              className="h-10 w-10 rounded-xl backdrop-blur-sm bg-white/50 border border-slate-200/50 hover:bg-white/80 transition-all dark:bg-slate-800/50 dark:border-slate-700 dark:hover:bg-slate-700/80"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-semibold text-slate-900">Mi Perfil</h1>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Mi Perfil</h1>
         </div>
 
         {!isEditing ? (
@@ -413,24 +413,24 @@ export default function ClientProfilePage() {
 
       {/* Messages */}
       {error && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-700 flex items-center gap-2">
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-700 flex items-center gap-2 dark:bg-green-900/20 dark:border-green-800/50 dark:text-green-400">
           <Check className="h-4 w-4" />
           {success}
         </div>
       )}
 
       {/* Profile Card */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-sm overflow-hidden">
+      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-sm overflow-hidden dark:bg-slate-800/80 dark:border-slate-700">
         {/* Header con gradiente */}
         <div className="relative bg-linear-to-br from-blue-500 to-blue-600 px-6 pb-16 pt-8">
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-            <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
-              <AvatarFallback className="bg-white text-2xl font-bold text-blue-600">
+            <Avatar className="h-24 w-24 border-4 border-white shadow-lg dark:border-slate-600">
+              <AvatarFallback className="bg-white text-2xl font-bold text-blue-600 dark:bg-slate-700 dark:text-blue-400">
                 {profile.initials}
               </AvatarFallback>
             </Avatar>
@@ -445,11 +445,13 @@ export default function ClientProfilePage() {
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="text-center text-xl font-semibold max-w-xs mx-auto"
+                className="text-center text-xl font-semibold max-w-xs mx-auto dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                 placeholder="Tu nombre"
               />
             ) : (
-              <h2 className="text-xl font-semibold text-slate-900">{profile.name}</h2>
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                {profile.name}
+              </h2>
             )}
           </div>
 
@@ -468,17 +470,19 @@ export default function ClientProfilePage() {
                     <item.icon className={`h-5 w-5 ${styles.iconColor}`} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">{item.label}</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide dark:text-slate-500">
+                      {item.label}
+                    </p>
                     {isEditing ? (
                       <Input
                         type={item.type}
                         value={item.editValue}
                         onChange={(e) => item.setEditValue(e.target.value)}
-                        className="mt-1 h-8 bg-slate-50"
+                        className="mt-1 h-8 bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                         placeholder={item.label}
                       />
                     ) : (
-                      <p className="mt-0.5 text-sm font-medium text-slate-900 truncate">
+                      <p className="mt-0.5 text-sm font-medium text-slate-900 truncate dark:text-slate-100">
                         {item.value}
                       </p>
                     )}
@@ -489,7 +493,7 @@ export default function ClientProfilePage() {
           </div>
 
           {/* Cambiar contraseña */}
-          <div className="mt-6 pt-6 border-t border-slate-200">
+          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
             <Button
               variant="outline"
               className="w-full rounded-xl gap-2"
@@ -512,13 +516,15 @@ export default function ClientProfilePage() {
 
           <div className="space-y-4 py-4">
             {passwordError && (
-              <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">
+              <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400">
                 {passwordError}
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Nueva contraseña</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Nueva contraseña
+              </label>
               <div className="relative">
                 <Input
                   type={showNewPassword ? 'text' : 'password'}
@@ -529,7 +535,7 @@ export default function ClientProfilePage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                 >
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -538,7 +544,9 @@ export default function ClientProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Confirmar contraseña</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Confirmar contraseña
+              </label>
               <Input
                 type="password"
                 value={confirmPassword}

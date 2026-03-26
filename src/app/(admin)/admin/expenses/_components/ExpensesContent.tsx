@@ -922,7 +922,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                   step="0.01"
                   value={expenseForm.amount}
                   onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                  className="h-10 rounded-xl pl-9"
+                  className="h-10 rounded-xl pl-9 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 />
               </div>
             </div>
