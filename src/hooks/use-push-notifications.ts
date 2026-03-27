@@ -50,7 +50,7 @@ export function usePushNotifications() {
       });
 
       const subJson = sub.toJSON();
-      await fetch('/api/push/subscribe', {
+      const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,6 +61,12 @@ export function usePushNotifications() {
           },
         }),
       });
+
+      if (!res.ok) {
+        // Revert the browser-side subscription if server failed to save it
+        await sub.unsubscribe();
+        throw new Error(`Server failed to save subscription: ${res.status}`);
+      }
 
       setIsSubscribed(true);
     } catch (err) {
