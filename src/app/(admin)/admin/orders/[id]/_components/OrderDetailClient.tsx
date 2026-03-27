@@ -340,6 +340,7 @@ export function OrderDetailClient({
             amount: finalAmount,
             method: newPaymentData.method,
             remainingBalance: remainingBalance - finalAmount,
+            clientId: order.client.id,
           }),
         }).catch((e) => console.error('[Email] Payment notification failed:', e));
       }
@@ -604,6 +605,7 @@ export function OrderDetailClient({
             orderNumber: order.id,
             newStatus: newStatusData.status,
             observations: newStatusData.observations || undefined,
+            clientId: order.client.id,
           }),
         }).catch((e) => console.error('[Email] Status notification failed:', e));
 

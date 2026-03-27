@@ -44,3 +44,39 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Push notification handler — show notification when received in background
+self.addEventListener('push', (event: PushEvent) => {
+  const data = (event.data?.json() ?? {}) as {
+    title?: string;
+    body?: string;
+    url?: string;
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? 'Bordados Perrino', {
+      body: data.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url ?? '/client/panel' },
+    })
+  );
+});
+
+// Notification click — open or focus the app at the relevant URL
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+
+  const url: string = (event.notification.data as { url?: string })?.url ?? '/client/panel';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return (client as WindowClient).focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

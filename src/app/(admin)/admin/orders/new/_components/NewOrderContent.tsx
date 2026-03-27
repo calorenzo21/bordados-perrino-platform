@@ -316,6 +316,23 @@ export default function NewOrderContent() {
         }
       }
 
+      // Enviar notificación al cliente (fire-and-forget)
+      if (selectedClient!.email) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new_order',
+            email: selectedClient!.email,
+            clientName: selectedClient!.name,
+            orderNumber,
+            description: formData.description.trim(),
+            dueDate: formData.dueDate,
+            clientId: selectedClient!.id,
+          }),
+        }).catch((e) => console.error('[Email] New order notification failed:', e));
+      }
+
       // Limpiar borrador del localStorage
       clearDraft();
 

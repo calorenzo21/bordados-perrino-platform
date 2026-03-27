@@ -164,6 +164,35 @@ export function partialDeliveryEmail(
   return { subject, html: buildEmailHtml(subject, body) };
 }
 
+export function newOrderEmail(
+  clientName: string,
+  orderNumber: string,
+  description: string,
+  dueDate: string
+): { subject: string; html: string } {
+  const subject = `Nuevo pedido registrado — #${orderNumber}`;
+
+  const formattedDate = new Date(dueDate).toLocaleDateString('es-VE', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const body = `
+    ${greeting(clientName)}
+    <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha registrado un nuevo pedido a tu nombre:</p>
+    ${infoTable(
+      infoRow('Pedido', `#${orderNumber}`) +
+        infoRow('Descripción', description) +
+        infoRow('Fecha de entrega estimada', formattedDate)
+    )}
+    <p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;">Te notificaremos cuando haya novedades sobre tu pedido.</p>
+    ${footer()}
+  `;
+
+  return { subject, html: buildEmailHtml(subject, body) };
+}
+
 export function newClientWelcomeEmail(
   clientName: string,
   email: string,

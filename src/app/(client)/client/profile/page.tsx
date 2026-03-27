@@ -23,6 +23,7 @@ import {
 
 import { createClient } from '@/lib/supabase/browser';
 
+import { PushNotificationToggle } from '@/components/client/PushNotificationToggle';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -502,6 +503,14 @@ export default function ClientProfilePage() {
               <Key className="h-4 w-4" />
               Cambiar contraseña
             </Button>
+          </div>
+
+          {/* Notificaciones push */}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <p className="text-xs text-slate-400 uppercase tracking-wide mb-3 dark:text-slate-500">
+              Notificaciones
+            </p>
+            <PushNotificationToggle />
           </div>
         </div>
       </div>

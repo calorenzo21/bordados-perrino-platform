@@ -3,18 +3,27 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import {
   newClientWelcomeEmail,
+  newOrderEmail,
   partialDeliveryEmail,
   paymentReceivedEmail,
   statusChangeEmail,
 } from '@/lib/email/templates';
+import { sendPushToClient } from '@/lib/services/push.server';
 import { createClient } from '@/lib/supabase/server';
-import type { OrderStatusType } from '@/lib/utils/status';
+import { OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
-type NotificationType = 'status_change' | 'payment' | 'partial_delivery' | 'new_client';
+type NotificationType =
+  | 'status_change'
+  | 'payment'
+  | 'partial_delivery'
+  | 'new_client'
+  | 'new_order';
 
 interface BasePayload {
   type: NotificationType;
   email: string;
+  /** Optional: client DB id — used to send push notification */
+  clientId?: string;
 }
 
 interface StatusChangePayload extends BasePayload {
@@ -48,11 +57,20 @@ interface NewClientPayload extends BasePayload {
   tempPassword: string;
 }
 
+interface NewOrderPayload extends BasePayload {
+  type: 'new_order';
+  clientName: string;
+  orderNumber: string;
+  description: string;
+  dueDate: string;
+}
+
 type NotificationPayload =
   | StatusChangePayload
   | PaymentPayload
   | PartialDeliveryPayload
-  | NewClientPayload;
+  | NewClientPayload
+  | NewOrderPayload;
 
 function buildEmailContent(payload: NotificationPayload): { subject: string; html: string } {
   switch (payload.type) {
@@ -80,6 +98,13 @@ function buildEmailContent(payload: NotificationPayload): { subject: string; htm
       );
     case 'new_client':
       return newClientWelcomeEmail(payload.clientName, payload.email, payload.tempPassword);
+    case 'new_order':
+      return newOrderEmail(
+        payload.clientName,
+        payload.orderNumber,
+        payload.description,
+        payload.dueDate
+      );
   }
 }
 
@@ -94,6 +119,39 @@ function buildIdempotencyKey(payload: NotificationPayload): string {
       return `delivery/${payload.orderNumber}/${ts}`;
     case 'new_client':
       return `welcome/${payload.email}/${ts}`;
+    case 'new_order':
+      return `neworder/${payload.orderNumber}/${ts}`;
+  }
+}
+
+function buildPushPayload(
+  payload: NotificationPayload
+): { title: string; body: string; url: string } | null {
+  switch (payload.type) {
+    case 'status_change':
+      return {
+        title: `Pedido #${payload.orderNumber}`,
+        body: `Tu pedido pasó a: ${OrderStatusLabels[payload.newStatus] ?? payload.newStatus}`,
+        url: '/client/panel',
+      };
+    case 'payment': {
+      const fmt = (n: number) =>
+        n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return {
+        title: 'Abono registrado',
+        body: `Recibimos un abono de $${fmt(payload.amount)} en tu pedido #${payload.orderNumber}`,
+        url: '/client/panel',
+      };
+    }
+    case 'new_order':
+      return {
+        title: 'Nuevo pedido registrado',
+        body: `Se registró el pedido #${payload.orderNumber}: ${payload.description}`,
+        url: '/client/panel',
+      };
+    // partial_delivery and new_client don't send push
+    default:
+      return null;
   }
 }
 
@@ -127,6 +185,16 @@ export async function POST(request: NextRequest) {
     if (!result.success) {
       console.error('[Notifications] Email send failed:', result.error);
       return NextResponse.json({ success: false, error: result.error }, { status: 500 });
+    }
+
+    // Fire push notification (non-blocking, best-effort)
+    if (payload.clientId) {
+      const pushPayload = buildPushPayload(payload);
+      if (pushPayload) {
+        sendPushToClient(payload.clientId, pushPayload).catch((err) => {
+          console.error('[Notifications] Push send failed:', err);
+        });
+      }
     }
 
     return NextResponse.json({ success: true, emailId: result.data?.id });
