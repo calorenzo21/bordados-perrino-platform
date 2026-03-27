@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { adminOrderFetcher, getAdminOrderSwrKey } from '@/hooks/use-orders';
 import {
   AlertCircle,
-  AlertTriangle,
   CheckCircle2,
   Clock,
   DollarSign,
@@ -356,13 +355,10 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
             <TableHeader>
               <TableRow className="border-slate-100 dark:border-slate-700 hover:bg-transparent">
                 <TableHead className="pl-6 text-xs font-semibold uppercase text-slate-400">
-                  Pedido
+                  Descripción
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-slate-400">
                   Cliente
-                </TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-slate-400">
-                  Descripción
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-slate-400">
                   Estado
@@ -386,25 +382,27 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                       hasPendingBalance ? 'bg-amber-50/30 dark:bg-transparent' : ''
                     }`}
                   >
-                    <TableCell className="pl-6">
+                    <TableCell
+                      className={`pl-6 max-w-96 ${order.isUrgent && order.status !== OrderStatus.ENTREGADO ? 'border-l-4 border-l-rose-500' : ''}`}
+                    >
                       <Link
                         href={`/admin/orders/${order.id}`}
                         className="block"
                         onMouseEnter={() => prefetchOrder(order.id)}
                         onFocus={() => prefetchOrder(order.id)}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                            {order.id}
-                          </span>
-                          {order.isUrgent && order.status !== OrderStatus.ENTREGADO && (
-                            <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
-                              <AlertTriangle className="h-3 w-3" />
-                              URGENTE
-                            </span>
-                          )}
+                        <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {order.description}
+                        </p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="border-slate-200 bg-slate-50 text-xs font-normal text-slate-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400"
+                          >
+                            {order.serviceType}
+                          </Badge>
+                          <span className="text-xs text-slate-400">{order.quantity} uds.</span>
                         </div>
-                        <p className="text-xs text-slate-400">{order.quantity} unidades</p>
                       </Link>
                     </TableCell>
                     <TableCell>
@@ -425,24 +423,6 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                           </p>
                           <p className="text-xs text-slate-400">{order.client.email}</p>
                         </div>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="block max-w-[200px]"
-                        onMouseEnter={() => prefetchOrder(order.id)}
-                        onFocus={() => prefetchOrder(order.id)}
-                      >
-                        <p className="truncate text-sm text-slate-700 dark:text-slate-300">
-                          {order.description}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className="mt-1 border-slate-200 bg-slate-50 text-xs font-normal text-slate-500 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-400"
-                        >
-                          {order.serviceType}
-                        </Badge>
                       </Link>
                     </TableCell>
                     <TableCell>
