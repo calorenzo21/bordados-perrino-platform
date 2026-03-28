@@ -124,29 +124,77 @@ function buildIdempotencyKey(payload: NotificationPayload): string {
   }
 }
 
+const STATUS_PUSH: Record<
+  OrderStatusType,
+  { title: string; body: (orderNumber: string, obs?: string) => string }
+> = {
+  RECIBIDO: {
+    title: '📦 Pedido recibido',
+    body: (n) => `Tu pedido #${n} fue registrado y está en cola. ¡Ya empezamos a trabajar en él!`,
+  },
+  CONFECCION: {
+    title: '🧵 ¡En producción!',
+    body: (n, obs) =>
+      obs
+        ? `Tu pedido #${n} está siendo confeccionado. Nota: ${obs}`
+        : `Tu pedido #${n} ya está en confección. Te avisamos cuando esté listo.`,
+  },
+  RETIRO: {
+    title: '✅ ¡Listo para retirar!',
+    body: (n, obs) =>
+      obs
+        ? `Tu pedido #${n} está listo. ${obs}`
+        : `Tu pedido #${n} está listo para que lo pases a buscar. ¡Te esperamos!`,
+  },
+  PARCIALMENTE_ENTREGADO: {
+    title: '📬 Entrega parcial',
+    body: (n, obs) =>
+      obs
+        ? `Parte de tu pedido #${n} fue entregada. ${obs}`
+        : `Una parte de tu pedido #${n} fue entregada. El resto estará listo pronto.`,
+  },
+  ENTREGADO: {
+    title: '🎉 ¡Pedido entregado!',
+    body: (n) => `Tu pedido #${n} fue entregado completamente. ¡Gracias por elegirnos! 🙌`,
+  },
+  CANCELADO: {
+    title: '❌ Pedido cancelado',
+    body: (n, obs) =>
+      obs
+        ? `Tu pedido #${n} fue cancelado. Motivo: ${obs}`
+        : `Tu pedido #${n} fue cancelado. Contactanos si tenés alguna duda.`,
+  },
+};
+
 function buildPushPayload(
   payload: NotificationPayload
 ): { title: string; body: string; url: string } | null {
   switch (payload.type) {
-    case 'status_change':
+    case 'status_change': {
+      const tpl = STATUS_PUSH[payload.newStatus];
+      if (!tpl) return null;
       return {
-        title: `Pedido #${payload.orderNumber}`,
-        body: `Tu pedido pasó a: ${OrderStatusLabels[payload.newStatus] ?? payload.newStatus}`,
+        title: tpl.title,
+        body: tpl.body(payload.orderNumber, payload.observations),
         url: '/client/panel',
       };
+    }
     case 'payment': {
       const fmt = (n: number) =>
-        n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const paidOff = payload.remainingBalance <= 0;
       return {
-        title: 'Abono registrado',
-        body: `Recibimos un abono de $${fmt(payload.amount)} en tu pedido #${payload.orderNumber}`,
+        title: '💰 Abono registrado',
+        body: paidOff
+          ? `Recibimos tu pago de $${fmt(payload.amount)} para el pedido #${payload.orderNumber}. ¡Está saldado! 🎉`
+          : `Recibimos un abono de $${fmt(payload.amount)} para el pedido #${payload.orderNumber}. Saldo restante: $${fmt(payload.remainingBalance)}.`,
         url: '/client/panel',
       };
     }
     case 'new_order':
       return {
-        title: 'Nuevo pedido registrado',
-        body: `Se registró el pedido #${payload.orderNumber}: ${payload.description}`,
+        title: '🆕 Nuevo pedido registrado',
+        body: `Registramos tu pedido #${payload.orderNumber}: "${payload.description}". ¡Manos a la obra! 🧵`,
         url: '/client/panel',
       };
     // partial_delivery and new_client don't send push
