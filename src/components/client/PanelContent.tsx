@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/context/auth-context';
 import { useClientPanel } from '@/hooks/useClientPanel';
 import {
   AlertTriangle,
@@ -118,6 +119,7 @@ const statusFilterOptions = [
 
 export function PanelContent() {
   const router = useRouter();
+  const { profile: authProfile } = useAuth();
   const { data, isLoading, isValidating, error, mutate } = useClientPanel();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -184,6 +186,31 @@ export function PanelContent() {
 
   // Error state
   if (error && !data) {
+    const isNoClientRecord = error.message === 'No autenticado o sin datos de cliente';
+
+    if (isNoClientRecord) {
+      const firstName = authProfile?.first_name ?? 'por aquí';
+      return (
+        <div className="space-y-5">
+          <div className="rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/50">
+            <h1 className="text-xl font-semibold text-white">¡Hola, {firstName}!</h1>
+            <p className="text-sm text-blue-100 mt-1">Bienvenido a Bordados Perrino</p>
+          </div>
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/50 py-16 text-center shadow-sm dark:bg-slate-800 dark:border-slate-700">
+            <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-700">
+              <Package className="h-8 w-8 text-slate-400 dark:text-slate-600" />
+            </div>
+            <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+              Todavía no tenés pedidos asociados
+            </p>
+            <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+              Cuando realices tu primer pedido, aparecerá aquí
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <XCircle className="h-12 w-12 text-rose-500 mb-4" />
