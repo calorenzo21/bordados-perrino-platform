@@ -10,9 +10,11 @@
 
 import useSWR from 'swr';
 
-import type { ClientPanelData } from '@/lib/services/client-portal.server';
+import type { ClientNotLinked, ClientPanelData } from '@/lib/services/client-portal.server';
 
-const fetcher = async (url: string): Promise<ClientPanelData> => {
+type PanelResponse = ClientPanelData | ClientNotLinked;
+
+const fetcher = async (url: string): Promise<PanelResponse> => {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     const error = await res.json();
@@ -22,7 +24,7 @@ const fetcher = async (url: string): Promise<ClientPanelData> => {
 };
 
 export function useClientPanel() {
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ClientPanelData>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<PanelResponse>(
     '/api/client/panel',
     fetcher,
     {

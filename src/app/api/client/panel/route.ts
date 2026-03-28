@@ -13,7 +13,12 @@ export async function GET() {
     const data = await getClientPanelData();
 
     if (!data) {
-      return NextResponse.json({ error: 'No autenticado o sin datos de cliente' }, { status: 401 });
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    // User is authenticated but has no linked client record yet — not an error
+    if ('clientNotLinked' in data) {
+      return NextResponse.json({ clientNotLinked: true });
     }
 
     return NextResponse.json(data, {

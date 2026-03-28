@@ -49,6 +49,11 @@ export interface ClientPanelData {
   stats: ClientStats;
   orders: ClientOrderSummary[];
   lastUpdated: string;
+  clientNotLinked?: never;
+}
+
+export interface ClientNotLinked {
+  clientNotLinked: true;
 }
 
 export interface StatusHistoryItem {
@@ -138,7 +143,7 @@ async function getClientForUser(
  * Get all data for the client panel page
  * Includes profile, stats, and recent orders
  */
-export async function getClientPanelData(): Promise<ClientPanelData | null> {
+export async function getClientPanelData(): Promise<ClientPanelData | ClientNotLinked | null> {
   const supabase = await createClient();
 
   // Get authenticated user
@@ -156,8 +161,7 @@ export async function getClientPanelData(): Promise<ClientPanelData | null> {
   const client = await getClientForUser(supabase, user.id);
 
   if (!client) {
-    console.error('No client found for user:', user.id);
-    return null;
+    return { clientNotLinked: true };
   }
 
   // Get orders with payment info for this client
