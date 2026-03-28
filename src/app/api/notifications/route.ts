@@ -175,31 +175,31 @@ export async function POST(request: NextRequest) {
     const { subject, html } = buildEmailContent(payload);
     const idempotencyKey = buildIdempotencyKey(payload);
 
-    const result = await sendEmail({
-      to: payload.email,
-      subject,
-      html,
-      idempotencyKey,
+    // Run email and push independently — one failure doesn't block the other
+    const [emailResult] = await Promise.all([
+      sendEmail({ to: payload.email, subject, html, idempotencyKey }).catch((err) => {
+        console.error('[Notifications] Email send failed:', err);
+        return { success: false as const, error: String(err) };
+      }),
+      payload.clientId
+        ? (() => {
+            const pushPayload = buildPushPayload(payload);
+            if (!pushPayload) return Promise.resolve();
+            return sendPushToClient(payload.clientId!, pushPayload).catch((err) => {
+              console.error('[Notifications] Push send failed:', err);
+            });
+          })()
+        : Promise.resolve(),
+    ]);
+
+    if (!emailResult.success) {
+      console.error('[Notifications] Email send failed:', emailResult.error);
+    }
+
+    return NextResponse.json({
+      success: true,
+      emailId: emailResult.success ? (emailResult as { data?: { id?: string } }).data?.id : null,
     });
-
-    if (!result.success) {
-      console.error('[Notifications] Email send failed:', result.error);
-      return NextResponse.json({ success: false, error: result.error }, { status: 500 });
-    }
-
-    // Send push notification — must be awaited before returning (Vercel kills non-awaited Promises)
-    if (payload.clientId) {
-      const pushPayload = buildPushPayload(payload);
-      if (pushPayload) {
-        try {
-          await sendPushToClient(payload.clientId, pushPayload);
-        } catch (err) {
-          console.error('[Notifications] Push send failed:', err);
-        }
-      }
-    }
-
-    return NextResponse.json({ success: true, emailId: result.data?.id });
   } catch (error) {
     console.error('[Notifications] Unexpected error:', error);
     return NextResponse.json({ success: false, error: 'Error interno' }, { status: 500 });
