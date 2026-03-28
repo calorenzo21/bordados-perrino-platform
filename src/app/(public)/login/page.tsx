@@ -255,16 +255,6 @@ function LoginForm() {
               )}
             </Button>
           </div>
-
-          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            ¿No tienes cuenta?{' '}
-            <Link
-              href="/register"
-              className="font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              Regístrate aquí
-            </Link>
-          </p>
         </CardContent>
       </Card>
     </div>
