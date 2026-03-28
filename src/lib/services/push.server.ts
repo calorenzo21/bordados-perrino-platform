@@ -31,14 +31,16 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           JSON.stringify(payload)
         );
       } catch (err: unknown) {
-        // 410 Gone or 404 = endpoint no longer valid, remove it
         if (
           err &&
           typeof err === 'object' &&
           'statusCode' in err &&
           (err.statusCode === 410 || err.statusCode === 404)
         ) {
+          // Endpoint expired — schedule for cleanup
           expiredIds.push(sub.id);
+        } else {
+          console.error('[Push] sendNotification failed for endpoint', sub.endpoint, err);
         }
       }
     })

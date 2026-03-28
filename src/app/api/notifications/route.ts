@@ -187,13 +187,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 });
     }
 
-    // Fire push notification (non-blocking, best-effort)
+    // Send push notification — must be awaited before returning (Vercel kills non-awaited Promises)
     if (payload.clientId) {
       const pushPayload = buildPushPayload(payload);
       if (pushPayload) {
-        sendPushToClient(payload.clientId, pushPayload).catch((err) => {
+        try {
+          await sendPushToClient(payload.clientId, pushPayload);
+        } catch (err) {
           console.error('[Notifications] Push send failed:', err);
-        });
+        }
       }
     }
 
