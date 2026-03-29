@@ -299,7 +299,7 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
       {/* ============================================ */}
       {/* MÉTRICAS PRINCIPALES */}
       {/* ============================================ */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3 min-[1741px]:gap-4">
+      <div className="metric-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
         <MetricCard
           title="Pedidos Activos"
           value={totalActiveOrders.toString()}
