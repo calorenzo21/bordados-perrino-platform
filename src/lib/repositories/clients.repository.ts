@@ -169,7 +169,8 @@ export class ClientsRepository {
   async count(): Promise<number> {
     const { count, error } = await this.supabase
       .from('clients')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
 
     if (error) throw new Error(error.message);
     return count || 0;

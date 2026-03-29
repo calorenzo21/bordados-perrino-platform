@@ -56,11 +56,10 @@ function getInitials(name: string): string {
 export const getClientsData = cache(async function getClientsData(): Promise<ClientsData> {
   const supabase = await createClient();
 
-  // Get clients with stats (excluding soft-deleted)
+  // Get clients with stats
   const { data: clientsData, error: clientsError } = await supabase
     .from('clients_with_stats')
     .select('*')
-    .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (clientsError) {

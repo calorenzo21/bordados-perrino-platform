@@ -115,7 +115,6 @@ export const getDashboardData = cache(async function getDashboardData(): Promise
     supabase
       .from('clients_with_stats')
       .select('id, name, total_orders, total_spent')
-      .eq('is_active', true)
       .order('total_spent', { ascending: false })
       .limit(4),
   ]);
