@@ -20,7 +20,7 @@ LEFT JOIN (
     COUNT(*) as total_orders,
     COUNT(*) FILTER (WHERE status IN ('RECIBIDO', 'CONFECCION', 'RETIRO', 'PARCIALMENTE_ENTREGADO')) as active_orders,
     COUNT(*) FILTER (WHERE status = 'ENTREGADO') as completed_orders,
-    SUM(total) as total_spent,
+    SUM(total) FILTER (WHERE status != 'CANCELADO') as total_spent,
     MAX(created_at) as last_order_date
   FROM orders
   GROUP BY client_id

@@ -383,7 +383,7 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                     }`}
                   >
                     <TableCell
-                      className={`pl-6 max-w-96 ${order.isUrgent && order.status !== OrderStatus.ENTREGADO ? 'border-l-4 border-l-rose-500' : ''}`}
+                      className={`pl-6 max-w-96 ${order.isUrgent && order.status !== OrderStatus.ENTREGADO && order.status !== OrderStatus.CANCELADO ? 'border-l-4 border-l-rose-500' : ''}`}
                     >
                       <Link
                         href={`/admin/orders/${order.id}`}

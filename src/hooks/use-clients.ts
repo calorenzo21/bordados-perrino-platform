@@ -136,12 +136,11 @@ export async function adminClientFetcher(key: readonly [string, string]): Promis
     })
   );
 
-  const completedOrders = orders.filter(
-    (o) => o.status === 'ENTREGADO' || o.status === 'CANCELADO'
-  ).length;
+  const nonCancelledOrders = orders.filter((o) => o.status !== 'CANCELADO');
+  const completedOrders = orders.filter((o) => o.status === 'ENTREGADO').length;
   const totalSpent = clientData.total_spent || 0;
   const averageOrderValue =
-    clientData.total_orders > 0 ? Math.round(totalSpent / clientData.total_orders) : 0;
+    nonCancelledOrders.length > 0 ? Math.round(totalSpent / nonCancelledOrders.length) : 0;
 
   return {
     id: clientData.id,
