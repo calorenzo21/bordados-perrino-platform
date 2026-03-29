@@ -11,9 +11,6 @@
  * Change values here to update the entire app.
  */
 @theme inline {
-  /* Custom breakpoints */
-  --breakpoint-3xl: 1741px;
-
   /* Typography - Font families */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;

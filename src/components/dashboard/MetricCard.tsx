@@ -73,14 +73,14 @@ export function MetricCard({
   if (loading) {
     return (
       <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-slate-800 shadow-sm">
-        <CardContent className="lg:p-3 xl:p-4 2xl:p-5 3xl:p-6">
+        <CardContent className="p-4 lg:p-3 xl:p-4 min-[1741px]:p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-3">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="lg:h-7 2xl:h-8 3xl:h-10 w-32" />
+              <Skeleton className="h-7 min-[1741px]:h-10 w-32" />
               <Skeleton className="h-4 w-36" />
             </div>
-            <Skeleton className="lg:h-10 lg:w-10 2xl:h-11 2xl:w-11 3xl:h-14 3xl:w-14 rounded-2xl" />
+            <Skeleton className="h-10 w-10 min-[1741px]:h-14 min-[1741px]:w-14 rounded-2xl" />
           </div>
         </CardContent>
       </Card>
@@ -100,14 +100,14 @@ export function MetricCard({
       {/* Subtle top accent line */}
       <div className={cn('absolute left-0 top-0 h-1 w-full opacity-80', styles.bg)} />
 
-      <CardContent className="relative flex flex-1 flex-col lg:p-3 lg:pb-2 xl:p-4 xl:pb-3 2xl:p-5 2xl:pb-3 3xl:p-6 3xl:pb-4">
+      <CardContent className="relative flex flex-1 flex-col p-4 pb-3 lg:p-3 lg:pb-2 xl:p-4 xl:pb-3 min-[1741px]:p-6 min-[1741px]:pb-4">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1 space-y-1">
             {/* Title with dot indicator */}
-            <div className="flex items-center gap-1.5 3xl:gap-2">
+            <div className="flex items-center gap-1.5 min-[1741px]:gap-2">
               <div
                 className={cn(
-                  'lg:h-1.5 lg:w-1.5 3xl:h-2 3xl:w-2 shrink-0 rounded-full',
+                  'h-1.5 w-1.5 min-[1741px]:h-2 min-[1741px]:w-2 shrink-0 rounded-full',
                   styles.dot
                 )}
               />
@@ -117,11 +117,11 @@ export function MetricCard({
             </div>
 
             {/* Value */}
-            <div className="pt-1 3xl:pt-2">
+            <div className="pt-1 min-[1741px]:pt-2">
               <p
                 className={cn(
                   'font-bold tracking-tight text-slate-900 dark:text-white',
-                  valueClassName ?? 'text-xl xl:text-2xl 2xl:text-3xl 3xl:text-4xl'
+                  valueClassName ?? 'text-xl xl:text-2xl min-[1741px]:text-4xl'
                 )}
               >
                 {value}
@@ -130,7 +130,7 @@ export function MetricCard({
 
             {/* Description */}
             {description && (
-              <p className="pt-1 text-[11px] xl:text-xs 3xl:text-sm text-slate-400 dark:text-slate-500">
+              <p className="pt-1 text-[11px] xl:text-xs min-[1741px]:text-sm text-slate-400 dark:text-slate-500">
                 {description}
               </p>
             )}
@@ -140,14 +140,14 @@ export function MetricCard({
             {/* Icon container with enhanced styling */}
             <div
               className={cn(
-                'ml-2 3xl:ml-3 flex lg:h-9 lg:w-9 xl:h-10 xl:w-10 2xl:h-11 2xl:w-11 3xl:h-14 3xl:w-14 shrink-0 items-center justify-center lg:rounded-xl 3xl:rounded-2xl shadow-lg lg:ring-2 3xl:ring-4 transition-transform duration-300 group-hover:scale-110',
+                'ml-2 min-[1741px]:ml-3 flex h-9 w-9 xl:h-10 xl:w-10 min-[1741px]:h-14 min-[1741px]:w-14 shrink-0 items-center justify-center rounded-xl min-[1741px]:rounded-2xl shadow-lg ring-2 min-[1741px]:ring-4 transition-transform duration-300 group-hover:scale-110',
                 styles.bg,
                 styles.shadow,
                 styles.ring
               )}
             >
               <Icon
-                className="lg:h-4 lg:w-4 xl:h-5 xl:w-5 2xl:h-5 2xl:w-5 3xl:h-7 3xl:w-7 text-white"
+                className="h-4 w-4 xl:h-5 xl:w-5 min-[1741px]:h-7 min-[1741px]:w-7 text-white"
                 strokeWidth={2}
               />
             </div>
