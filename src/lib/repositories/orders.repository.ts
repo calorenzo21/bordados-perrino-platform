@@ -357,6 +357,7 @@ export class OrdersRepository {
     const { data, error } = await this.supabase
       .from('orders')
       .select('created_at, total')
+      .neq('status', 'CANCELADO')
       .gte('created_at', fromDate.toISOString())
       .order('created_at', { ascending: true });
 
@@ -430,10 +431,11 @@ export class OrdersRepository {
 
     if (stError) throw new Error(stError.message);
 
-    // Obtener pedidos agrupados por service_type (campo de texto existente)
+    // Obtener pedidos agrupados por service_type (campo de texto existente), excluyendo cancelados
     const { data: orders, error } = await this.supabase
       .from('orders')
-      .select('service_type, total');
+      .select('service_type, total')
+      .neq('status', 'CANCELADO');
 
     if (error) throw new Error(error.message);
 

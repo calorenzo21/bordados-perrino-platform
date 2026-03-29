@@ -157,12 +157,11 @@ export const getAdminClientDetail = cache(async function getAdminClientDetail(
     })
   );
 
-  const completedOrders = orders.filter(
-    (o) => o.status === 'ENTREGADO' || o.status === 'CANCELADO'
-  ).length;
+  const nonCancelledOrders = orders.filter((o) => o.status !== 'CANCELADO');
+  const completedOrders = orders.filter((o) => o.status === 'ENTREGADO').length;
   const totalSpent = clientData.total_spent || 0;
-  const averageOrderValue =
-    clientData.total_orders > 0 ? Math.round(totalSpent / clientData.total_orders) : 0;
+  const totalOrders = nonCancelledOrders.length;
+  const averageOrderValue = totalOrders > 0 ? Math.round(totalSpent / totalOrders) : 0;
 
   return {
     id: clientData.id,
@@ -172,7 +171,7 @@ export const getAdminClientDetail = cache(async function getAdminClientDetail(
     phone: clientData.phone || '',
     cedula: clientData.cedula || '',
     address: clientData.address || '',
-    totalOrders: clientData.total_orders || 0,
+    totalOrders,
     activeOrders: clientData.active_orders || 0,
     completedOrders,
     totalSpent,
