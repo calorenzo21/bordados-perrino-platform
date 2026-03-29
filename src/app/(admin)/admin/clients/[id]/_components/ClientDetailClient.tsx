@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useClient } from '@/hooks/use-clients';
 import {
@@ -81,6 +82,7 @@ export function ClientDetailClient({
   clientId: string;
   initialClient: ClientDetail | null;
 }) {
+  const router = useRouter();
   const {
     client,
     isLoading: loading,
@@ -91,6 +93,8 @@ export function ClientDetailClient({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -110,6 +114,22 @@ export function ClientDetailClient({
       });
     }
   }, [client]);
+
+  const handleDelete = async () => {
+    if (!client) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar');
+      setIsDeleteDialogOpen(false);
+      router.push('/admin/clients');
+    } catch (err: unknown) {
+      console.error('Error deleting client:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSaveEdit = async () => {
     if (!client) return;
@@ -256,7 +276,10 @@ export function ClientDetailClient({
                 Llamar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="rounded-lg text-rose-600">
+              <DropdownMenuItem
+                className="rounded-lg text-rose-600 dark:text-rose-400"
+                onSelect={() => setIsDeleteDialogOpen(true)}
+              >
                 Eliminar Cliente
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -579,6 +602,65 @@ export function ClientDetailClient({
                   <Check className="mr-2 h-4 w-4" />
                   Guardar Cambios
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Eliminación */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="rounded-2xl dark:bg-slate-800 dark:border-slate-700 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-slate-100">
+              {client && client.orders.length === 0
+                ? 'Eliminar cliente permanentemente'
+                : 'Desactivar cliente'}
+            </DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
+              {client && client.orders.length === 0 ? (
+                <>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {client.name}
+                  </span>{' '}
+                  no tiene pedidos asociados. Se eliminará permanentemente de la base de datos junto
+                  con su cuenta de acceso.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {client?.name}
+                  </span>{' '}
+                  tiene {client?.orders.length} pedido{client?.orders.length !== 1 ? 's' : ''}{' '}
+                  asociado{client?.orders.length !== 1 ? 's' : ''}. Se ocultará de la lista pero
+                  todos sus registros se conservarán.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="rounded-xl"
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDelete}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {client && client.orders.length === 0 ? 'Eliminando...' : 'Desactivando...'}
+                </>
+              ) : client && client.orders.length === 0 ? (
+                'Eliminar permanentemente'
+              ) : (
+                'Desactivar cliente'
               )}
             </Button>
           </DialogFooter>

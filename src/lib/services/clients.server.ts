@@ -56,10 +56,11 @@ function getInitials(name: string): string {
 export const getClientsData = cache(async function getClientsData(): Promise<ClientsData> {
   const supabase = await createClient();
 
-  // Get clients with stats
+  // Get clients with stats (excluding soft-deleted)
   const { data: clientsData, error: clientsError } = await supabase
     .from('clients_with_stats')
     .select('*')
+    .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (clientsError) {
@@ -160,8 +161,10 @@ export const getAdminClientDetail = cache(async function getAdminClientDetail(
   const nonCancelledOrders = orders.filter((o) => o.status !== 'CANCELADO');
   const completedOrders = orders.filter((o) => o.status === 'ENTREGADO').length;
   const totalSpent = clientData.total_spent || 0;
-  const totalOrders = nonCancelledOrders.length;
-  const averageOrderValue = totalOrders > 0 ? Math.round(totalSpent / totalOrders) : 0;
+  // totalOrders includes cancelled (visible in history table)
+  // averageOrderValue only divides by non-cancelled orders
+  const averageOrderValue =
+    nonCancelledOrders.length > 0 ? Math.round(totalSpent / nonCancelledOrders.length) : 0;
 
   return {
     id: clientData.id,
@@ -171,7 +174,7 @@ export const getAdminClientDetail = cache(async function getAdminClientDetail(
     phone: clientData.phone || '',
     cedula: clientData.cedula || '',
     address: clientData.address || '',
-    totalOrders,
+    totalOrders: clientData.total_orders || 0,
     activeOrders: clientData.active_orders || 0,
     completedOrders,
     totalSpent,
