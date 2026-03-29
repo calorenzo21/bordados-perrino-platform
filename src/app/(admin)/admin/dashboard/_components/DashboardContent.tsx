@@ -651,16 +651,6 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
                   <span className="text-sm text-slate-500 dark:text-slate-400">
                     pedidos totales
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${
-                      parseFloat(percentageChange) >= 0
-                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
-                    }`}
-                  >
-                    {parseFloat(percentageChange) >= 0 ? '↑' : '↓'}{' '}
-                    {Math.abs(parseFloat(percentageChange))}%
-                  </span>
                 </div>
               </div>
               <div className="flex gap-2">
