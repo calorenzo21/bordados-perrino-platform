@@ -80,7 +80,7 @@ export function MetricCard({
               <Skeleton className="h-7 w-32" />
               <Skeleton className="h-4 w-36" />
             </div>
-            <Skeleton className="metric-icon-box h-10 w-10 rounded-2xl" />
+            <Skeleton className="metric-icon-box hidden 2xl:block h-10 w-10 rounded-2xl" />
           </div>
         </CardContent>
       </Card>
@@ -131,17 +131,17 @@ export function MetricCard({
             )}
           </div>
 
-          <div className="flex flex-col items-end justify-between h-full">
+          <div className="hidden 2xl:flex flex-col items-end justify-between h-full">
             {/* Icon container with enhanced styling */}
             <div
               className={cn(
-                'metric-icon-box ml-2 flex h-9 w-9 xl:h-12 xl:w-12 shrink-0 items-center justify-center rounded-xl shadow-lg ring-2 transition-transform duration-300 group-hover:scale-110',
+                'metric-icon-box ml-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg ring-2 transition-transform duration-300 group-hover:scale-110',
                 styles.bg,
                 styles.shadow,
                 styles.ring
               )}
             >
-              <Icon className="metric-icon-svg h-4 w-4 xl:h-5 xl:w-5 text-white" strokeWidth={2} />
+              <Icon className="metric-icon-svg h-5 w-5 text-white" strokeWidth={2} />
             </div>
             <div className="flex gap-1 opacity-30">
               <div className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
