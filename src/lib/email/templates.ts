@@ -4,6 +4,16 @@ const LOGO_URL = 'https://bordados-perrino-platform.vercel.app/icons/perrino-log
 const BRAND_COLOR = '#3b82f6';
 const BRAND_NAME = 'Bordados Perrino';
 
+/** Escape HTML special characters to prevent XSS in email templates */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildEmailHtml(title: string, bodyHtml: string): string {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -80,17 +90,18 @@ export function statusChangeEmail(
   observations?: string
 ): { subject: string; html: string } {
   const statusLabel = OrderStatusLabels[newStatus] || newStatus;
-  const subject = `Pedido #${orderNumber} — ${statusLabel}`;
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const subject = `Pedido #${safeOrderNumber} — ${statusLabel}`;
 
   const obsHtml = observations
-    ? `<p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;"><strong>Observaciones:</strong> ${observations}</p>`
+    ? `<p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;"><strong>Observaciones:</strong> ${escapeHtml(observations)}</p>`
     : '';
 
   const body = `
-    ${greeting(clientName)}
+    ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">El estado de tu pedido ha sido actualizado:</p>
     ${infoTable(
-      infoRow('Pedido', `#${orderNumber}`) +
+      infoRow('Pedido', `#${safeOrderNumber}`) +
         infoRow(
           'Nuevo estado',
           `<span style="color:${BRAND_COLOR};font-weight:700;">${statusLabel}</span>`
@@ -110,7 +121,8 @@ export function paymentReceivedEmail(
   method: string,
   remainingBalance: number
 ): { subject: string; html: string } {
-  const subject = `Abono registrado — Pedido #${orderNumber}`;
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const subject = `Abono registrado — Pedido #${safeOrderNumber}`;
   const fmt = (n: number) =>
     n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -122,12 +134,12 @@ export function paymentReceivedEmail(
   };
 
   const body = `
-    ${greeting(clientName)}
+    ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha registrado un abono en tu pedido:</p>
     ${infoTable(
-      infoRow('Pedido', `#${orderNumber}`) +
+      infoRow('Pedido', `#${safeOrderNumber}`) +
         infoRow('Monto abonado', `<strong style="color:#16a34a;">$${fmt(amount)}</strong>`) +
-        infoRow('Método', methodLabels[method] || method) +
+        infoRow('Método', methodLabels[method] || escapeHtml(method)) +
         infoRow(
           'Saldo restante',
           remainingBalance <= 0
@@ -147,13 +159,14 @@ export function partialDeliveryEmail(
   qtyDelivered: number,
   qtyRemaining: number
 ): { subject: string; html: string } {
-  const subject = `Entrega parcial — Pedido #${orderNumber}`;
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const subject = `Entrega parcial — Pedido #${safeOrderNumber}`;
 
   const body = `
-    ${greeting(clientName)}
+    ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha realizado una entrega parcial de tu pedido:</p>
     ${infoTable(
-      infoRow('Pedido', `#${orderNumber}`) +
+      infoRow('Pedido', `#${safeOrderNumber}`) +
         infoRow('Cantidad entregada', `<strong>${qtyDelivered}</strong> unidad(es)`) +
         infoRow('Pendiente por entregar', `<strong>${qtyRemaining}</strong> unidad(es)`)
     )}
@@ -170,7 +183,8 @@ export function newOrderEmail(
   description: string,
   dueDate: string
 ): { subject: string; html: string } {
-  const subject = `Nuevo pedido registrado — #${orderNumber}`;
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const subject = `Nuevo pedido registrado — #${safeOrderNumber}`;
 
   const formattedDate = new Date(dueDate).toLocaleDateString('es-VE', {
     day: '2-digit',
@@ -179,11 +193,11 @@ export function newOrderEmail(
   });
 
   const body = `
-    ${greeting(clientName)}
+    ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha registrado un nuevo pedido a tu nombre:</p>
     ${infoTable(
-      infoRow('Pedido', `#${orderNumber}`) +
-        infoRow('Descripción', description) +
+      infoRow('Pedido', `#${safeOrderNumber}`) +
+        infoRow('Descripción', escapeHtml(description)) +
         infoRow('Fecha de entrega estimada', formattedDate)
     )}
     <p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;">Te notificaremos cuando haya novedades sobre tu pedido.</p>
@@ -201,20 +215,50 @@ export function newClientWelcomeEmail(
   const subject = `Bienvenido a ${BRAND_NAME}`;
 
   const body = `
-    ${greeting(clientName)}
+    ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">
       Se ha creado tu cuenta en nuestra plataforma. Puedes iniciar sesión con los siguientes datos:
     </p>
     ${infoTable(
-      infoRow('Correo', email) +
+      infoRow('Correo', escapeHtml(email)) +
         infoRow(
           'Contraseña temporal',
-          `<code style="background:#f1f5f9;padding:4px 10px;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:1px;color:#0f172a;">${tempPassword}</code>`
+          `<code style="background:#f1f5f9;padding:4px 10px;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:1px;color:#0f172a;">${escapeHtml(tempPassword)}</code>`
         )
     )}
     <div style="background-color:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin:16px 0;">
       <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
         <strong>Importante:</strong> Te recomendamos cambiar tu contraseña la primera vez que inicies sesión.
+      </p>
+    </div>
+    ${footer()}
+  `;
+
+  return { subject, html: buildEmailHtml(subject, body) };
+}
+
+export function newAdminWelcomeEmail(
+  adminName: string,
+  email: string,
+  tempPassword: string
+): { subject: string; html: string } {
+  const subject = `Acceso de administrador — ${BRAND_NAME}`;
+
+  const body = `
+    ${greeting(escapeHtml(adminName))}
+    <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">
+      Se te ha otorgado acceso como <strong>administrador</strong> en nuestra plataforma. Aquí están tus credenciales:
+    </p>
+    ${infoTable(
+      infoRow('Correo', escapeHtml(email)) +
+        infoRow(
+          'Contraseña temporal',
+          `<code style="background:#f1f5f9;padding:4px 10px;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:1px;color:#0f172a;">${escapeHtml(tempPassword)}</code>`
+        )
+    )}
+    <div style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin:16px 0;">
+      <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.5;">
+        <strong>Importante:</strong> Cambia tu contraseña inmediatamente después de iniciar sesión. No compartas estas credenciales con nadie.
       </p>
     </div>
     ${footer()}

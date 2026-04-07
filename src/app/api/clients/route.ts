@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       to: email,
       subject,
       html,
-      idempotencyKey: `welcome/${authData.user.id}/${Date.now()}`,
+      idempotencyKey: `welcome/${authData.user.id}/${new Date().toISOString().slice(0, 16)}`,
     }).catch((e) => console.error('[Email] Welcome email failed:', e));
 
     return NextResponse.json({

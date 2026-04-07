@@ -1,6 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { sendEmail } from '@/lib/email/resend';
+import { newAdminWelcomeEmail } from '@/lib/email/templates';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createAdminSchema, deleteAdminSchema } from '@/lib/validators/admin.schema';
 
@@ -151,6 +153,16 @@ export async function POST(request: NextRequest) {
     // Revalidar páginas de configuración
     revalidatePath('/admin/settings');
 
+    // Enviar email de bienvenida al nuevo admin (no bloquea la respuesta)
+    const adminName = [firstName, lastName].filter(Boolean).join(' ') || 'Admin';
+    const { subject, html } = newAdminWelcomeEmail(adminName, email, defaultPassword);
+    sendEmail({
+      to: email,
+      subject,
+      html,
+      idempotencyKey: `admin-welcome/${authData.user.id}/${new Date().toISOString().slice(0, 16)}`,
+    }).catch((e) => console.error('[Email] Admin welcome email failed:', e));
+
     return NextResponse.json({
       success: true,
       message: 'Administrador creado exitosamente',
@@ -160,7 +172,7 @@ export async function POST(request: NextRequest) {
         firstName: firstName || 'Admin',
         lastName: lastName || '',
       },
-      defaultPassword, // Enviar la contraseña generada para que se la compartan al nuevo admin
+      defaultPassword,
     });
   } catch (error) {
     console.error('Error al crear administrador:', error);

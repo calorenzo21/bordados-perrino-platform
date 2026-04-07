@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { sendEmail } from '@/lib/email/resend';
 import {
+  newAdminWelcomeEmail,
   newClientWelcomeEmail,
   newOrderEmail,
   partialDeliveryEmail,
@@ -10,13 +11,14 @@ import {
 } from '@/lib/email/templates';
 import { sendPushToClient } from '@/lib/services/push.server';
 import { createClient } from '@/lib/supabase/server';
-import { OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
+import { type OrderStatusType } from '@/lib/utils/status';
 
 type NotificationType =
   | 'status_change'
   | 'payment'
   | 'partial_delivery'
   | 'new_client'
+  | 'new_admin'
   | 'new_order';
 
 interface BasePayload {
@@ -59,6 +61,12 @@ interface NewClientPayload extends BasePayload {
   tempPassword: string;
 }
 
+interface NewAdminPayload extends BasePayload {
+  type: 'new_admin';
+  adminName: string;
+  tempPassword: string;
+}
+
 interface NewOrderPayload extends BasePayload {
   type: 'new_order';
   clientName: string;
@@ -72,6 +80,7 @@ type NotificationPayload =
   | PaymentPayload
   | PartialDeliveryPayload
   | NewClientPayload
+  | NewAdminPayload
   | NewOrderPayload;
 
 function buildEmailContent(payload: NotificationPayload): { subject: string; html: string } {
@@ -100,6 +109,8 @@ function buildEmailContent(payload: NotificationPayload): { subject: string; htm
       );
     case 'new_client':
       return newClientWelcomeEmail(payload.clientName, payload.email, payload.tempPassword);
+    case 'new_admin':
+      return newAdminWelcomeEmail(payload.adminName, payload.email, payload.tempPassword);
     case 'new_order':
       return newOrderEmail(
         payload.clientName,
@@ -111,18 +122,23 @@ function buildEmailContent(payload: NotificationPayload): { subject: string; htm
 }
 
 function buildIdempotencyKey(payload: NotificationPayload): string {
-  const ts = Date.now();
+  // Use a date-based window (per minute) instead of Date.now() so that
+  // rapid duplicate calls within the same minute are deduplicated,
+  // while still allowing legitimate re-sends over time.
+  const window = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
   switch (payload.type) {
     case 'status_change':
-      return `status/${payload.orderNumber}/${payload.newStatus}/${ts}`;
+      return `status/${payload.orderNumber}/${payload.newStatus}/${window}`;
     case 'payment':
-      return `payment/${payload.orderNumber}/${payload.amount}/${ts}`;
+      return `payment/${payload.orderNumber}/${payload.amount}/${window}`;
     case 'partial_delivery':
-      return `delivery/${payload.orderNumber}/${ts}`;
+      return `delivery/${payload.orderNumber}/${window}`;
     case 'new_client':
-      return `welcome/${payload.email}/${ts}`;
+      return `welcome/${payload.email}/${window}`;
+    case 'new_admin':
+      return `admin-welcome/${payload.email}/${window}`;
     case 'new_order':
-      return `neworder/${payload.orderNumber}/${ts}`;
+      return `neworder/${payload.orderNumber}/${window}`;
   }
 }
 

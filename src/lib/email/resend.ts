@@ -31,7 +31,7 @@ export async function sendEmail({
   subject,
   html,
   text,
-  from = 'Bordados Perrino <onboarding@resend.dev>',
+  from = 'Bordados Perrino <noreply@bordadosperrino.com>',
   replyTo,
   idempotencyKey,
 }: SendEmailParams): Promise<SendEmailResult> {
