@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { env } from '@/config/env';
 
 import { createClient } from '@/lib/supabase/server';
+import { hasAdminAccess } from '@/lib/utils/roles';
 
 export interface AuthResult {
   success: boolean;
@@ -50,7 +51,7 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
 
   revalidatePath('/', 'layout');
 
-  const redirectTo = profile?.role === 'ADMIN' ? '/admin/dashboard' : '/client/panel';
+  const redirectTo = hasAdminAccess(profile?.role) ? '/admin/dashboard' : '/client/panel';
 
   return { success: true, redirectTo };
 }

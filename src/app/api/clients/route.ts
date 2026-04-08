@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import { newClientWelcomeEmail } from '@/lib/email/templates';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createOrReuseAuthUser } from '@/lib/utils/reuse-auth-user';
+import { hasAdminAccess } from '@/lib/utils/roles';
 import { createClientSchema, updateClientSchema } from '@/lib/validators/client.schema';
 
 // Función para generar contraseña por defecto (6 dígitos numéricos)
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
+    if (!hasAdminAccess(currentProfile?.role)) {
       return NextResponse.json(
         { error: 'Solo los administradores pueden crear clientes' },
         { status: 403 }
@@ -70,35 +72,25 @@ export async function POST(request: NextRequest) {
     const { firstName, lastName } = splitFullName(name);
     const defaultPassword = generateDefaultPassword();
 
-    // 1. Crear usuario en Supabase Auth
-    const { data: authData, error: createAuthError } = await adminClient.auth.admin.createUser({
+    // 1. Crear o reutilizar usuario auth (maneja emails de usuarios soft-deleted/inactivos)
+    const { data: authResult, error: reuseError } = await createOrReuseAuthUser(adminClient, {
       email,
       password: defaultPassword,
-      email_confirm: true,
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-      },
+      firstName,
+      lastName,
     });
 
-    if (createAuthError) {
-      console.error('Error creating auth user:', createAuthError);
+    if (reuseError || !authResult) {
       return NextResponse.json(
-        {
-          error: createAuthError.message || 'Error al crear usuario de autenticación',
-        },
+        { error: reuseError || 'Error al crear usuario de autenticación' },
         { status: 400 }
       );
     }
 
-    if (!authData.user) {
-      return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 500 });
-    }
-
-    // 2. Crear o actualizar perfil con rol CLIENT
+    // 2. Upsert profile with CLIENT role
     const { error: profileError } = await adminClient.from('profiles').upsert(
       {
-        id: authData.user.id,
+        id: authResult.userId,
         email,
         first_name: firstName,
         last_name: lastName,
@@ -113,30 +105,85 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
-      // Intentar eliminar el usuario auth si falla el perfil
-      await adminClient.auth.admin.deleteUser(authData.user.id);
+      if (!authResult.isReused) {
+        await adminClient.auth.admin.deleteUser(authResult.userId);
+      }
       return NextResponse.json({ error: 'Error al crear perfil de cliente' }, { status: 500 });
     }
 
-    // 3. Crear cliente vinculado al perfil
-    const { data: clientData, error: clientError } = await adminClient
-      .from('clients')
-      .insert({
-        user_id: authData.user.id,
-        name,
-        email,
-        phone,
-        cedula: cedula || null,
-        address: address || null,
-      })
-      .select()
-      .single();
+    // 3. Crear o reactivar cliente vinculado al perfil
+    let clientData;
+    if (authResult.isReused) {
+      // Check if there's an existing soft-deleted client record to reactivate
+      const { data: existingClient } = await adminClient
+        .from('clients')
+        .select('*')
+        .eq('user_id', authResult.userId)
+        .single();
 
-    if (clientError) {
-      console.error('Error creating client:', clientError);
-      // Intentar limpiar en caso de error
-      await adminClient.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 });
+      if (existingClient) {
+        const { data: updated, error: updateError } = await adminClient
+          .from('clients')
+          .update({
+            name,
+            email,
+            phone,
+            cedula: cedula || null,
+            address: address || null,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingClient.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error reactivating client:', updateError);
+          return NextResponse.json({ error: 'Error al reactivar cliente' }, { status: 500 });
+        }
+        clientData = updated;
+      } else {
+        // Reused user had no client record (was an admin before) — create new
+        const { data: inserted, error: insertError } = await adminClient
+          .from('clients')
+          .insert({
+            user_id: authResult.userId,
+            name,
+            email,
+            phone,
+            cedula: cedula || null,
+            address: address || null,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating client:', insertError);
+          return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 });
+        }
+        clientData = inserted;
+      }
+    } else {
+      // Brand new user — create client record
+      const { data: inserted, error: clientError } = await adminClient
+        .from('clients')
+        .insert({
+          user_id: authResult.userId,
+          name,
+          email,
+          phone,
+          cedula: cedula || null,
+          address: address || null,
+        })
+        .select()
+        .single();
+
+      if (clientError) {
+        console.error('Error creating client:', clientError);
+        await adminClient.auth.admin.deleteUser(authResult.userId);
+        return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 });
+      }
+      clientData = inserted;
     }
 
     // Revalidar páginas que muestran clientes
@@ -149,7 +196,7 @@ export async function POST(request: NextRequest) {
       to: email,
       subject,
       html,
-      idempotencyKey: `welcome/${authData.user.id}/${new Date().toISOString().slice(0, 16)}`,
+      idempotencyKey: `welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
     }).catch((e) => console.error('[Email] Welcome email failed:', e));
 
     return NextResponse.json({
@@ -185,7 +232,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
+    if (!hasAdminAccess(currentProfile?.role)) {
       return NextResponse.json(
         { error: 'Solo los administradores pueden editar clientes' },
         { status: 403 }

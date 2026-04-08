@@ -596,6 +596,11 @@ export function OrderDetailClient({
 
       // 5.5 Enviar notificación por email (fire-and-forget)
       if (order.client.email) {
+        const isPartial =
+          newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
+          newStatusData.quantityDelivered;
+        const qtyDel = isPartial ? parseInt(newStatusData.quantityDelivered, 10) : undefined;
+
         fetch('/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -608,27 +613,11 @@ export function OrderDetailClient({
             newStatus: newStatusData.status,
             observations: newStatusData.observations || undefined,
             clientId: order.client.id,
+            ...(isPartial && qtyDel != null
+              ? { qtyDelivered: qtyDel, qtyRemaining: remainingToDeliver - qtyDel }
+              : {}),
           }),
         }).catch((e) => console.error('[Email] Status notification failed:', e));
-
-        if (
-          newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
-          newStatusData.quantityDelivered
-        ) {
-          const qtyDel = parseInt(newStatusData.quantityDelivered, 10);
-          fetch('/api/notifications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'partial_delivery',
-              email: order.client.email,
-              clientName: order.client.name,
-              orderNumber: order.id,
-              qtyDelivered: qtyDel,
-              qtyRemaining: remainingToDeliver - qtyDel,
-            }),
-          }).catch((e) => console.error('[Email] Partial delivery notification failed:', e));
-        }
       }
 
       // 6. Limpiar y cerrar

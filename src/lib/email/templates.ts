@@ -1,8 +1,11 @@
+import { env } from '@/config/env';
+
 import { OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
 const LOGO_URL = 'https://bordados-perrino-platform.vercel.app/icons/perrino-logo.png';
 const BRAND_COLOR = '#3b82f6';
 const BRAND_NAME = 'Bordados Perrino';
+const APP_URL = env.APP_URL;
 
 /** Escape HTML special characters to prevent XSS in email templates */
 function escapeHtml(str: string): string {
@@ -79,6 +82,21 @@ function footer(): string {
   return `<p style="margin:24px 0 0;font-size:14px;color:#64748b;line-height:1.6;">Gracias por confiar en <strong>${BRAND_NAME}</strong>.</p>`;
 }
 
+function ctaButton(label: string, url: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+    <tr>
+      <td align="center">
+        <a href="${url}" target="_blank" style="display:inline-block;background-color:${BRAND_COLOR};color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:0.2px;">
+          ${label}
+        </a>
+      </td>
+    </tr>
+  </table>
+  <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.5;">
+    Si tenés la app instalada, también podés ingresar desde ahí.
+  </p>`;
+}
+
 // ---------------------------------------------------------------------------
 // Templates
 // ---------------------------------------------------------------------------
@@ -87,27 +105,45 @@ export function statusChangeEmail(
   clientName: string,
   orderNumber: string,
   newStatus: OrderStatusType,
-  observations?: string
+  options?: {
+    description?: string;
+    observations?: string;
+    qtyDelivered?: number;
+    qtyRemaining?: number;
+  }
 ): { subject: string; html: string } {
   const statusLabel = OrderStatusLabels[newStatus] || newStatus;
   const safeOrderNumber = escapeHtml(orderNumber);
   const subject = `Pedido #${safeOrderNumber} — ${statusLabel}`;
 
-  const obsHtml = observations
-    ? `<p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;"><strong>Observaciones:</strong> ${escapeHtml(observations)}</p>`
+  const obsHtml = options?.observations
+    ? `<p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;"><strong>Observaciones:</strong> ${escapeHtml(options.observations)}</p>`
     : '';
+
+  const descRow = options?.description
+    ? infoRow('Descripción', escapeHtml(options.description))
+    : '';
+
+  const qtyRows =
+    options?.qtyDelivered != null && options?.qtyRemaining != null
+      ? infoRow('Cantidad entregada', `<strong>${options.qtyDelivered}</strong> unidad(es)`) +
+        infoRow('Pendiente por entregar', `<strong>${options.qtyRemaining}</strong> unidad(es)`)
+      : '';
 
   const body = `
     ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">El estado de tu pedido ha sido actualizado:</p>
     ${infoTable(
       infoRow('Pedido', `#${safeOrderNumber}`) +
+        descRow +
         infoRow(
           'Nuevo estado',
           `<span style="color:${BRAND_COLOR};font-weight:700;">${statusLabel}</span>`
-        )
+        ) +
+        qtyRows
     )}
     ${obsHtml}
+    ${ctaButton('Ver mi pedido', `${APP_URL}/client/panel`)}
     ${footer()}
   `;
 
@@ -119,7 +155,8 @@ export function paymentReceivedEmail(
   orderNumber: string,
   amount: number,
   method: string,
-  remainingBalance: number
+  remainingBalance: number,
+  description?: string
 ): { subject: string; html: string } {
   const safeOrderNumber = escapeHtml(orderNumber);
   const subject = `Abono registrado — Pedido #${safeOrderNumber}`;
@@ -133,11 +170,14 @@ export function paymentReceivedEmail(
     otro: 'Otro',
   };
 
+  const descRow = description ? infoRow('Descripción', escapeHtml(description)) : '';
+
   const body = `
     ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha registrado un abono en tu pedido:</p>
     ${infoTable(
       infoRow('Pedido', `#${safeOrderNumber}`) +
+        descRow +
         infoRow('Monto abonado', `<strong style="color:#16a34a;">$${fmt(amount)}</strong>`) +
         infoRow('Método', methodLabels[method] || escapeHtml(method)) +
         infoRow(
@@ -147,6 +187,7 @@ export function paymentReceivedEmail(
             : `<strong>$${fmt(remainingBalance)}</strong>`
         )
     )}
+    ${ctaButton('Ver mi pedido', `${APP_URL}/client/panel`)}
     ${footer()}
   `;
 
@@ -157,20 +198,25 @@ export function partialDeliveryEmail(
   clientName: string,
   orderNumber: string,
   qtyDelivered: number,
-  qtyRemaining: number
+  qtyRemaining: number,
+  description?: string
 ): { subject: string; html: string } {
   const safeOrderNumber = escapeHtml(orderNumber);
   const subject = `Entrega parcial — Pedido #${safeOrderNumber}`;
+
+  const descRow = description ? infoRow('Descripción', escapeHtml(description)) : '';
 
   const body = `
     ${greeting(escapeHtml(clientName))}
     <p style="margin:0 0 4px;font-size:15px;color:#334155;line-height:1.6;">Se ha realizado una entrega parcial de tu pedido:</p>
     ${infoTable(
       infoRow('Pedido', `#${safeOrderNumber}`) +
+        descRow +
         infoRow('Cantidad entregada', `<strong>${qtyDelivered}</strong> unidad(es)`) +
         infoRow('Pendiente por entregar', `<strong>${qtyRemaining}</strong> unidad(es)`)
     )}
     <p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;">Te notificaremos cuando el resto de tu pedido esté listo.</p>
+    ${ctaButton('Ver mi pedido', `${APP_URL}/client/panel`)}
     ${footer()}
   `;
 
@@ -201,6 +247,7 @@ export function newOrderEmail(
         infoRow('Fecha de entrega estimada', formattedDate)
     )}
     <p style="margin:16px 0 0;font-size:14px;color:#475569;line-height:1.6;">Te notificaremos cuando haya novedades sobre tu pedido.</p>
+    ${ctaButton('Ver mi pedido', `${APP_URL}/client/panel`)}
     ${footer()}
   `;
 
@@ -231,6 +278,7 @@ export function newClientWelcomeEmail(
         <strong>Importante:</strong> Te recomendamos cambiar tu contraseña la primera vez que inicies sesión.
       </p>
     </div>
+    ${ctaButton('Iniciar sesión', `${APP_URL}/login`)}
     ${footer()}
   `;
 
@@ -261,6 +309,7 @@ export function newAdminWelcomeEmail(
         <strong>Importante:</strong> Cambia tu contraseña inmediatamente después de iniciar sesión. No compartas estas credenciales con nadie.
       </p>
     </div>
+    ${ctaButton('Iniciar sesión', `${APP_URL}/login`)}
     ${footer()}
   `;
 

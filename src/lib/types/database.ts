@@ -28,7 +28,7 @@ export type ServiceType =
 
 export type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
 
-export type UserRole = 'ADMIN' | 'CLIENT' | 'INACTIVE';
+export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'CLIENT' | 'INACTIVE';
 
 export type PaymentStatus = 'PENDING' | 'PARTIAL' | 'PAID';
 

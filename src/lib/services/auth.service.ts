@@ -1,13 +1,12 @@
 /**
  * Auth Service
- * 
+ *
  * Business logic for authentication operations.
  * Handles sign up, sign in, sign out, and user profile management.
  */
-
 import { SupabaseClient, User } from '@supabase/supabase-js';
 
-import type { Profile, SignUpData, SignInData, AuthUser, UserRole } from '@/lib/types/database';
+import type { AuthUser, Profile, SignInData, SignUpData, UserRole } from '@/lib/types/database';
 
 export class AuthService {
   constructor(private supabase: SupabaseClient) {}
@@ -79,7 +78,7 @@ export class AuthService {
    */
   async signOut(): Promise<{ error: string | null }> {
     const { error } = await this.supabase.auth.signOut();
-    
+
     if (error) {
       return { error: this.getErrorMessage(error.message) };
     }
@@ -91,7 +90,10 @@ export class AuthService {
    * Get the current authenticated user with profile
    */
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user }, error } = await this.supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await this.supabase.auth.getUser();
 
     if (error || !user) {
       return null;
@@ -157,7 +159,7 @@ export class AuthService {
     }
 
     const profile = await this.getProfile(userId);
-    return profile?.role === 'ADMIN';
+    return profile?.role === 'ADMIN' || profile?.role === 'SUPERADMIN';
   }
 
   /**
@@ -200,7 +202,8 @@ export class AuthService {
       'User already registered': 'Este correo electrónico ya está registrado.',
       'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
       'Signup requires a valid password': 'Se requiere una contraseña válida.',
-      'Unable to validate email address: invalid format': 'El formato del correo electrónico no es válido.',
+      'Unable to validate email address: invalid format':
+        'El formato del correo electrónico no es válido.',
       'Email rate limit exceeded': 'Demasiados intentos. Intenta de nuevo más tarde.',
     };
 

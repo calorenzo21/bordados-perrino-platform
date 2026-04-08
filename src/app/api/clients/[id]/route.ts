@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { hasAdminAccess } from '@/lib/utils/roles';
 
 export async function DELETE(
   _request: NextRequest,
@@ -27,7 +28,7 @@ export async function DELETE(
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
+    if (!hasAdminAccess(currentProfile?.role)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

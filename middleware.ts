@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { type UserRole, updateSession } from '@/lib/supabase/middleware';
+import { hasAdminAccess } from '@/lib/utils/roles';
 
 /**
  * Route protection middleware for Next.js
@@ -27,6 +28,7 @@ const matchesRoute = (pathname: string, routes: string[]) =>
 // Get the appropriate dashboard based on user role
 const getDashboardByRole = (role: UserRole): string => {
   switch (role) {
+    case 'SUPERADMIN':
     case 'ADMIN':
       return '/admin/dashboard';
     case 'CLIENT':
@@ -102,8 +104,8 @@ export async function middleware(request: NextRequest) {
   // CASE 4: Role-based route protection
   // ============================================
 
-  // Admin routes - only ADMIN users can access
-  if (isAdminRoute && role !== 'ADMIN') {
+  // Admin routes - only ADMIN/SUPERADMIN users can access
+  if (isAdminRoute && !hasAdminAccess(role)) {
     // If user is a client, redirect to client panel
     if (role === 'CLIENT') {
       return NextResponse.redirect(new URL('/client/panel', request.url));
@@ -114,8 +116,8 @@ export async function middleware(request: NextRequest) {
 
   // Client routes - only CLIENT users can access
   if (isClientRoute && role !== 'CLIENT') {
-    // If user is an admin, redirect to admin dashboard
-    if (role === 'ADMIN') {
+    // If user is an admin/superadmin, redirect to admin dashboard
+    if (hasAdminAccess(role)) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
     // No role or unknown role - redirect to login

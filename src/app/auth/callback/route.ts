@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { hasAdminAccess } from '@/lib/utils/roles';
 
 /**
  * Parse first/last name from Google (or other OAuth) user_metadata.
@@ -80,6 +81,6 @@ export async function GET(request: Request) {
     .eq('id', data.user.id)
     .single();
 
-  const path = profileAfter?.role === 'ADMIN' ? '/admin/dashboard' : '/client/panel';
+  const path = hasAdminAccess(profileAfter?.role) ? '/admin/dashboard' : '/client/panel';
   return NextResponse.redirect(`${origin}${path}`);
 }

@@ -49,6 +49,7 @@ interface Admin {
   first_name: string;
   last_name: string;
   phone: string | null;
+  role: string;
   created_at: string;
 }
 
@@ -86,7 +87,7 @@ function translateSupabaseError(error: any): string {
 }
 
 export default function SettingsPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, isSuperAdmin: currentUserIsSuperAdmin } = useAuth();
 
   // Estado del perfil
   const [profileData, setProfileData] = useState({
@@ -566,20 +567,28 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {admin.id === user?.id ? (
+                    {admin.role === 'SUPERADMIN' && (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        Superadmin
+                      </span>
+                    )}
+                    {admin.id === user?.id && (
                       <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                         Tú
                       </span>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                        onClick={() => setAdminToDelete(admin)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     )}
+                    {currentUserIsSuperAdmin &&
+                      admin.id !== user?.id &&
+                      admin.role !== 'SUPERADMIN' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                          onClick={() => setAdminToDelete(admin)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                   </div>
                 </div>
               ))}

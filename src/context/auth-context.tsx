@@ -22,6 +22,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   signOut: () => void;
   refreshProfile: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -174,12 +175,22 @@ export function AuthProvider({
     window.location.href = '/auth/signout';
   }, []);
 
-  // isAdmin se computa desde profile que está disponible desde el primer render (SSR)
-  const isAdmin = profile?.role === 'ADMIN';
+  // isAdmin/isSuperAdmin se computan desde profile que está disponible desde el primer render (SSR)
+  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPERADMIN';
+  const isSuperAdmin = profile?.role === 'SUPERADMIN';
 
   const value = useMemo(
-    () => ({ user, profile, isLoading, isAdmin, signOut, refreshProfile, refreshSession }),
-    [user, profile, isLoading, isAdmin, signOut, refreshProfile, refreshSession]
+    () => ({
+      user,
+      profile,
+      isLoading,
+      isAdmin,
+      isSuperAdmin,
+      signOut,
+      refreshProfile,
+      refreshSession,
+    }),
+    [user, profile, isLoading, isAdmin, isSuperAdmin, signOut, refreshProfile, refreshSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

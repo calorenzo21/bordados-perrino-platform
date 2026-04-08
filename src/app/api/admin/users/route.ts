@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import { newAdminWelcomeEmail } from '@/lib/email/templates';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createOrReuseAuthUser } from '@/lib/utils/reuse-auth-user';
+import { hasAdminAccess, isSuperAdmin } from '@/lib/utils/roles';
 import { createAdminSchema, deleteAdminSchema } from '@/lib/validators/admin.schema';
 
 // Generar contraseña aleatoria
@@ -35,15 +37,15 @@ export async function GET() {
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
+    if (!hasAdminAccess(currentProfile?.role)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
-    // Obtener todos los administradores
+    // Obtener todos los administradores (ADMIN + SUPERADMIN)
     const { data: admins, error } = await supabase
       .from('profiles')
-      .select('id, email, first_name, last_name, phone, created_at')
-      .eq('role', 'ADMIN')
+      .select('id, email, first_name, last_name, phone, role, created_at')
+      .in('role', ['ADMIN', 'SUPERADMIN'])
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
+    if (!hasAdminAccess(currentProfile?.role)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -91,44 +93,25 @@ export async function POST(request: NextRequest) {
 
     const { email, firstName, lastName } = parsed.data;
 
-    // Verificar si el email ya existe
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (existingProfile) {
-      return NextResponse.json({ error: 'Ya existe un usuario con este correo' }, { status: 400 });
-    }
-
     // Generar contraseña por defecto
     const defaultPassword = generatePassword();
 
-    // Crear usuario en auth usando admin client
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    // Crear o reutilizar usuario auth (maneja emails de usuarios soft-deleted/inactivos)
+    const { data: authResult, error: authError } = await createOrReuseAuthUser(adminClient, {
       email,
       password: defaultPassword,
-      email_confirm: true, // Confirmar email automáticamente
-      user_metadata: {
-        first_name: firstName || 'Admin',
-        last_name: lastName || '',
-      },
+      firstName: firstName || 'Admin',
+      lastName: lastName || '',
     });
 
-    if (authError) {
-      console.error('Error al crear usuario en auth:', authError);
-      return NextResponse.json(
-        { error: authError.message || 'Error al crear usuario' },
-        { status: 400 }
-      );
+    if (authError || !authResult) {
+      return NextResponse.json({ error: authError || 'Error al crear usuario' }, { status: 400 });
     }
 
-    // Usar UPSERT para manejar el caso donde el trigger crea el perfil y donde no
-    // El trigger handle_new_user puede o no crear el perfil, así que usamos upsert
+    // Upsert profile with ADMIN role (handles both new and reused users)
     const { error: profileError } = await adminClient.from('profiles').upsert(
       {
-        id: authData.user.id,
+        id: authResult.userId,
         email,
         first_name: firstName || 'Admin',
         last_name: lastName || '',
@@ -142,8 +125,9 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('Error al crear/actualizar perfil:', profileError);
-      // Si falla el perfil, eliminar el usuario de auth
-      await adminClient.auth.admin.deleteUser(authData.user.id);
+      if (!authResult.isReused) {
+        await adminClient.auth.admin.deleteUser(authResult.userId);
+      }
       return NextResponse.json(
         { error: 'Error al configurar perfil de administrador' },
         { status: 500 }
@@ -160,14 +144,14 @@ export async function POST(request: NextRequest) {
       to: email,
       subject,
       html,
-      idempotencyKey: `admin-welcome/${authData.user.id}/${new Date().toISOString().slice(0, 16)}`,
+      idempotencyKey: `admin-welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
     }).catch((e) => console.error('[Email] Admin welcome email failed:', e));
 
     return NextResponse.json({
       success: true,
       message: 'Administrador creado exitosamente',
       user: {
-        id: authData.user.id,
+        id: authResult.userId,
         email,
         firstName: firstName || 'Admin',
         lastName: lastName || '',
@@ -200,8 +184,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (currentProfile?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    if (!isSuperAdmin(currentProfile?.role)) {
+      return NextResponse.json(
+        { error: 'Solo el superadministrador puede eliminar administradores' },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -221,11 +208,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 });
     }
 
+    // No permitir eliminar al SUPERADMIN
+    const { data: targetProfile } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (targetProfile?.role === 'SUPERADMIN') {
+      return NextResponse.json(
+        { error: 'No se puede eliminar al superadministrador' },
+        { status: 400 }
+      );
+    }
+
     // Verificar que quede al menos un admin activo después de desactivar
     const { count } = await adminClient
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .eq('role', 'ADMIN');
+      .in('role', ['ADMIN', 'SUPERADMIN']);
 
     if ((count ?? 0) <= 1) {
       return NextResponse.json(

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { type CookieOptions, createServerClient } from '@supabase/ssr';
 
-export type UserRole = 'ADMIN' | 'CLIENT' | 'INACTIVE' | null;
+export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'CLIENT' | 'INACTIVE' | null;
 
 export interface SessionResult {
   supabaseResponse: NextResponse;

@@ -35,6 +35,8 @@ interface StatusChangePayload extends BasePayload {
   description?: string;
   newStatus: OrderStatusType;
   observations?: string;
+  qtyDelivered?: number;
+  qtyRemaining?: number;
 }
 
 interface PaymentPayload extends BasePayload {
@@ -51,6 +53,7 @@ interface PartialDeliveryPayload extends BasePayload {
   type: 'partial_delivery';
   clientName: string;
   orderNumber: string;
+  description?: string;
   qtyDelivered: number;
   qtyRemaining: number;
 }
@@ -86,26 +89,28 @@ type NotificationPayload =
 function buildEmailContent(payload: NotificationPayload): { subject: string; html: string } {
   switch (payload.type) {
     case 'status_change':
-      return statusChangeEmail(
-        payload.clientName,
-        payload.orderNumber,
-        payload.newStatus,
-        payload.observations
-      );
+      return statusChangeEmail(payload.clientName, payload.orderNumber, payload.newStatus, {
+        description: payload.description,
+        observations: payload.observations,
+        qtyDelivered: payload.qtyDelivered,
+        qtyRemaining: payload.qtyRemaining,
+      });
     case 'payment':
       return paymentReceivedEmail(
         payload.clientName,
         payload.orderNumber,
         payload.amount,
         payload.method,
-        payload.remainingBalance
+        payload.remainingBalance,
+        payload.description
       );
     case 'partial_delivery':
       return partialDeliveryEmail(
         payload.clientName,
         payload.orderNumber,
         payload.qtyDelivered,
-        payload.qtyRemaining
+        payload.qtyRemaining,
+        payload.description
       );
     case 'new_client':
       return newClientWelcomeEmail(payload.clientName, payload.email, payload.tempPassword);
