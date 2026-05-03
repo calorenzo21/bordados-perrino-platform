@@ -24,6 +24,7 @@ import {
 
 import { OrderStatus, OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
+import { NotificationBanner } from '@/components/client/NotificationBanner';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -265,6 +266,9 @@ export function PanelContent() {
           </div>
         </div>
       </div>
+
+      {/* Notification permission banner */}
+      <NotificationBanner />
 
       {/* Search and Filter */}
       <div className="flex flex-row gap-2">
