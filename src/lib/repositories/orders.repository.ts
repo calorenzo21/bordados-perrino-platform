@@ -503,13 +503,15 @@ export class OrdersRepository {
   }
 
   /**
-   * Sum of remaining balance across all orders (pending to collect).
+   * Sum of remaining balance across all non-cancelled orders (pending to collect).
+   * Includes delivered orders with unpaid balance.
    */
   async getTotalPendingToCollect(): Promise<number> {
     const { data, error } = await this.supabase
       .from('orders_with_payments')
       .select('remaining_balance')
-      .not('status', 'in', '("ENTREGADO","CANCELADO")');
+      .neq('status', 'CANCELADO')
+      .gt('remaining_balance', 0);
 
     if (error) throw new Error(error.message);
     return (data || []).reduce((sum, row) => sum + (Number(row.remaining_balance) || 0), 0);

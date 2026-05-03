@@ -153,6 +153,7 @@ export async function POST(request: NextRequest) {
             phone,
             cedula: cedula || null,
             address: address || null,
+            is_active: true,
           })
           .select()
           .single();
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
           phone,
           cedula: cedula || null,
           address: address || null,
+          is_active: true,
         })
         .select()
         .single();
