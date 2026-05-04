@@ -100,6 +100,20 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
   const [expenseToDelete, setExpenseToDelete] = useState<(typeof expenses)[0] | null>(null);
   const [isDeletingExpense, setIsDeletingExpense] = useState(false);
 
+  // Estado para modal de visualización de gasto
+  const [isViewExpenseDialogOpen, setIsViewExpenseDialogOpen] = useState(false);
+  const [viewingExpense, setViewingExpense] = useState<(typeof expenses)[0] | null>(null);
+
+  const handleOpenViewExpense = (expense: (typeof expenses)[0]) => {
+    setViewingExpense(expense);
+    setIsViewExpenseDialogOpen(true);
+  };
+
+  const handleCloseViewExpense = () => {
+    setIsViewExpenseDialogOpen(false);
+    setViewingExpense(null);
+  };
+
   const supabase = createClient();
 
   // Usar tipos directamente de la DB
@@ -557,6 +571,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
               {paginatedExpenses.map((expense) => (
                 <TableRow
                   key={expense.id}
+                  onClick={() => handleOpenViewExpense(expense)}
                   className="group cursor-pointer border-slate-100 transition-colors hover:bg-blue-50/50 dark:border-slate-700 dark:hover:bg-slate-700/50"
                 >
                   <TableCell className="pl-6">
@@ -580,7 +595,7 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                       -${expense.amount.toLocaleString()}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right pr-6">
+                  <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -1051,6 +1066,80 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                   Eliminar
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Ver Detalle del Gasto */}
+      <Dialog
+        open={isViewExpenseDialogOpen}
+        onOpenChange={(open) => !open && handleCloseViewExpense()}
+      >
+        <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
+          <DialogHeader>
+            <DialogTitle className="dark:text-slate-100">Detalle del Gasto</DialogTitle>
+            <DialogDescription>Información completa del gasto registrado</DialogDescription>
+          </DialogHeader>
+
+          {viewingExpense && (
+            <div className="space-y-4 py-2">
+              {/* Resumen visual: ícono + tipo + monto */}
+              <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-4 dark:border-slate-700 dark:from-slate-700/50 dark:to-slate-800">
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${getTypeColor(viewingExpense.typeId)} shadow-md`}
+                >
+                  <Receipt className="h-6 w-6 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Badge className={`border ${getTypeBadgeClasses(viewingExpense.typeId)}`}>
+                    {viewingExpense.typeName}
+                  </Badge>
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {viewingExpense.date}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    -${viewingExpense.amount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Descripción completa — sin truncar */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Descripción
+                </label>
+                <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/30">
+                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                    {viewingExpense.description || (
+                      <span className="italic text-slate-400 dark:text-slate-500">
+                        Sin descripción
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={handleCloseViewExpense} className="rounded-xl">
+              Cerrar
+            </Button>
+            <Button
+              onClick={() => {
+                if (viewingExpense) {
+                  handleCloseViewExpense();
+                  handleOpenEditExpense(viewingExpense);
+                }
+              }}
+              className="rounded-xl bg-blue-500 hover:bg-blue-600"
+            >
+              <Edit2 className="mr-2 h-4 w-4" />
+              Editar
             </Button>
           </DialogFooter>
         </DialogContent>
