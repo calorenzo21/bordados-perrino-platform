@@ -1,6 +1,17 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
+// Infer the app URL from Vercel env vars when APP_URL isn't explicitly set.
+// This prevents emails from leaking localhost links in production deployments.
+// Priority: VERCEL_PROJECT_PRODUCTION_URL (stable prod domain, e.g. custom domain)
+//        → VERCEL_URL (per-deployment URL, used for previews)
+//        → localhost:3000 (local dev)
+const inferredAppUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
+
 export const env = createEnv({
   /**
    * Server-side environment variables schema
@@ -9,7 +20,7 @@ export const env = createEnv({
   server: {
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
     RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required'),
-    APP_URL: z.string().url('APP_URL must be a valid URL').default('http://localhost:3000'),
+    APP_URL: z.string().url('APP_URL must be a valid URL').default(inferredAppUrl),
     VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY is required'),
     VAPID_SUBJECT: z.string().min(1, 'VAPID_SUBJECT is required'),
   },

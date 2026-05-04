@@ -2,10 +2,10 @@ import { env } from '@/config/env';
 
 import { OrderStatusLabels, type OrderStatusType } from '@/lib/utils/status';
 
-const LOGO_URL = 'https://bordados-perrino-platform.vercel.app/icons/perrino-logo.png';
+const APP_URL = env.APP_URL;
+const LOGO_URL = `${APP_URL}/icons/perrino-logo.png`;
 const BRAND_COLOR = '#3b82f6';
 const BRAND_NAME = 'Bordados Perrino';
-const APP_URL = env.APP_URL;
 
 /** Escape HTML special characters to prevent XSS in email templates */
 function escapeHtml(str: string): string {
