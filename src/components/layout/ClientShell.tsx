@@ -12,6 +12,7 @@ import { Loader2, LogOut, Menu, Moon, Package, Sun, User, X } from 'lucide-react
 import { cn } from '@/lib/utils';
 
 import { PerrinoLogo } from '@/components/PerrinoLogo';
+import { NotificationReminder } from '@/components/client/NotificationReminder';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -226,6 +227,9 @@ export function ClientShell({ children }: ClientShellProps) {
 
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+
+      {/* Floating reminder toast — appears every session if notifications not yet enabled */}
+      <NotificationReminder />
     </div>
   );
 }
