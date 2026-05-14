@@ -1,0 +1,206 @@
+###
+# Smoke tests for /api/agent/* — replay these against `pnpm dev`.
+#
+# Supported runners:
+#   - VS Code REST Client extension (jetbrains-idea-rest-client equivalent)
+#   - JetBrains HTTP Client (built-in to WebStorm / IntelliJ)
+#   - hurl, kreuzwerker httpyac
+#   - For curl: see the bottom of this file for one-liners.
+#
+# Replace the @placeholders below with values from your seed data:
+#   - @apiKey       AGENT_API_KEY from .env.local (must match what the agent sends)
+#   - @phone        E.164 phone of the seed client (e.g. +5215512345678)
+#   - @clientId     UUID returned by EP-1 for that phone
+#   - @orderId      UUID of an order belonging to @clientId
+#   - @otherPhone   Any OTHER registered phone (for cross-tenant tests)
+###
+
+@baseUrl = http://localhost:3000
+@apiKey = REPLACE_WITH_AGENT_API_KEY_FROM_DOTENV
+@phone = +5215512345678
+@clientId = 00000000-0000-0000-0000-000000000000
+@orderId = 00000000-0000-0000-0000-000000000000
+@otherPhone = +5215587654321
+
+###
+# ============================================================
+# EP-1 — Resolve phone → client
+# ============================================================
+
+### EP-1.1 happy path — returns ClientDTO
+GET {{baseUrl}}/api/agent/clients/by-phone/{{phone}}
+Authorization: Bearer {{apiKey}}
+
+### EP-1.2 unknown phone — 404 NOT_FOUND
+GET {{baseUrl}}/api/agent/clients/by-phone/+5215500000000
+Authorization: Bearer {{apiKey}}
+
+### EP-1.3 missing bearer — 401 UNAUTHORIZED
+GET {{baseUrl}}/api/agent/clients/by-phone/{{phone}}
+
+### EP-1.4 wrong bearer — 401 UNAUTHORIZED (constant-time compare)
+GET {{baseUrl}}/api/agent/clients/by-phone/{{phone}}
+Authorization: Bearer thisIsNotTheRealKeyButTheRightLength12345
+
+### EP-1.5 malformed phone — 400 VALIDATION_ERROR / BAD_REQUEST
+GET {{baseUrl}}/api/agent/clients/by-phone/notaphone
+Authorization: Bearer {{apiKey}}
+
+###
+# ============================================================
+# EP-2 — List orders for client
+# ============================================================
+
+### EP-2.1 happy path — defaults limit=5 include=active
+GET {{baseUrl}}/api/agent/clients/{{clientId}}/orders
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-2.2 explicit query — limit=20 include=all
+GET {{baseUrl}}/api/agent/clients/{{clientId}}/orders?limit=20&include=all
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-2.3 cross-tenant — phone does NOT own client_id → 404 (NOT 403)
+GET {{baseUrl}}/api/agent/clients/{{clientId}}/orders
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{otherPhone}}
+
+### EP-2.4 invalid limit — 400 VALIDATION_ERROR
+GET {{baseUrl}}/api/agent/clients/{{clientId}}/orders?limit=999
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-2.5 missing X-Agent-Phone — 400 BAD_REQUEST
+GET {{baseUrl}}/api/agent/clients/{{clientId}}/orders
+Authorization: Bearer {{apiKey}}
+
+###
+# ============================================================
+# EP-3 — Single order
+# ============================================================
+
+### EP-3.1 happy path
+GET {{baseUrl}}/api/agent/orders/{{orderId}}?client_id={{clientId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-3.2 missing client_id query — 400 BAD_REQUEST
+GET {{baseUrl}}/api/agent/orders/{{orderId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-3.3 cross-tenant on the same order — 404
+GET {{baseUrl}}/api/agent/orders/{{orderId}}?client_id={{clientId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{otherPhone}}
+
+### EP-3.4 malformed order_id — 400 BAD_REQUEST
+GET {{baseUrl}}/api/agent/orders/not-a-uuid?client_id={{clientId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+###
+# ============================================================
+# EP-4 — Payment summary
+# ============================================================
+
+### EP-4.1 happy path — returns total/paid/due in cents
+GET {{baseUrl}}/api/agent/orders/{{orderId}}/payments/summary?client_id={{clientId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+
+### EP-4.2 cross-tenant — 404
+GET {{baseUrl}}/api/agent/orders/{{orderId}}/payments/summary?client_id={{clientId}}
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{otherPhone}}
+
+###
+# ============================================================
+# EP-5 — Handoff (POST)
+# ============================================================
+
+### EP-5.1 happy path — 201 with { queued: true, id }
+POST {{baseUrl}}/api/agent/handoff
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+Content-Type: application/json
+
+{
+  "phone": "{{phone}}",
+  "client_id": "{{clientId}}",
+  "summary": "Cliente solicita hablar con un asesor para modificar su pedido.",
+  "reason": "modify"
+}
+
+### EP-5.2 phone in body ≠ X-Agent-Phone — 400 BAD_REQUEST
+POST {{baseUrl}}/api/agent/handoff
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+Content-Type: application/json
+
+{
+  "phone": "{{otherPhone}}",
+  "client_id": "{{clientId}}",
+  "summary": "Confused agent posting against wrong client.",
+  "reason": "modify"
+}
+
+### EP-5.3 invalid reason — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/agent/handoff
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+Content-Type: application/json
+
+{
+  "phone": "{{phone}}",
+  "client_id": "{{clientId}}",
+  "summary": "Bad reason",
+  "reason": "definitely_not_in_the_enum"
+}
+
+### EP-5.4 summary too long — 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/agent/handoff
+Authorization: Bearer {{apiKey}}
+X-Agent-Phone: {{phone}}
+Content-Type: application/json
+
+{
+  "phone": "{{phone}}",
+  "client_id": "{{clientId}}",
+  "summary": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x",
+  "reason": "complaint"
+}
+
+###
+# ============================================================
+# curl one-liners (paste in any terminal)
+# ============================================================
+#
+# EP-1:
+#   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
+#        "http://localhost:3000/api/agent/clients/by-phone/+5215512345678"
+#
+# EP-2:
+#   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
+#        -H "X-Agent-Phone: +5215512345678" \
+#        "http://localhost:3000/api/agent/clients/$CLIENT_ID/orders?limit=5"
+#
+# EP-3:
+#   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
+#        -H "X-Agent-Phone: +5215512345678" \
+#        "http://localhost:3000/api/agent/orders/$ORDER_ID?client_id=$CLIENT_ID"
+#
+# EP-4:
+#   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
+#        -H "X-Agent-Phone: +5215512345678" \
+#        "http://localhost:3000/api/agent/orders/$ORDER_ID/payments/summary?client_id=$CLIENT_ID"
+#
+# EP-5:
+#   curl -i -X POST -H "Authorization: Bearer $AGENT_API_KEY" \
+#        -H "X-Agent-Phone: +5215512345678" \
+#        -H "Content-Type: application/json" \
+#        -d '{"phone":"+5215512345678","client_id":"'$CLIENT_ID'","summary":"test","reason":"modify"}' \
+#        "http://localhost:3000/api/agent/handoff"
+#
+###
