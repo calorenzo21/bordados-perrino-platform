@@ -39,6 +39,7 @@ import {
   ZoomIn,
 } from 'lucide-react';
 
+import { notifyAgentOfOrderStatusChange } from '@/lib/actions/agent-notifications';
 import { revalidateOrder } from '@/lib/actions/revalidate';
 import { PAYMENT_METHODS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/browser';
@@ -593,6 +594,14 @@ export function OrderDetailClient({
       // Revalidar caché del servidor
       revalidateOrder(order.uuid).catch(console.error);
       refetch();
+
+      // 5.4 Notificar al agente de WhatsApp (fire-and-forget). Falla silenciosa:
+      // si el agente está caído, el admin no debe ver un error ni revertirse el cambio.
+      notifyAgentOfOrderStatusChange(
+        order.uuid,
+        order.status as OrderStatusType,
+        newStatusData.status
+      ).catch((e) => console.error('[Agent] Status notification failed:', e));
 
       // 5.5 Enviar notificación por email (fire-and-forget)
       if (order.client.email) {
