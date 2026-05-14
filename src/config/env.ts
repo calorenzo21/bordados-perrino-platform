@@ -23,6 +23,13 @@ export const env = createEnv({
     APP_URL: z.string().url('APP_URL must be a valid URL').default(inferredAppUrl),
     VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY is required'),
     VAPID_SUBJECT: z.string().min(1, 'VAPID_SUBJECT is required'),
+    // Agent integration — bordados-perrino-agent talks to this platform via /api/agent/*
+    // and we push HMAC-signed status-change webhooks to it. Keys must be ≥32 chars
+    // because they are the only thing standing between the agent boundary and a
+    // service-role Supabase client.
+    AGENT_API_KEY: z.string().min(32, 'AGENT_API_KEY must be at least 32 characters'),
+    AGENT_WEBHOOK_SECRET: z.string().min(32, 'AGENT_WEBHOOK_SECRET must be at least 32 characters'),
+    AGENT_WEBHOOK_URL: z.string().url('AGENT_WEBHOOK_URL must be a valid URL'),
   },
 
   /**
@@ -46,6 +53,9 @@ export const env = createEnv({
     APP_URL: process.env.APP_URL,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
     VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+    AGENT_API_KEY: process.env.AGENT_API_KEY,
+    AGENT_WEBHOOK_SECRET: process.env.AGENT_WEBHOOK_SECRET,
+    AGENT_WEBHOOK_URL: process.env.AGENT_WEBHOOK_URL,
     // Client
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
