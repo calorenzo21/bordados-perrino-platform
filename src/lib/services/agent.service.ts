@@ -63,6 +63,20 @@ interface PaymentRow {
 // Helpers
 // ============================================================
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Pick the right column to filter on given an order identifier.
+ *
+ * Callers pass either a UUID (primary key) or an `ORD-NNN` order_number.
+ * Both are stable per-tenant identifiers. The LLM almost always uses the
+ * human-readable one because that's what customers see; UUIDs come up
+ * only when a tool that returned them is the source.
+ */
+function orderIdColumn(orderId: string): 'id' | 'order_number' {
+  return UUID_REGEX.test(orderId) ? 'id' : 'order_number';
+}
+
 function splitName(fullName: string): { first_name: string; last_name: string | null } {
   const [first, ...rest] = fullName.trim().split(/\s+/);
   return {
@@ -172,7 +186,7 @@ export async function getOrder(
     .select(
       'id, client_id, status, description, service_type, total, due_date, created_at, order_status_history(changed_at)'
     )
-    .eq('id', orderId)
+    .eq(orderIdColumn(orderId), orderId)
     .eq('client_id', clientId)
     .maybeSingle<OrderRow>();
 
@@ -193,17 +207,19 @@ export async function getOrderPaymentSummary(
   const { data: order, error: orderErr } = await supabase
     .from('orders')
     .select('id, total')
-    .eq('id', orderId)
+    .eq(orderIdColumn(orderId), orderId)
     .eq('client_id', clientId)
     .maybeSingle<{ id: string; total: number }>();
 
   if (orderErr) throw orderErr;
   if (!order) return null;
 
+  // Payments are joined by the UUID `order_id` regardless of how the
+  // caller addressed the order — translate now that we know the UUID.
   const { data: payments, error: payErr } = await supabase
     .from('payments')
     .select('amount, payment_date')
-    .eq('order_id', orderId)
+    .eq('order_id', order.id)
     .order('payment_date', { ascending: false })
     .returns<PaymentRow[]>();
 

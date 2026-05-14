@@ -6,7 +6,10 @@ import { Errors, errorResponse, handleApiError, successResponse } from '@/lib/ut
 
 import { getXAgentPhone, verifyAgentBearer, verifyPhoneClientBinding } from '@/app/api/agent/_auth';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Orders can be addressed by EITHER their UUID primary key OR their
+// human-readable order_number (e.g. "ORD-003"). The LLM tends to use the
+// latter because it's what customers see in invoices and the admin UI.
+const ORDER_ID_REGEX = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|ORD-\d+)$/i;
 
 /**
  * EP-4 — GET /api/agent/orders/{order_id}/payments/summary?client_id={client_id}
@@ -24,12 +27,15 @@ export async function GET(
     const phone = getXAgentPhone(req);
 
     const { order_id } = await context.params;
-    if (!UUID_REGEX.test(order_id)) {
-      throw Errors.badRequest('Invalid order_id (must be UUID)');
+    if (!ORDER_ID_REGEX.test(order_id)) {
+      throw Errors.badRequest('Invalid order_id (must be UUID or ORD-NNN)');
     }
 
     const clientId = req.nextUrl.searchParams.get('client_id');
-    if (!clientId || !UUID_REGEX.test(clientId)) {
+    if (
+      !clientId ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
+    ) {
       throw Errors.badRequest('Missing or invalid client_id query parameter');
     }
 
