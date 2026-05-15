@@ -17,7 +17,7 @@ const phoneE164 = z
   .trim()
   .min(1, 'Teléfono es requerido')
   .max(30, 'Teléfono demasiado largo')
-  .transform(normalizePhone)
+  .transform((s) => normalizePhone(s))
   .refine(isE164, { message: PHONE_E164_ERROR_MESSAGE });
 
 export const createClientSchema = z.object({
