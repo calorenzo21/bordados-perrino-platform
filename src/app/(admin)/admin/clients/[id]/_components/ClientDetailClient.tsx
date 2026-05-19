@@ -94,7 +94,9 @@ export function ClientDetailClient({
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  // null = idle. 'soft' = deactivating, 'hard' = permanently deleting.
+  // Tracking the mode (not just a boolean) lets the right button spin.
+  const [deletingMode, setDeletingMode] = useState<'soft' | 'hard' | null>(null);
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -115,11 +117,16 @@ export function ClientDetailClient({
     }
   }, [client]);
 
-  const handleDelete = async () => {
+  // mode 'soft' → deactivate (is_active=false, records kept).
+  // mode 'hard' → permanently delete the client + all orders + auth account.
+  // For a client with no orders the API hard-deletes regardless of mode.
+  const handleDelete = async (mode: 'soft' | 'hard') => {
     if (!client) return;
-    setIsDeleting(true);
+    setDeletingMode(mode);
     try {
-      const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+      const url =
+        mode === 'hard' ? `/api/clients/${client.id}?mode=hard` : `/api/clients/${client.id}`;
+      const res = await fetch(url, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al eliminar');
       setIsDeleteDialogOpen(false);
@@ -127,7 +134,7 @@ export function ClientDetailClient({
     } catch (err: unknown) {
       console.error('Error deleting client:', err);
     } finally {
-      setIsDeleting(false);
+      setDeletingMode(null);
     }
   };
 
@@ -615,7 +622,7 @@ export function ClientDetailClient({
             <DialogTitle className="text-slate-900 dark:text-slate-100">
               {client && client.orders.length === 0
                 ? 'Eliminar cliente permanentemente'
-                : 'Desactivar cliente'}
+                : 'Eliminar o desactivar cliente'}
             </DialogTitle>
             <DialogDescription className="dark:text-slate-400">
               {client && client.orders.length === 0 ? (
@@ -624,7 +631,7 @@ export function ClientDetailClient({
                     {client.name}
                   </span>{' '}
                   no tiene pedidos asociados. Se eliminará permanentemente de la base de datos junto
-                  con su cuenta de acceso.
+                  con su cuenta de acceso. Esta acción no se puede deshacer.
                 </>
               ) : (
                 <>
@@ -632,8 +639,19 @@ export function ClientDetailClient({
                     {client?.name}
                   </span>{' '}
                   tiene {client?.orders.length} pedido{client?.orders.length !== 1 ? 's' : ''}{' '}
-                  asociado{client?.orders.length !== 1 ? 's' : ''}. Se ocultará de la lista pero
-                  todos sus registros se conservarán.
+                  asociado{client?.orders.length !== 1 ? 's' : ''}. Elige cómo proceder:
+                  <span className="mt-2 block">
+                    · <span className="font-medium">Desactivar</span>: se oculta de la lista, pero
+                    se conservan el cliente y todos sus registros.
+                  </span>
+                  <span className="mt-1 block">
+                    ·{' '}
+                    <span className="font-medium text-rose-600 dark:text-rose-400">
+                      Eliminar todo
+                    </span>
+                    : se borran permanentemente el cliente, sus pedidos, abonos, historial y cuenta
+                    de acceso. No se puede deshacer.
+                  </span>
                 </>
               )}
             </DialogDescription>
@@ -643,24 +661,41 @@ export function ClientDetailClient({
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               className="rounded-xl"
-              disabled={isDeleting}
+              disabled={deletingMode !== null}
             >
               Cancelar
             </Button>
+            {client && client.orders.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => handleDelete('soft')}
+                className="rounded-xl"
+                disabled={deletingMode !== null}
+              >
+                {deletingMode === 'soft' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Desactivando...
+                  </>
+                ) : (
+                  'Desactivar'
+                )}
+              </Button>
+            )}
             <Button
-              onClick={handleDelete}
+              onClick={() => handleDelete('hard')}
               className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
-              disabled={isDeleting}
+              disabled={deletingMode !== null}
             >
-              {isDeleting ? (
+              {deletingMode === 'hard' ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {client && client.orders.length === 0 ? 'Eliminando...' : 'Desactivando...'}
+                  Eliminando...
                 </>
               ) : client && client.orders.length === 0 ? (
                 'Eliminar permanentemente'
               ) : (
-                'Desactivar cliente'
+                'Eliminar todo permanentemente'
               )}
             </Button>
           </DialogFooter>

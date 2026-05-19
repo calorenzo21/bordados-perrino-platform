@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/context/auth-context';
 import { useOrder } from '@/hooks/use-orders';
@@ -30,6 +31,7 @@ import {
   Phone,
   Plus,
   Save,
+  Trash2,
   Truck,
   Upload,
   User,
@@ -130,6 +132,7 @@ export function OrderDetailClient({
   initialOrder: OrderForDetail | null;
 }) {
   const supabase = createClient();
+  const router = useRouter();
   const { user: authUser, profile: authProfile } = useAuth();
 
   const {
@@ -182,6 +185,9 @@ export function OrderDetailClient({
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  // Estado para eliminar el pedido permanentemente
+  const [isDeleteOrderDialogOpen, setIsDeleteOrderDialogOpen] = useState(false);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
 
   // Inicializar editData cuando se cargue el pedido
   useEffect(() => {
@@ -228,6 +234,25 @@ export function OrderDetailClient({
       0
     ) || 0;
   const remainingToDeliver = order ? order.quantity - totalDelivered : 0;
+
+  // Eliminar el pedido permanentemente (distinto de "Cancelar", que solo
+  // cambia el estado a CANCELADO). Borra el pedido y todo lo asociado.
+  const handleDeleteOrder = async () => {
+    if (!order) return;
+    setIsDeletingOrder(true);
+    try {
+      const res = await fetch(`/api/orders/${order.uuid}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar el pedido');
+      setIsDeleteOrderDialogOpen(false);
+      router.push('/admin/orders');
+    } catch (err) {
+      console.error('Error al eliminar el pedido:', err);
+      alert(err instanceof Error ? err.message : 'Error al eliminar el pedido');
+    } finally {
+      setIsDeletingOrder(false);
+    }
+  };
 
   // Función para agregar un nuevo abono
   const handleAddPayment = async () => {
@@ -742,6 +767,14 @@ export function OrderDetailClient({
               >
                 <Edit3 className="h-4 w-4" />
                 Editar Pedido
+              </Button>
+              <Button
+                variant="outline"
+                className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
+                onClick={() => setIsDeleteOrderDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar Pedido
               </Button>
             </>
           )}
@@ -2213,6 +2246,47 @@ export function OrderDetailClient({
                   <Plus className="mr-2 h-4 w-4" />
                   Registrar Abono
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo: eliminar pedido permanentemente */}
+      <Dialog open={isDeleteOrderDialogOpen} onOpenChange={setIsDeleteOrderDialogOpen}>
+        <DialogContent className="rounded-2xl dark:bg-slate-800 dark:border-slate-700 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-slate-100">
+              Eliminar pedido permanentemente
+            </DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
+              El pedido{' '}
+              <span className="font-medium text-slate-900 dark:text-slate-100">{order.id}</span> se
+              eliminará de forma permanente, junto con sus abonos, su historial de estados y sus
+              fotos. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteOrderDialogOpen(false)}
+              className="rounded-xl"
+              disabled={isDeletingOrder}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteOrder}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={isDeletingOrder}
+            >
+              {isDeletingOrder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar permanentemente'
               )}
             </Button>
           </DialogFooter>
