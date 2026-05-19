@@ -1,5 +1,5 @@
 import { revalidatePath } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 
 import { sendEmail } from '@/lib/email/resend';
 import { newAdminWelcomeEmail } from '@/lib/email/templates';
@@ -137,15 +137,23 @@ export async function POST(request: NextRequest) {
     // Revalidar páginas de configuración
     revalidatePath('/admin/settings');
 
-    // Enviar email de bienvenida al nuevo admin (no bloquea la respuesta)
+    // Enviar email de bienvenida al nuevo admin después de responder. `after()`
+    // garantiza la ejecución en entornos serverless (Vercel), donde una promesa
+    // sin await se cancelaría al terminar la respuesta HTTP.
     const adminName = [firstName, lastName].filter(Boolean).join(' ') || 'Admin';
     const { subject, html } = newAdminWelcomeEmail(adminName, email, defaultPassword);
-    sendEmail({
-      to: email,
-      subject,
-      html,
-      idempotencyKey: `admin-welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
-    }).catch((e) => console.error('[Email] Admin welcome email failed:', e));
+    after(async () => {
+      try {
+        await sendEmail({
+          to: email,
+          subject,
+          html,
+          idempotencyKey: `admin-welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
+        });
+      } catch (e) {
+        console.error('[Email] Admin welcome email failed:', e);
+      }
+    });
 
     return NextResponse.json({
       success: true,

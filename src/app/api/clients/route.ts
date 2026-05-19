@@ -1,5 +1,5 @@
 import { revalidatePath } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 
 import { sendEmail } from '@/lib/email/resend';
 import { newClientWelcomeEmail } from '@/lib/email/templates';
@@ -192,14 +192,22 @@ export async function POST(request: NextRequest) {
     revalidatePath('/admin/clients');
     revalidatePath('/admin/dashboard');
 
-    // Enviar email de bienvenida (no bloquea la respuesta)
+    // Enviar email de bienvenida después de responder. `after()` garantiza que
+    // este trabajo asíncrono se ejecute en entornos serverless (Vercel), donde
+    // una promesa sin await se cancelaría al terminar la respuesta HTTP.
     const { subject, html } = newClientWelcomeEmail(name, email, defaultPassword);
-    sendEmail({
-      to: email,
-      subject,
-      html,
-      idempotencyKey: `welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
-    }).catch((e) => console.error('[Email] Welcome email failed:', e));
+    after(async () => {
+      try {
+        await sendEmail({
+          to: email,
+          subject,
+          html,
+          idempotencyKey: `welcome/${authResult.userId}/${new Date().toISOString().slice(0, 16)}`,
+        });
+      } catch (e) {
+        console.error('[Email] Welcome email failed:', e);
+      }
+    });
 
     return NextResponse.json({
       success: true,

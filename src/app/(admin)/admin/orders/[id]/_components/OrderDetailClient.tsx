@@ -328,23 +328,28 @@ export function OrderDetailClient({
       revalidateOrder(order.uuid).catch(console.error);
       refetch();
 
-      // 4.5 Enviar notificación por email (fire-and-forget)
+      // 4.5 Enviar notificación por email. Esperamos el ack del servidor; el
+      // envío real ocurre en segundo plano (vía `after()` en la API).
       if (order.client.email) {
-        fetch('/api/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'payment',
-            email: order.client.email,
-            clientName: order.client.name,
-            orderNumber: order.id,
-            description: order.description,
-            amount: finalAmount,
-            method: newPaymentData.method,
-            remainingBalance: remainingBalance - finalAmount,
-            clientId: order.client.id,
-          }),
-        }).catch((e) => console.error('[Email] Payment notification failed:', e));
+        try {
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'payment',
+              email: order.client.email,
+              clientName: order.client.name,
+              orderNumber: order.id,
+              description: order.description,
+              amount: finalAmount,
+              method: newPaymentData.method,
+              remainingBalance: remainingBalance - finalAmount,
+              clientId: order.client.id,
+            }),
+          });
+        } catch (e) {
+          console.error('[Email] Payment notification failed:', e);
+        }
       }
 
       // 5. Resetear el formulario y cerrar
@@ -603,30 +608,35 @@ export function OrderDetailClient({
         newStatusData.status
       ).catch((e) => console.error('[Agent] Status notification failed:', e));
 
-      // 5.5 Enviar notificación por email (fire-and-forget)
+      // 5.5 Enviar notificación por email. Esperamos el ack del servidor; el
+      // envío real ocurre en segundo plano (vía `after()` en la API).
       if (order.client.email) {
         const isPartial =
           newStatusData.status === OrderStatus.PARCIALMENTE_ENTREGADO &&
           newStatusData.quantityDelivered;
         const qtyDel = isPartial ? parseInt(newStatusData.quantityDelivered, 10) : undefined;
 
-        fetch('/api/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'status_change',
-            email: order.client.email,
-            clientName: order.client.name,
-            orderNumber: order.id,
-            description: order.description,
-            newStatus: newStatusData.status,
-            observations: newStatusData.observations || undefined,
-            clientId: order.client.id,
-            ...(isPartial && qtyDel != null
-              ? { qtyDelivered: qtyDel, qtyRemaining: remainingToDeliver - qtyDel }
-              : {}),
-          }),
-        }).catch((e) => console.error('[Email] Status notification failed:', e));
+        try {
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'status_change',
+              email: order.client.email,
+              clientName: order.client.name,
+              orderNumber: order.id,
+              description: order.description,
+              newStatus: newStatusData.status,
+              observations: newStatusData.observations || undefined,
+              clientId: order.client.id,
+              ...(isPartial && qtyDel != null
+                ? { qtyDelivered: qtyDel, qtyRemaining: remainingToDeliver - qtyDel }
+                : {}),
+            }),
+          });
+        } catch (e) {
+          console.error('[Email] Status notification failed:', e);
+        }
       }
 
       // 6. Limpiar y cerrar

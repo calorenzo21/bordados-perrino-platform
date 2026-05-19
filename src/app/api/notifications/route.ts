@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse, after } from 'next/server';
 
 import { sendEmail } from '@/lib/email/resend';
 import {
@@ -241,31 +241,33 @@ export async function POST(request: NextRequest) {
     const { subject, html } = buildEmailContent(payload);
     const idempotencyKey = buildIdempotencyKey(payload);
 
-    // Run email and push independently — one failure doesn't block the other
-    const [emailResult] = await Promise.all([
-      sendEmail({ to: payload.email, subject, html, idempotencyKey }).catch((err) => {
-        console.error('[Notifications] Email send failed:', err);
-        return { success: false as const, error: String(err) };
-      }),
-      payload.clientId
-        ? (() => {
-            const pushPayload = buildPushPayload(payload);
-            if (!pushPayload) return Promise.resolve();
-            return sendPushToClient(payload.clientId!, pushPayload).catch((err) => {
-              console.error('[Notifications] Push send failed:', err);
-            });
-          })()
-        : Promise.resolve(),
-    ]);
+    // Enviar email y push después de responder. `after()` garantiza la ejecución
+    // en entornos serverless (Vercel) sin depender de que el navegador del cliente
+    // mantenga viva la petición. La respuesta vuelve de inmediato.
+    after(async () => {
+      // Run email and push independently — one failure doesn't block the other
+      const [emailResult] = await Promise.all([
+        sendEmail({ to: payload.email, subject, html, idempotencyKey }).catch((err) => {
+          console.error('[Notifications] Email send failed:', err);
+          return { success: false as const, error: String(err) };
+        }),
+        payload.clientId
+          ? (() => {
+              const pushPayload = buildPushPayload(payload);
+              if (!pushPayload) return Promise.resolve();
+              return sendPushToClient(payload.clientId!, pushPayload).catch((err) => {
+                console.error('[Notifications] Push send failed:', err);
+              });
+            })()
+          : Promise.resolve(),
+      ]);
 
-    if (!emailResult.success) {
-      console.error('[Notifications] Email send failed:', emailResult.error);
-    }
-
-    return NextResponse.json({
-      success: true,
-      emailId: emailResult.success ? (emailResult as { data?: { id?: string } }).data?.id : null,
+      if (!emailResult.success) {
+        console.error('[Notifications] Email send failed:', emailResult.error);
+      }
     });
+
+    return NextResponse.json({ success: true, queued: true });
   } catch (error) {
     console.error('[Notifications] Unexpected error:', error);
     return NextResponse.json({ success: false, error: 'Error interno' }, { status: 500 });
