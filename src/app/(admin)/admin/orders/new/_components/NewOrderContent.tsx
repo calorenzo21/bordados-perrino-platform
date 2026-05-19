@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -17,6 +17,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Search,
   User,
   X,
 } from 'lucide-react';
@@ -40,7 +41,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -63,6 +63,11 @@ function getInitials(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+}
+
+/** Lowercase + strip accents, so "garcia" matches "García". */
+function normalizeText(value: string): string {
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 const INITIAL_NEW_CLIENT = {
@@ -103,6 +108,7 @@ export default function NewOrderContent() {
   const { serviceTypes, isLoading: loadingServices } = useServiceTypes();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientSearch, setClientSearch] = useState('');
   const [formData, setFormData] = useState({
     description: '',
     serviceType: '',
@@ -116,6 +122,15 @@ export default function NewOrderContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // Clientes filtrados por el término de búsqueda (nombre, email o teléfono).
+  const filteredClients = useMemo(() => {
+    const query = normalizeText(clientSearch.trim());
+    if (!query) return clients;
+    return clients.filter((client) =>
+      normalizeText(`${client.name} ${client.email} ${client.phone}`).includes(query)
+    );
+  }, [clients, clientSearch]);
 
   // Modal crear cliente (desde nuevo pedido)
   const [isCreateClientDialogOpen, setIsCreateClientDialogOpen] = useState(false);
@@ -529,80 +544,91 @@ export default function NewOrderContent() {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* Selector de cliente */}
+              {/* Selector de cliente con búsqueda */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Seleccionar Cliente
                 </label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {selectedClient ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-2.5 dark:border-slate-600">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                          {selectedClient.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate font-medium text-slate-900 dark:text-slate-100">
+                        {selectedClient.name}
+                      </span>
+                    </div>
                     <Button
-                      variant="outline"
-                      className="h-12 w-full justify-between rounded-xl border-slate-200 px-4 text-left dark:border-slate-600"
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20"
+                      onClick={() => {
+                        setSelectedClient(null);
+                        setClientSearch('');
+                      }}
                     >
-                      {selectedClient ? (
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-7 w-7">
-                            <AvatarFallback className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                              {selectedClient.initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{selectedClient.name}</span>
-                        </div>
-                      ) : loadingClients && clients.length === 0 ? (
-                        <div className="flex items-center gap-2 text-slate-400">
+                      Cambiar
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Buscar por nombre, email o teléfono..."
+                        className="h-12 rounded-xl border-slate-200 pl-9 dark:border-slate-600"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-600">
+                      {loadingClients && clients.length === 0 ? (
+                        <div className="flex items-center justify-center gap-2 p-4 text-sm text-slate-500 dark:text-slate-400">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Cargando clientes...</span>
+                          Cargando clientes...
+                        </div>
+                      ) : filteredClients.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                          {clients.length === 0
+                            ? 'Aún no hay clientes registrados.'
+                            : `Sin resultados para "${clientSearch}".`}
                         </div>
                       ) : (
-                        <span className="text-slate-400">Buscar cliente...</span>
-                      )}
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="max-h-80 w-[calc(100vw-3rem)] max-w-md overflow-y-auto rounded-xl p-2">
-                    {loadingClients && clients.length === 0 ? (
-                      <div className="flex items-center justify-center gap-2 p-4 text-sm text-slate-500 dark:text-slate-400">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Cargando clientes...
-                      </div>
-                    ) : (
-                      <>
-                        {clients.map((client) => (
-                          <DropdownMenuItem
+                        filteredClients.map((client) => (
+                          <button
                             key={client.id}
-                            className="cursor-pointer rounded-lg p-3"
-                            onClick={() => setSelectedClient(client)}
+                            type="button"
+                            onClick={() => {
+                              setSelectedClient(client);
+                              setClientSearch('');
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/60"
                           >
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-9 w-9 border border-slate-100 dark:border-slate-700">
-                                <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-sm text-white">
-                                  {client.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium text-slate-900 dark:text-slate-100">
-                                  {client.name}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {client.email}
-                                </p>
-                              </div>
+                            <Avatar className="h-9 w-9 border border-slate-100 dark:border-slate-700">
+                              <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-sm text-white">
+                                {client.initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-slate-900 dark:text-slate-100">
+                                {client.name}
+                              </p>
+                              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                {client.email}
+                              </p>
                             </div>
-                          </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer rounded-lg text-blue-600 focus:bg-blue-50 focus:text-blue-700 dark:focus:bg-blue-900/30"
-                          onClick={handleOpenCreateClient}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Crear nuevo cliente
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               <Button
@@ -655,15 +681,6 @@ export default function NewOrderContent() {
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-
-              {!selectedClient && (
-                <div className="rounded-xl border-2 border-dashed border-slate-200 p-6 text-center dark:border-slate-600">
-                  <User className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Selecciona un cliente para continuar
-                  </p>
                 </div>
               )}
             </CardContent>
