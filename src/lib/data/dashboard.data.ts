@@ -26,8 +26,6 @@ const mockMetrics: DashboardMetrics = {
   totalClients: 20,
   totalClientsChange: 5,
   pendingToCollect: 0,
-  completedOrders: 156,
-  completedOrdersChange: 15,
 };
 
 const mockOrdersByMonth: OrdersByMonth[] = [

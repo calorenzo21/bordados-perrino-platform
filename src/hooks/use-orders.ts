@@ -108,7 +108,7 @@ async function fetchOrderForDetail(
       id: orderData.client_id,
       name: orderData.client_name,
       initials: getInitials(orderData.client_name),
-      email: orderData.client_email,
+      email: orderData.client_email ?? '',
       phone: orderData.client_phone || '',
       cedula: orderData.client_cedula || '',
       address: orderData.client_address || '',

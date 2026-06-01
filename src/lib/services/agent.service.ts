@@ -125,11 +125,18 @@ export async function findClientByPhone(
   supabase: SupabaseClient,
   phone: string
 ): Promise<ClientDTO | null> {
+  // Tolerante a duplicados: aunque la creación de clientes bloquea teléfonos
+  // duplicados, no hay índice único sobre clients.phone, así que datos legados
+  // podrían tener más de una fila activa con el mismo número. Acotamos a la más
+  // antigua con limit(1) para que el lookup del agente nunca falle (maybeSingle
+  // lanzaría error con >1 fila).
   const { data, error } = await supabase
     .from('clients')
     .select('id, name, phone')
     .eq('phone', phone)
     .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle<ClientRow>();
 
   if (error) throw error;
@@ -287,11 +294,14 @@ export async function getStatusChangeContext(
     .eq('id', orderId)
     .maybeSingle<{
       client_id: string;
-      clients: { name: string; phone: string; is_active: boolean } | null;
+      // phone es nullable tras la migración 013 (clientes solo-correo).
+      clients: { name: string; phone: string | null; is_active: boolean } | null;
     }>();
 
   if (error) throw error;
-  if (!data || !data.clients || !data.clients.is_active) return null;
+  // Sin teléfono no hay notificación por WhatsApp: retornamos null explícitamente
+  // en vez de dejar que el dispatch falle al validar un phone nulo más adelante.
+  if (!data || !data.clients || !data.clients.is_active || !data.clients.phone) return null;
 
   const { first_name } = splitName(data.clients.name);
   return {

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/context/auth-context';
 import {
   ArrowLeft,
   Calendar,
@@ -50,6 +51,7 @@ export function ExpenseDetailClient({
   initialExpenseTypes: ExpenseType[];
 }) {
   const router = useRouter();
+  const { isSuperAdmin } = useAuth();
 
   const [expense, setExpense] = useState<Expense | null>(initialExpense);
   const [expenseTypes] = useState<ExpenseType[]>(initialExpenseTypes);
@@ -127,9 +129,18 @@ export function ExpenseDetailClient({
       } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
 
-      const { error: deleteError } = await supabase.from('expenses').delete().eq('id', expenseId);
+      // `.select()` revela las filas borradas: si RLS bloquea el DELETE no hay
+      // error pero tampoco filas, evitando navegar como si se hubiera eliminado.
+      const { data: deleted, error: deleteError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseId)
+        .select('id');
 
       if (deleteError) throw deleteError;
+      if (!deleted || deleted.length === 0) {
+        throw new Error('No se pudo eliminar el gasto: no tienes permiso.');
+      }
 
       router.push('/admin/expenses');
     } catch (err: unknown) {
@@ -189,14 +200,16 @@ export function ExpenseDetailClient({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="h-10 gap-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800/50 dark:hover:bg-blue-900/20"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2 className="h-4 w-4" />
-            Eliminar
-          </Button>
+          {isSuperAdmin && (
+            <Button
+              variant="outline"
+              className="h-10 gap-2 rounded-xl text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800/50 dark:hover:bg-blue-900/20"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </Button>
+          )}
           <Link href="/admin/expenses">
             <Button variant="outline" className="h-10 gap-2 rounded-xl">
               <X className="h-4 w-4" />

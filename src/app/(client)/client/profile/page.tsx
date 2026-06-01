@@ -131,18 +131,20 @@ export default function ClientProfilePage() {
           .join('')
           .toUpperCase()
           .slice(0, 2),
-        email: client.email,
-        phone: client.phone,
+        // email/phone son nullable tras la migración 013; coercionar a '' evita
+        // pasar null a inputs controlados (warning de React controlado/no-controlado).
+        email: client.email ?? '',
+        phone: client.phone ?? '',
         cedula: client.cedula,
         address: client.address,
       };
 
       setProfile(profileData);
       setEditName(client.name);
-      setEditPhone(client.phone);
+      setEditPhone(client.phone ?? '');
       setEditCedula(client.cedula || '');
       setEditAddress(client.address || '');
-      setEditEmail(client.email);
+      setEditEmail(client.email ?? '');
       setLoading(false);
     }
 
@@ -171,7 +173,7 @@ export default function ClientProfilePage() {
         .from('clients')
         .update({
           name: editName,
-          phone: editPhone,
+          phone: editPhone || null,
           cedula: editCedula || null,
           address: editAddress || null,
           email: editEmail,
@@ -190,7 +192,7 @@ export default function ClientProfilePage() {
         .update({
           first_name: firstName,
           last_name: lastName,
-          phone: editPhone,
+          phone: editPhone || null,
           email: editEmail,
         })
         .eq('id', user.id);

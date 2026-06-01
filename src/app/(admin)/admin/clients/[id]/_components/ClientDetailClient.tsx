@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/context/auth-context';
 import { useClient } from '@/hooks/use-clients';
 import {
   ArrowLeft,
@@ -83,6 +84,7 @@ export function ClientDetailClient({
   initialClient: ClientDetail | null;
 }) {
   const router = useRouter();
+  const { isSuperAdmin } = useAuth();
   const {
     client,
     isLoading: loading,
@@ -94,6 +96,12 @@ export function ClientDetailClient({
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  // Credenciales mostradas cuando, al editar, se le da acceso al portal a un
+  // cliente que antes solo tenía teléfono (el backend provisiona la cuenta).
+  const [portalCredentials, setPortalCredentials] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
   // null = idle. 'soft' = deactivating, 'hard' = permanently deleting.
   // Tracking the mode (not just a boolean) lets the right button spin.
   const [deletingMode, setDeletingMode] = useState<'soft' | 'hard' | null>(null);
@@ -167,6 +175,16 @@ export function ClientDetailClient({
       }
 
       setIsEditDialogOpen(false);
+      // Si al agregar el correo se creó acceso al portal, mostrar las credenciales
+      // temporales para que el admin pueda comunicárselas al cliente.
+      if (data.account?.defaultPassword) {
+        // Usar el correo normalizado que devuelve el backend (coincide con el de
+        // inicio de sesión); cae a editData.email solo por compatibilidad.
+        setPortalCredentials({
+          email: data.account.email ?? editData.email,
+          password: data.account.defaultPassword,
+        });
+      }
       // Refrescar datos
       refetch();
     } catch (err: any) {
@@ -282,13 +300,17 @@ export function ClientDetailClient({
                 <Phone className="mr-2 h-4 w-4" />
                 Llamar
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="rounded-lg text-rose-600 dark:text-rose-400"
-                onSelect={() => setIsDeleteDialogOpen(true)}
-              >
-                Eliminar Cliente
-              </DropdownMenuItem>
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="rounded-lg text-rose-600 dark:text-rose-400"
+                    onSelect={() => setIsDeleteDialogOpen(true)}
+                  >
+                    Eliminar Cliente
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -341,7 +363,7 @@ export function ClientDetailClient({
               Email
             </p>
             <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-              {client.email}
+              {client.email || 'Sin correo'}
             </p>
           </div>
         </div>
@@ -367,7 +389,7 @@ export function ClientDetailClient({
               Teléfono
             </p>
             <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-              {client.phone}
+              {client.phone || 'Sin teléfono'}
             </p>
           </div>
         </div>
@@ -697,6 +719,49 @@ export function ClientDetailClient({
               ) : (
                 'Eliminar todo permanentemente'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credenciales del portal recién creado (al agregar correo a un cliente
+          que solo tenía teléfono) */}
+      <Dialog
+        open={!!portalCredentials}
+        onOpenChange={(open) => !open && setPortalCredentials(null)}
+      >
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-slate-100">
+              Acceso al portal creado
+            </DialogTitle>
+            <DialogDescription>
+              Se creó la cuenta del cliente. Comunícale estas credenciales de forma segura; se
+              recomienda que cambie la contraseña en su primer acceso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500 dark:text-slate-400">Email:</span>
+              <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
+                {portalCredentials?.email}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Contraseña temporal:
+              </span>
+              <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
+                {portalCredentials?.password}
+              </span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="rounded-xl bg-blue-500 hover:bg-blue-600"
+              onClick={() => setPortalCredentials(null)}
+            >
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>

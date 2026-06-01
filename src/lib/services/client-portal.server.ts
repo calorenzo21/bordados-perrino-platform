@@ -189,8 +189,8 @@ export async function getClientPanelData(): Promise<ClientPanelData | ClientNotL
     id: client.id,
     name: client.name,
     initials: getInitials(client.name),
-    email: client.email,
-    phone: client.phone,
+    email: client.email ?? '',
+    phone: client.phone ?? '',
     cedula: client.cedula,
     address: client.address,
   };
@@ -414,8 +414,8 @@ export async function getClientProfile(): Promise<ClientProfile | null> {
     id: client.id,
     name: client.name,
     initials: getInitials(client.name),
-    email: client.email,
-    phone: client.phone,
+    email: client.email ?? '',
+    phone: client.phone ?? '',
     cedula: client.cedula,
     address: client.address,
   };

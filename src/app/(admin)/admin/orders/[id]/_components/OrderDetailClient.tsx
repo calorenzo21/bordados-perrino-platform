@@ -133,7 +133,7 @@ export function OrderDetailClient({
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { user: authUser, profile: authProfile } = useAuth();
+  const { user: authUser, profile: authProfile, isSuperAdmin } = useAuth();
 
   const {
     order,
@@ -768,14 +768,16 @@ export function OrderDetailClient({
                 <Edit3 className="h-4 w-4" />
                 Editar Pedido
               </Button>
-              <Button
-                variant="outline"
-                className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
-                onClick={() => setIsDeleteOrderDialogOpen(true)}
-              >
-                <Trash2 className="h-4 w-4" />
-                Eliminar Pedido
-              </Button>
+              {isSuperAdmin && (
+                <Button
+                  variant="outline"
+                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
+                  onClick={() => setIsDeleteOrderDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar Pedido
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -992,7 +994,7 @@ export function OrderDetailClient({
                   <div>
                     <p className="text-xs text-slate-400">Email</p>
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {order.client.email}
+                      {order.client.email || 'Sin correo'}
                     </p>
                   </div>
                 </div>
@@ -1016,7 +1018,7 @@ export function OrderDetailClient({
                   <div>
                     <p className="text-xs text-slate-400">Teléfono</p>
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {order.client.phone}
+                      {order.client.phone || 'Sin teléfono'}
                     </p>
                   </div>
                 </div>

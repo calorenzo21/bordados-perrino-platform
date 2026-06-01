@@ -15,7 +15,7 @@ import {
   Loader2,
   MoreHorizontal,
   Package,
-  ShoppingCart,
+  Scale,
   TrendingDown,
   TrendingUp,
   Users,
@@ -234,6 +234,19 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
     [metrics]
   );
 
+  // Balance del mes = ingresos del mes − gastos del mes (con comparación al mes anterior)
+  const balanceMetrics = useMemo(
+    () => ({
+      thisMonth: (metrics?.monthlyRevenue || 0) - (metrics?.monthlyExpenses || 0),
+      lastMonth: (metrics?.prevMonthlyRevenue || 0) - (metrics?.prevMonthlyExpenses || 0),
+    }),
+    [metrics]
+  );
+
+  // Formato de moneda con signo (los negativos se muestran como -$1.234)
+  const formatSignedCurrency = (value: number) =>
+    `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString()}`;
+
   const totalActiveOrders =
     ordersByStatus[OrderStatus.RECIBIDO] +
     ordersByStatus[OrderStatus.CONFECCION] +
@@ -329,11 +342,11 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           iconColor="purple"
         />
         <MetricCard
-          title="Pedidos Completados"
-          value={ordersByStatus[OrderStatus.ENTREGADO].toString()}
-          description="Histórico total"
-          icon={ShoppingCart}
-          iconColor="amber"
+          title="Balance del Mes"
+          value={formatSignedCurrency(balanceMetrics.thisMonth)}
+          description={`vs. ${formatSignedCurrency(balanceMetrics.lastMonth)} mes anterior`}
+          icon={Scale}
+          iconColor={balanceMetrics.thisMonth >= 0 ? 'green' : 'rose'}
         />
       </div>
 

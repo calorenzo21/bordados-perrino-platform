@@ -139,7 +139,8 @@ export default function NewOrderContent() {
   const [createClientError, setCreateClientError] = useState<string | null>(null);
   const [createdClientResult, setCreatedClientResult] = useState<{
     client: Client;
-    password: string;
+    // null cuando el cliente se crea solo con teléfono (sin cuenta de portal).
+    password: string | null;
     email: string;
   } | null>(null);
 
@@ -400,8 +401,11 @@ export default function NewOrderContent() {
   };
 
   const handleCreateClientSubmit = async () => {
-    if (!newClientForm.name.trim() || !newClientForm.email.trim() || !newClientForm.phone.trim()) {
-      setCreateClientError('Nombre, email y teléfono son requeridos');
+    const emailValue = newClientForm.email.trim();
+    const phoneValue = newClientForm.phone.trim();
+    // Regla: nombre obligatorio + al menos uno de correo o teléfono.
+    if (!newClientForm.name.trim() || (!emailValue && !phoneValue)) {
+      setCreateClientError('Indica al menos un correo electrónico o un teléfono');
       return;
     }
 
@@ -414,8 +418,8 @@ export default function NewOrderContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newClientForm.name.trim(),
-          email: newClientForm.email.trim(),
-          phone: newClientForm.phone.trim(),
+          email: emailValue || null,
+          phone: phoneValue || null,
           cedula: newClientForm.cedula.trim() || null,
           address: newClientForm.address.trim() || null,
         }),
@@ -431,16 +435,16 @@ export default function NewOrderContent() {
         id: data.client.id,
         name: data.client.name,
         initials: getInitials(data.client.name),
-        email: data.client.email,
-        phone: data.client.phone,
+        email: data.client.email || '',
+        phone: data.client.phone || '',
         cedula: data.client.cedula || '',
         address: data.client.address || undefined,
       };
 
       setCreatedClientResult({
         client: clientForOrder,
-        password: data.defaultPassword,
-        email: data.client.email,
+        password: data.defaultPassword ?? null,
+        email: data.client.email || '',
       });
       refetchClients();
     } catch (err) {
@@ -620,7 +624,7 @@ export default function NewOrderContent() {
                                 {client.name}
                               </p>
                               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                                {client.email}
+                                {client.email || client.phone || 'Sin contacto'}
                               </p>
                             </div>
                           </button>
@@ -663,13 +667,13 @@ export default function NewOrderContent() {
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-slate-400">Email:</span>
                       <span className="text-slate-700 dark:text-slate-300">
-                        {selectedClient.email}
+                        {selectedClient.email || 'Sin correo'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-slate-400">Teléfono:</span>
                       <span className="text-slate-700 dark:text-slate-300">
-                        {selectedClient.phone}
+                        {selectedClient.phone || 'Sin teléfono'}
                       </span>
                     </div>
                     {selectedClient.address && (
@@ -872,7 +876,7 @@ export default function NewOrderContent() {
             <DialogDescription>
               {createdClientResult
                 ? 'El cliente ha sido creado. Puedes usarlo para este pedido y continuar.'
-                : 'Completa los datos del cliente'}
+                : 'Completa los datos del cliente. Indica al menos un correo o un teléfono.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -890,24 +894,36 @@ export default function NewOrderContent() {
                   <span className="font-semibold">Cliente creado exitosamente</span>
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 dark:border-slate-600 dark:bg-slate-700/40">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">Email:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                    {createdClientResult.email}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">Contraseña temporal:</span>
-                  <span className="font-mono font-semibold text-blue-600">
-                    {createdClientResult.password}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg dark:text-amber-400 dark:bg-amber-900/20">
-                Comunica las credenciales al cliente de forma segura. Se recomienda que cambie la
-                contraseña en su primer acceso.
-              </p>
+              {createdClientResult.password ? (
+                <>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 dark:border-slate-600 dark:bg-slate-700/40">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {createdClientResult.email}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Contraseña temporal:
+                      </span>
+                      <span className="font-mono font-semibold text-blue-600">
+                        {createdClientResult.password}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg dark:text-amber-400 dark:bg-amber-900/20">
+                    Comunica las credenciales al cliente de forma segura. Se recomienda que cambie
+                    la contraseña en su primer acceso.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  El cliente se creó sin correo electrónico, por lo que{' '}
+                  <span className="font-medium">no tiene acceso al portal</span>. Se identifica por
+                  su teléfono y puedes usarlo para este pedido.
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 py-4">
@@ -925,7 +941,7 @@ export default function NewOrderContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Email *
+                    Email
                   </label>
                   <Input
                     type="email"
@@ -937,7 +953,7 @@ export default function NewOrderContent() {
                 </div>
                 <div className="grid gap-2">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Teléfono *
+                    Teléfono
                   </label>
                   <Input
                     type="tel"
@@ -997,8 +1013,7 @@ export default function NewOrderContent() {
                   disabled={
                     isCreatingClient ||
                     !newClientForm.name.trim() ||
-                    !newClientForm.email.trim() ||
-                    !newClientForm.phone.trim()
+                    (!newClientForm.email.trim() && !newClientForm.phone.trim())
                   }
                   className="rounded-xl bg-blue-500 hover:bg-blue-600"
                 >

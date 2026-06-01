@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/context/auth-context';
 import {
   Calendar,
   Check,
@@ -64,6 +65,7 @@ interface ExpensesContentProps {
 
 export function ExpensesContent({ initialExpenses, initialExpenseTypes }: ExpensesContentProps) {
   const router = useRouter();
+  const { isSuperAdmin } = useAuth();
 
   // Use server data directly - single source of truth
   const expenses = initialExpenses;
@@ -278,9 +280,19 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
 
-      const { error } = await supabase.from('expense_types').delete().eq('id', typeId);
+      // `.select()` devuelve las filas borradas: si RLS bloquea el DELETE (p.ej.
+      // un ADMIN sin permiso de borrado) no hay error pero tampoco filas, así que
+      // detectamos ese caso en vez de asumir éxito.
+      const { data: deleted, error } = await supabase
+        .from('expense_types')
+        .delete()
+        .eq('id', typeId)
+        .select('id');
 
       if (error) throw error;
+      if (!deleted || deleted.length === 0) {
+        throw new Error('No se pudo eliminar el tipo de gasto: no tienes permiso.');
+      }
 
       // Revalidar caché del servidor
       revalidateExpenseTypes().catch(console.error);
@@ -402,9 +414,18 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
       } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.');
 
-      const { error } = await supabase.from('expenses').delete().eq('id', expenseToDelete.id);
+      // `.select()` revela las filas borradas: si RLS bloquea el DELETE no hay
+      // error pero tampoco filas, evitando un falso "éxito".
+      const { data: deleted, error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseToDelete.id)
+        .select('id');
 
       if (error) throw error;
+      if (!deleted || deleted.length === 0) {
+        throw new Error('No se pudo eliminar el gasto: no tienes permiso.');
+      }
 
       setIsDeleteExpenseDialogOpen(false);
       setExpenseToDelete(null);
@@ -614,14 +635,18 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                           <Edit2 className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
-                          onClick={() => handleOpenDeleteExpense(expense)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar
-                        </DropdownMenuItem>
+                        {isSuperAdmin && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
+                              onClick={() => handleOpenDeleteExpense(expense)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -779,18 +804,20 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteType(type.id)}
-                                disabled={isDeletingType === type.id}
-                                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-                                title="Eliminar tipo"
-                              >
-                                {isDeletingType === type.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                              </button>
+                              {isSuperAdmin && (
+                                <button
+                                  onClick={() => handleDeleteType(type.id)}
+                                  disabled={isDeletingType === type.id}
+                                  className="rounded-md p-1 text-slate-400 transition-colors hover:bg-blue-100 hover:text-blue-600 disabled:opacity-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
+                                  title="Eliminar tipo"
+                                >
+                                  {isDeletingType === type.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              )}
                             </>
                           )}
                         </div>

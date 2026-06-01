@@ -68,12 +68,18 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
     address: '',
   });
 
+  // Resultado de la creación. `createdSuccess` controla la vista de éxito;
+  // `createdPassword` solo existe cuando se creó cuenta de portal (con correo).
+  const [createdSuccess, setCreatedSuccess] = useState(false);
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
   const [createdClientEmail, setCreatedClientEmail] = useState<string>('');
 
   const handleCreateClient = async () => {
-    if (!newClient.name.trim() || !newClient.email.trim() || !newClient.phone.trim()) {
-      setCreateError('Por favor completa los campos requeridos');
+    const emailValue = newClient.email.trim();
+    const phoneValue = newClient.phone.trim();
+    // Regla: nombre obligatorio + al menos uno de correo o teléfono.
+    if (!newClient.name.trim() || (!emailValue && !phoneValue)) {
+      setCreateError('Indica al menos un correo electrónico o un teléfono');
       return;
     }
 
@@ -88,8 +94,8 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
         },
         body: JSON.stringify({
           name: newClient.name.trim(),
-          email: newClient.email.trim(),
-          phone: newClient.phone.trim(),
+          email: emailValue || null,
+          phone: phoneValue || null,
           cedula: newClient.cedula.trim() || null,
           address: newClient.address.trim() || null,
         }),
@@ -101,9 +107,11 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
         throw new Error(data.error || 'Error al crear el cliente');
       }
 
-      // Guardar la contraseña generada y el email para mostrarlos
-      setCreatedPassword(data.defaultPassword);
-      setCreatedClientEmail(newClient.email);
+      // Guardar credenciales (si las hay) y el email para mostrarlos.
+      // Un cliente solo-teléfono no tiene cuenta de portal → sin contraseña.
+      setCreatedSuccess(true);
+      setCreatedPassword(data.defaultPassword ?? null);
+      setCreatedClientEmail(emailValue);
 
       // Limpiar formulario
       setNewClient({ name: '', email: '', phone: '', cedula: '', address: '' });
@@ -121,6 +129,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
   const handleCloseCreateDialog = () => {
     setIsCreateDialogOpen(false);
     setCreateError(null);
+    setCreatedSuccess(false);
     setCreatedPassword(null);
     setCreatedClientEmail('');
     setNewClient({ name: '', email: '', phone: '', cedula: '', address: '' });
@@ -270,11 +279,11 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
                           <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                          {client.email}
+                          {client.email || 'Sin correo'}
                         </div>
                         <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
                           <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                          {client.phone}
+                          {client.phone || 'Sin teléfono'}
                         </div>
                       </div>
                     </Link>
@@ -356,11 +365,11 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
       <Dialog open={isCreateDialogOpen} onOpenChange={handleCloseCreateDialog}>
         <DialogContent className="max-w-lg rounded-2xl dark:bg-slate-800">
           <DialogHeader>
-            <DialogTitle>{createdPassword ? 'Cliente Creado' : 'Nuevo Cliente'}</DialogTitle>
+            <DialogTitle>{createdSuccess ? 'Cliente Creado' : 'Nuevo Cliente'}</DialogTitle>
             <DialogDescription>
-              {createdPassword
-                ? 'El cliente ha sido creado exitosamente con acceso al sistema'
-                : 'Completa los datos del cliente'}
+              {createdSuccess
+                ? 'El cliente ha sido creado exitosamente'
+                : 'Completa los datos del cliente. Indica al menos un correo o un teléfono.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -370,8 +379,8 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
             </div>
           )}
 
-          {createdPassword ? (
-            // Vista de éxito con credenciales
+          {createdSuccess ? (
+            // Vista de éxito
             <div className="space-y-4 py-4">
               <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4 dark:bg-green-900/20 dark:border-green-800/50">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-green-400">
@@ -387,31 +396,39 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  El cliente ahora puede acceder al sistema con las siguientes credenciales:
-                </p>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 dark:border-slate-600 dark:bg-slate-700">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Email:</span>
-                    <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {createdClientEmail}
-                    </span>
+              {createdPassword ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    El cliente ahora puede acceder al sistema con las siguientes credenciales:
+                  </p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 dark:border-slate-600 dark:bg-slate-700">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Email:</span>
+                      <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {createdClientEmail}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        Contraseña temporal:
+                      </span>
+                      <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
+                        {createdPassword}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                      Contraseña temporal:
-                    </span>
-                    <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-                      {createdPassword}
-                    </span>
-                  </div>
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg dark:bg-amber-900/20 dark:text-amber-400 dark:border dark:border-amber-800/50">
+                    Comunica estas credenciales al cliente de forma segura. Se recomienda que cambie
+                    la contraseña en su primer acceso.
+                  </p>
                 </div>
-                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg dark:bg-amber-900/20 dark:text-amber-400 dark:border dark:border-amber-800/50">
-                  Comunica estas credenciales al cliente de forma segura. Se recomienda que cambie
-                  la contraseña en su primer acceso.
+              ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  El cliente se creó sin correo electrónico, por lo que{' '}
+                  <span className="font-medium">no tiene acceso al portal</span>. Se gestiona desde
+                  el panel de administración y se identifica por su teléfono.
                 </p>
-              </div>
+              )}
             </div>
           ) : (
             // Formulario de creación
@@ -427,7 +444,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium dark:text-slate-300">Email *</label>
+                  <label className="text-sm font-medium dark:text-slate-300">Email</label>
                   <Input
                     type="email"
                     placeholder="email@ejemplo.com"
@@ -437,7 +454,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium dark:text-slate-300">Teléfono *</label>
+                  <label className="text-sm font-medium dark:text-slate-300">Teléfono</label>
                   <Input
                     type="tel"
                     placeholder="+54 9 11 1234-5678"
@@ -469,7 +486,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
           )}
 
           <DialogFooter>
-            {createdPassword ? (
+            {createdSuccess ? (
               <Button
                 className="rounded-xl bg-blue-500 hover:bg-blue-600"
                 onClick={handleCloseCreateDialog}
@@ -492,8 +509,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                   disabled={
                     isCreating ||
                     !newClient.name.trim() ||
-                    !newClient.email.trim() ||
-                    !newClient.phone.trim()
+                    (!newClient.email.trim() && !newClient.phone.trim())
                   }
                 >
                   {isCreating ? (

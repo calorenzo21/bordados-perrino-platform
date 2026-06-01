@@ -51,8 +51,10 @@ export interface Client {
   id: string;
   user_id: string | null;
   name: string;
-  email: string;
-  phone: string;
+  // email y phone son opcionales a nivel individual: un cliente debe tener al
+  // menos uno de los dos (ver migración 013 y createClientSchema).
+  email: string | null;
+  phone: string | null;
   cedula: string | null;
   address: string | null;
   notes: string | null;
@@ -149,8 +151,8 @@ export interface ClientWithStats extends Client {
 
 export interface OrderWithPayments extends Order {
   client_name: string;
-  client_email: string;
-  client_phone: string;
+  client_email: string | null;
+  client_phone: string | null;
   client_cedula: string | null;
   client_address: string | null;
   total_paid: number;
@@ -273,8 +275,6 @@ export interface DashboardMetrics {
   totalClientsChange: number;
   /** Suma del saldo pendiente de cobro en todos los pedidos (total - abonos) */
   pendingToCollect: number;
-  completedOrders: number;
-  completedOrdersChange: number;
 }
 
 export interface OrdersByMonth {

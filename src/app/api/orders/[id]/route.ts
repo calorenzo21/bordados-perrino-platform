@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
-import { hasAdminAccess } from '@/lib/utils/roles';
+import { isSuperAdmin } from '@/lib/utils/roles';
 import { deleteStorageObjectsByUrl } from '@/lib/utils/storage-cleanup';
 
 /**
@@ -25,7 +25,7 @@ export async function DELETE(
   try {
     const { id: orderId } = await params;
 
-    // Auth check — must be admin.
+    // Auth check — borrar un pedido es una acción destructiva: solo SUPERADMIN.
     const supabase = await createClient();
     const {
       data: { user },
@@ -42,7 +42,7 @@ export async function DELETE(
       .eq('id', user.id)
       .single();
 
-    if (!hasAdminAccess(currentProfile?.role)) {
+    if (!isSuperAdmin(currentProfile?.role)) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 

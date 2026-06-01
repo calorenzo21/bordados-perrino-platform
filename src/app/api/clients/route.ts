@@ -28,6 +28,72 @@ function splitFullName(fullName: string): { firstName: string; lastName: string 
   return { firstName, lastName };
 }
 
+// Devuelve el primer mensaje de validación legible para el usuario. Los
+// mensajes propios del esquema están en español; cualquier texto por defecto
+// de Zod (en inglés, p.ej. "Invalid input: expected string, received null") se
+// reemplaza por un genérico para no filtrarlo a la UI.
+function firstValidationMessage(issues: { message?: string }[]): string {
+  const msg = issues[0]?.message;
+  if (!msg) return 'Datos inválidos';
+  if (/^(Invalid|Expected|String must|Number must|Too |Required|Unrecognized)/i.test(msg)) {
+    return 'Datos inválidos';
+  }
+  return msg;
+}
+
+type AdminSupabaseClient = Awaited<ReturnType<typeof createAdminClient>>;
+
+type ProvisionResult =
+  | { userId: string; isReused: boolean; defaultPassword: string }
+  | { error: string; status: number };
+
+// Crea (o reutiliza) la cuenta de Supabase Auth y su perfil CLIENT para un
+// cliente con correo, y devuelve las credenciales generadas o un error con su
+// status HTTP. NO toca la fila `clients`: la vinculación queda a cargo del
+// llamador (al crear se inserta/reactiva; al editar se enlaza el cliente
+// existente). Si falla la creación del perfil revierte el usuario recién creado.
+async function provisionPortalAccount(
+  adminClient: AdminSupabaseClient,
+  { name, email, phone }: { name: string; email: string; phone: string | null }
+): Promise<ProvisionResult> {
+  const { firstName, lastName } = splitFullName(name);
+  const defaultPassword = generateDefaultPassword();
+
+  const { data: authResult, error: reuseError } = await createOrReuseAuthUser(adminClient, {
+    email,
+    password: defaultPassword,
+    firstName,
+    lastName,
+  });
+
+  if (reuseError || !authResult) {
+    return { error: reuseError || 'Error al crear usuario de autenticación', status: 400 };
+  }
+
+  const { error: profileError } = await adminClient.from('profiles').upsert(
+    {
+      id: authResult.userId,
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone ?? null,
+      role: 'CLIENT',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' }
+  );
+
+  if (profileError) {
+    console.error('Error creating profile:', profileError);
+    if (!authResult.isReused) {
+      await adminClient.auth.admin.deleteUser(authResult.userId);
+    }
+    return { error: 'Error al crear perfil de cliente', status: 500 };
+  }
+
+  return { userId: authResult.userId, isReused: authResult.isReused, defaultPassword };
+}
+
 // POST - Crear cliente con perfil
 export async function POST(request: NextRequest) {
   try {
@@ -61,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' },
+        { error: firstValidationMessage(parsed.error.issues) },
         { status: 400 }
       );
     }
@@ -69,6 +135,64 @@ export async function POST(request: NextRequest) {
     const { name, email, phone, cedula, address } = parsed.data;
 
     const adminClient = await createAdminClient();
+
+    // Evitar clientes duplicados por teléfono. El teléfono es la identidad de
+    // los clientes sin correo (el agente los resuelve por número) y no existe
+    // un índice único sobre clients.phone, así que se valida a nivel de
+    // aplicación antes de insertar. Solo bloquea contra clientes ACTIVOS.
+    if (phone) {
+      const { data: phoneDupe } = await adminClient
+        .from('clients')
+        .select('id')
+        .eq('phone', phone)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (phoneDupe) {
+        return NextResponse.json(
+          { error: 'Ya existe un cliente activo con ese teléfono' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // ── Cliente solo con teléfono (sin correo electrónico) ──────────────
+    // No se crea cuenta de Supabase Auth ni perfil: es un registro gestionado
+    // por el admin, sin acceso al portal. La validación ya garantizó que haya
+    // al menos un teléfono.
+    if (!email) {
+      const { data: inserted, error: insertError } = await adminClient
+        .from('clients')
+        .insert({
+          user_id: null,
+          name,
+          email: null,
+          phone: phone ?? null,
+          cedula: cedula || null,
+          address: address || null,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating phone-only client:', insertError);
+        return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 });
+      }
+
+      revalidatePath('/admin/clients');
+      revalidatePath('/admin/dashboard');
+
+      return NextResponse.json({
+        success: true,
+        client: inserted,
+        account: null,
+        message: 'Cliente creado sin acceso al portal (sin correo electrónico)',
+      });
+    }
+
+    // ── Cliente con correo: flujo completo con cuenta de Auth ───────────
     const { firstName, lastName } = splitFullName(name);
     const defaultPassword = generateDefaultPassword();
 
@@ -94,7 +218,7 @@ export async function POST(request: NextRequest) {
         email,
         first_name: firstName,
         last_name: lastName,
-        phone,
+        phone: phone ?? null,
         role: 'CLIENT',
         updated_at: new Date().toISOString(),
       },
@@ -127,7 +251,7 @@ export async function POST(request: NextRequest) {
           .update({
             name,
             email,
-            phone,
+            phone: phone ?? null,
             cedula: cedula || null,
             address: address || null,
             is_active: true,
@@ -150,7 +274,7 @@ export async function POST(request: NextRequest) {
             user_id: authResult.userId,
             name,
             email,
-            phone,
+            phone: phone ?? null,
             cedula: cedula || null,
             address: address || null,
             is_active: true,
@@ -172,7 +296,7 @@ export async function POST(request: NextRequest) {
           user_id: authResult.userId,
           name,
           email,
-          phone,
+          phone: phone ?? null,
           cedula: cedula || null,
           address: address || null,
           is_active: true,
@@ -254,7 +378,7 @@ export async function PUT(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' },
+        { error: firstValidationMessage(parsed.error.issues) },
         { status: 400 }
       );
     }
@@ -263,10 +387,11 @@ export async function PUT(request: NextRequest) {
 
     const adminClient = await createAdminClient();
 
-    // Obtener el cliente actual para saber su user_id
+    // Obtener el cliente actual (user_id para saber si ya tiene cuenta de portal;
+    // name/phone como respaldo al provisionar si el payload no los incluye).
     const { data: existingClient, error: fetchError } = await adminClient
       .from('clients')
-      .select('user_id')
+      .select('user_id, name, phone')
       .eq('id', clientId)
       .single();
 
@@ -285,6 +410,46 @@ export async function PUT(request: NextRequest) {
     if (cedula !== undefined) updateData.cedula = cedula;
     if (address !== undefined) updateData.address = address;
 
+    // Upgrade solo-teléfono → portal: si un cliente sin cuenta (user_id null)
+    // recibe un correo, se provisiona ahora su acceso al portal (usuario de Auth
+    // + perfil), se enlaza a este cliente y se le envía la bienvenida con una
+    // contraseña temporal. Así "agregar correo" otorga acceso de forma
+    // consistente con la creación de clientes con correo.
+    let provisionedUserId: string | null = null;
+    let provisionedPassword: string | null = null;
+    let provisionedIsReused = false;
+    if (!existingClient?.user_id && email) {
+      // No enlazar un correo que ya pertenece a otra cuenta (evita duplicados).
+      const { data: emailOwner } = await adminClient
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .limit(1)
+        .maybeSingle();
+
+      if (emailOwner) {
+        return NextResponse.json(
+          { error: 'Ese correo ya está en uso por otra cuenta. Usa un correo distinto.' },
+          { status: 409 }
+        );
+      }
+
+      const provision = await provisionPortalAccount(adminClient, {
+        name: name ?? existingClient?.name ?? '',
+        email,
+        phone: phone ?? existingClient?.phone ?? null,
+      });
+
+      if ('error' in provision) {
+        return NextResponse.json({ error: provision.error }, { status: provision.status });
+      }
+
+      provisionedUserId = provision.userId;
+      provisionedPassword = provision.defaultPassword;
+      provisionedIsReused = provision.isReused;
+      updateData.user_id = provision.userId; // enlazar el cliente con la nueva cuenta
+    }
+
     const { error: clientError } = await adminClient
       .from('clients')
       .update(updateData)
@@ -292,6 +457,13 @@ export async function PUT(request: NextRequest) {
 
     if (clientError) {
       console.error('Error updating client:', clientError);
+      // Revertir la cuenta recién creada para no dejar un usuario huérfano. Solo
+      // si fue una cuenta NUEVA: si se hubiera reutilizado una preexistente, no
+      // debe borrarse (hoy el pre-chequeo de email hace inalcanzable el reuse,
+      // pero la guarda mantiene correcto el rollback si eso cambiara).
+      if (provisionedUserId && !provisionedIsReused) {
+        await adminClient.auth.admin.deleteUser(provisionedUserId);
+      }
       return NextResponse.json({ error: 'Error al actualizar cliente' }, { status: 500 });
     }
 
@@ -333,6 +505,27 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Enviar correo de bienvenida si se acaba de crear el acceso al portal.
+    if (provisionedUserId && provisionedPassword) {
+      const welcomeName = name ?? existingClient?.name ?? '';
+      const welcomeEmail = email as string;
+      const welcomeUserId = provisionedUserId;
+      const welcomePassword = provisionedPassword;
+      const { subject, html } = newClientWelcomeEmail(welcomeName, welcomeEmail, welcomePassword);
+      after(async () => {
+        try {
+          await sendEmail({
+            to: welcomeEmail,
+            subject,
+            html,
+            idempotencyKey: `welcome/${welcomeUserId}/${new Date().toISOString().slice(0, 16)}`,
+          });
+        } catch (e) {
+          console.error('[Email] Welcome email failed:', e);
+        }
+      });
+    }
+
     // Revalidar páginas que muestran clientes
     revalidatePath('/admin/clients');
     revalidatePath(`/admin/clients/${clientId}`);
@@ -340,7 +533,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Cliente actualizado exitosamente',
+      message: provisionedPassword
+        ? 'Cliente actualizado y acceso al portal creado'
+        : 'Cliente actualizado exitosamente',
+      // `email` ya viene normalizado (minúsculas) por el esquema, para que las
+      // credenciales mostradas coincidan exactamente con las de inicio de sesión.
+      account: provisionedPassword ? { defaultPassword: provisionedPassword, email } : null,
     });
   } catch (error: unknown) {
     console.error('Error in PUT /api/clients:', error);

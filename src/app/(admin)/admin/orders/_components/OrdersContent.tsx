@@ -421,7 +421,9 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                           <p className="font-medium text-slate-900 dark:text-white">
                             {order.client.name}
                           </p>
-                          <p className="text-xs text-slate-400">{order.client.email}</p>
+                          <p className="text-xs text-slate-400">
+                            {order.client.email || 'Sin correo'}
+                          </p>
                         </div>
                       </Link>
                     </TableCell>
