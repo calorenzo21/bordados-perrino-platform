@@ -957,7 +957,7 @@ export default function NewOrderContent() {
                   </label>
                   <Input
                     type="tel"
-                    placeholder="+54 9 11 1234-5678"
+                    placeholder="0424-1234567"
                     className="h-10 rounded-xl"
                     value={newClientForm.phone}
                     onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}

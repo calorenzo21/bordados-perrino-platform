@@ -457,7 +457,7 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
                   <label className="text-sm font-medium dark:text-slate-300">Teléfono</label>
                   <Input
                     type="tel"
-                    placeholder="+54 9 11 1234-5678"
+                    placeholder="0424-1234567"
                     className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
                     value={newClient.phone}
                     onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}

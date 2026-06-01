@@ -590,7 +590,7 @@ export function ClientDetailClient({
                   value={editData.phone}
                   onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
                   className="h-10 rounded-xl dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400"
-                  placeholder="+54 9 11 1234-5678"
+                  placeholder="0424-1234567"
                   disabled={isSaving}
                 />
               </div>
