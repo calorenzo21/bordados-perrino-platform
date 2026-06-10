@@ -39,7 +39,7 @@ export const OrderAgentDTOSchema = z.object({
   description: z.string(),
   service_type: z.string().nullable(),
   total_amount_cents: z.number().int().nonnegative(),
-  currency: z.literal('MXN'),
+  currency: z.literal('USD'),
   created_at: z.string().datetime(),
   estimated_ready_at: z.string().datetime().nullable(),
   last_status_change_at: z.string().datetime().nullable(),
@@ -51,7 +51,7 @@ export const PaymentSummaryDTOSchema = z.object({
   total_amount_cents: z.number().int().nonnegative(),
   amount_paid_cents: z.number().int().nonnegative(),
   balance_due_cents: z.number().int(),
-  currency: z.literal('MXN'),
+  currency: z.literal('USD'),
   last_payment_at: z.string().datetime().nullable(),
   payment_count: z.number().int().nonnegative(),
 });

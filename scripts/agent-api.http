@@ -9,18 +9,18 @@
 #
 # Replace the @placeholders below with values from your seed data:
 #   - @apiKey       AGENT_API_KEY from .env.local (must match what the agent sends)
-#   - @phone        E.164 phone of the seed client (e.g. +5215512345678)
+#   - @phone        E.164 phone of the seed client (e.g. +584121234567)
 #   - @clientId     UUID returned by EP-1 for that phone
 #   - @orderId      UUID of an order belonging to @clientId
 #   - @otherPhone   Any OTHER registered phone (for cross-tenant tests)
 ###
 
 @baseUrl = http://localhost:3000
-@apiKey = REPLACE_WITH_AGENT_API_KEY_FROM_DOTENV
-@phone = +5215512345678
+@apiKey = oBQSWVs0lGs4xyRIabnR6pX3ce_YLoHlO71pGwXQYiFy6uHW7IM-mpgu-SjVfVu1
+@phone = +584249263556
 @clientId = 00000000-0000-0000-0000-000000000000
 @orderId = 00000000-0000-0000-0000-000000000000
-@otherPhone = +5215587654321
+@otherPhone = +584129876543
 
 ###
 # ============================================================
@@ -32,7 +32,7 @@ GET {{baseUrl}}/api/agent/clients/by-phone/{{phone}}
 Authorization: Bearer {{apiKey}}
 
 ### EP-1.2 unknown phone — 404 NOT_FOUND
-GET {{baseUrl}}/api/agent/clients/by-phone/+5215500000000
+GET {{baseUrl}}/api/agent/clients/by-phone/+584120000000
 Authorization: Bearer {{apiKey}}
 
 ### EP-1.3 missing bearer — 401 UNAUTHORIZED
@@ -179,28 +179,28 @@ Content-Type: application/json
 #
 # EP-1:
 #   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
-#        "http://localhost:3000/api/agent/clients/by-phone/+5215512345678"
+#        "http://localhost:3000/api/agent/clients/by-phone/+584121234567"
 #
 # EP-2:
 #   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
-#        -H "X-Agent-Phone: +5215512345678" \
+#        -H "X-Agent-Phone: +584121234567" \
 #        "http://localhost:3000/api/agent/clients/$CLIENT_ID/orders?limit=5"
 #
 # EP-3:
 #   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
-#        -H "X-Agent-Phone: +5215512345678" \
+#        -H "X-Agent-Phone: +584121234567" \
 #        "http://localhost:3000/api/agent/orders/$ORDER_ID?client_id=$CLIENT_ID"
 #
 # EP-4:
 #   curl -i -H "Authorization: Bearer $AGENT_API_KEY" \
-#        -H "X-Agent-Phone: +5215512345678" \
+#        -H "X-Agent-Phone: +584121234567" \
 #        "http://localhost:3000/api/agent/orders/$ORDER_ID/payments/summary?client_id=$CLIENT_ID"
 #
 # EP-5:
 #   curl -i -X POST -H "Authorization: Bearer $AGENT_API_KEY" \
-#        -H "X-Agent-Phone: +5215512345678" \
+#        -H "X-Agent-Phone: +584121234567" \
 #        -H "Content-Type: application/json" \
-#        -d '{"phone":"+5215512345678","client_id":"'$CLIENT_ID'","summary":"test","reason":"modify"}' \
+#        -d '{"phone":"+584121234567","client_id":"'$CLIENT_ID'","summary":"test","reason":"modify"}' \
 #        "http://localhost:3000/api/agent/handoff"
 #
 ###

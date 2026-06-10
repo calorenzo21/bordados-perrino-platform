@@ -110,7 +110,7 @@ function projectOrder(row: OrderRow): OrderAgentDTO {
     description: row.description,
     service_type: row.service_type,
     total_amount_cents: toCents(row.total),
-    currency: 'MXN',
+    currency: 'USD',
     created_at: toIsoUtc(row.created_at) ?? new Date(row.created_at).toISOString(),
     estimated_ready_at: toIsoUtc(row.due_date),
     last_status_change_at: lastStatusChange(row.order_status_history),
@@ -242,7 +242,7 @@ export async function getOrderPaymentSummary(
     total_amount_cents,
     amount_paid_cents,
     balance_due_cents: total_amount_cents - amount_paid_cents,
-    currency: 'MXN',
+    currency: 'USD',
     last_payment_at,
     payment_count: payments?.length ?? 0,
   };

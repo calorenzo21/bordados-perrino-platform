@@ -75,7 +75,7 @@ export function normalizePhone(
   }
 
   // 6. Anything else → assume the country code is already at the front,
-  //    just needs the `+`. (e.g. `5215512345678` for Mexico, 13 digits.)
+  //    just needs the `+`. (e.g. `5215512345678` for a 13-digit country code.)
   return '+' + s;
 }
 
@@ -92,4 +92,4 @@ export function isE164(value: string): boolean {
 export const PHONE_E164_ERROR_MESSAGE =
   'Teléfono inválido. Aceptamos: +584249263556, 584249263556, ' +
   '04249263556 (local con 0) o 4249263556 (local). Para otros países, ' +
-  'incluí el código país: ej. +5215512345678 (México móvil con el 1).';
+  'incluí el código país: ej. +584121234567 (Venezuela móvil).';
