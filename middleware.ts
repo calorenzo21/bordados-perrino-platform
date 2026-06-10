@@ -19,7 +19,9 @@ import { hasAdminAccess } from '@/lib/utils/roles';
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
 const ADMIN_ROUTES = ['/admin'];
 const CLIENT_ROUTES = ['/client'];
-const PUBLIC_ROUTES = ['/auth/callback'];
+// Publicly accessible routes — served to everyone, authenticated or not, and
+// never redirected to /login. Includes the auth callback and public legal pages.
+const PUBLIC_ROUTES = ['/auth/callback', '/privacidad'];
 
 // Helper to check if pathname starts with any of the routes
 const matchesRoute = (pathname: string, routes: string[]) =>
@@ -47,8 +49,8 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Allow callback route to process
-  if (pathname === '/auth/callback') {
+  // Allow public routes (auth callback, legal pages) for everyone — no auth gate.
+  if (matchesRoute(pathname, PUBLIC_ROUTES)) {
     return supabaseResponse;
   }
 

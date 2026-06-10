@@ -434,6 +434,13 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                       <div className="flex items-center gap-1.5">
                         {order.status === OrderStatus.CANCELADO ? (
                           <span className="text-sm text-slate-400">—</span>
+                        ) : order.status === OrderStatus.ENTREGADO ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 text-sky-500" />
+                            <span className="text-sm text-sky-600 dark:text-sky-400">
+                              Completado
+                            </span>
+                          </>
                         ) : order.isDelayed ? (
                           <>
                             <AlertCircle className="h-4 w-4 text-rose-500" />
@@ -446,13 +453,6 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
                             <Clock className="h-4 w-4 text-amber-500" />
                             <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
                               Hoy
-                            </span>
-                          </>
-                        ) : order.status === OrderStatus.ENTREGADO ? (
-                          <>
-                            <CheckCircle2 className="h-4 w-4 text-sky-500" />
-                            <span className="text-sm text-sky-600 dark:text-sky-400">
-                              Completado
                             </span>
                           </>
                         ) : (
