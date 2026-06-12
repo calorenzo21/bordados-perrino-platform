@@ -4,10 +4,11 @@ import { withSerwist } from '@serwist/turbopack';
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Prevent Next.js from bundling these packages into serverless functions.
-  // @serwist/turbopack dynamically requires next/dist/server/config.js at runtime;
-  // marking it external lets Node.js resolve it from node_modules normally.
-  serverExternalPackages: ['@serwist/turbopack', 'esbuild'],
+  // NO externalizar @serwist/turbopack: al ser external traía su propia copia de
+  // React, y su SerwistProvider (client component con hooks, en el root layout)
+  // rompía el SSR en producción → TypeError useState null → HTTP 500 en TODAS las
+  // páginas. Solo `esbuild` queda externo.
+  serverExternalPackages: ['esbuild'],
   images: {
     remotePatterns: [
       {
