@@ -87,6 +87,11 @@ export const OrderStatusChangedWebhookSchema = z.object({
   new_status: OrderStatusType,
   old_status: OrderStatusType,
   changed_at: z.string().datetime(),
+  // Customer-facing order code ("ORD-NNN") + description, shown in the WhatsApp
+  // notification. The agent caps the description length on its side; we bound
+  // it here too so the payload stays small.
+  order_number: z.string().regex(/^ORD-\d+$/, 'order_number must be ORD-NNN'),
+  order_description: z.string().max(2000),
 });
 export type OrderStatusChangedWebhook = z.infer<typeof OrderStatusChangedWebhookSchema>;
 

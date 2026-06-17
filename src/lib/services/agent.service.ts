@@ -6,9 +6,15 @@
  * talks to Supabase for the agent; route handlers stay thin.
  *
  * Field projection is explicit and minimal — never `select('*')`. Internal
- * fields (cost, margin, internal_notes, order_number, etc.) must never
- * leak to the agent. This is enforced twice: (a) here in the SELECT and
- * (b) on the agent side via Pydantic `extra="forbid"`.
+ * fields (cost, margin, internal_notes, etc.) must never leak to the agent.
+ * This is enforced twice: (a) here in the SELECT and (b) on the agent side
+ * via Pydantic `extra="forbid"`.
+ *
+ * Exception: `order_number` (the customer-facing "ORD-NNN" code) and the order
+ * `description` ARE sent on the status-change webhook only, so the outbound
+ * WhatsApp notification can reference the customer's own order in a readable
+ * way. They are still omitted from the read DTOs (OrderAgentDTO) used by the
+ * inbound query tools.
  */
 import { type SupabaseClient } from '@supabase/supabase-js';
 
@@ -282,6 +288,10 @@ export interface StatusChangeContext {
   phone: string;
   client_id: string;
   customer_first_name: string;
+  // Customer-facing order code ("ORD-NNN") and description — included in the
+  // outbound WhatsApp notification so the customer can locate their order.
+  order_number: string;
+  description: string;
 }
 
 export async function getStatusChangeContext(
@@ -290,10 +300,12 @@ export async function getStatusChangeContext(
 ): Promise<StatusChangeContext | null> {
   const { data, error } = await supabase
     .from('orders')
-    .select('client_id, clients(name, phone, is_active)')
+    .select('client_id, order_number, description, clients(name, phone, is_active)')
     .eq('id', orderId)
     .maybeSingle<{
       client_id: string;
+      order_number: string;
+      description: string;
       // phone es nullable tras la migración 013 (clientes solo-correo).
       clients: { name: string; phone: string | null; is_active: boolean } | null;
     }>();
@@ -308,5 +320,7 @@ export async function getStatusChangeContext(
     phone: data.clients.phone,
     client_id: data.client_id,
     customer_first_name: first_name,
+    order_number: data.order_number,
+    description: data.description,
   };
 }

@@ -65,5 +65,7 @@ export async function notifyAgentOfOrderStatusChange(
     new_status: newStatus,
     old_status: oldStatus,
     changed_at: new Date().toISOString(),
+    order_number: ctx.order_number,
+    order_description: ctx.description,
   });
 }
