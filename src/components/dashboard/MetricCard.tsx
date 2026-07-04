@@ -94,7 +94,7 @@ export function MetricCard({
   }
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white dark:bg-slate-800 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white pb-0 dark:bg-slate-800 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
       {/* Decorative background element */}
       <div
         className={cn(
