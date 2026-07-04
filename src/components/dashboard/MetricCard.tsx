@@ -18,6 +18,11 @@ interface MetricCardProps {
   loading?: boolean;
   /** Clases para el valor principal (ej. text-lg line-clamp-2 para textos largos) */
   valueClassName?: string;
+  /** Dato acumulado histórico que se muestra anclado al pie de la tarjeta */
+  footer?: {
+    label: string;
+    value: string;
+  };
 }
 
 const iconStyles = {
@@ -67,6 +72,7 @@ export function MetricCard({
   iconColor = 'blue',
   loading = false,
   valueClassName,
+  footer,
 }: MetricCardProps) {
   const styles = iconStyles[iconColor];
 
@@ -150,6 +156,23 @@ export function MetricCard({
             </div>
           </div>
         </div>
+
+        {/* Footer con acumulado histórico */}
+        {footer && (
+          <div className="metric-footer mt-auto pt-3">
+            <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2 dark:border-slate-700/60">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <div className={cn('h-1 w-1 shrink-0 rounded-full opacity-60', styles.dot)} />
+                <span className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {footer.label}
+                </span>
+              </div>
+              <span className="shrink-0 text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200 xl:text-sm">
+                {footer.value}
+              </span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

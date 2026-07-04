@@ -63,6 +63,26 @@ export class DashboardService {
   }
 
   /**
+   * Get total revenue from all payments since the system started
+   */
+  private async getTotalRevenue(): Promise<number> {
+    const { data, error } = await this.supabase.from('payments').select('amount');
+
+    if (error) throw new Error(error.message);
+    return data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+  }
+
+  /**
+   * Get total expenses since the system started
+   */
+  private async getTotalExpenses(): Promise<number> {
+    const { data, error } = await this.supabase.from('expenses').select('amount');
+
+    if (error) throw new Error(error.message);
+    return data?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+  }
+
+  /**
    * Get all dashboard metrics
    */
   async getMetrics(): Promise<DashboardMetrics> {
@@ -83,6 +103,9 @@ export class DashboardService {
       prevMonthlyExpenses,
       totalClients,
       pendingToCollect,
+      totalRevenue,
+      totalExpenses,
+      completedOrders,
     ] = await Promise.all([
       this.ordersRepo.countActive(),
       this.ordersRepo.countDelayed(),
@@ -92,6 +115,9 @@ export class DashboardService {
       this.getMonthlyExpenses(prevYear, prevMonth),
       this.clientsRepo.count(),
       this.ordersRepo.getTotalPendingToCollect(),
+      this.getTotalRevenue(),
+      this.getTotalExpenses(),
+      this.ordersRepo.countCompleted(),
     ]);
 
     return {
@@ -107,6 +133,9 @@ export class DashboardService {
       totalClients,
       totalClientsChange: 0, // No se calcula por ahora
       pendingToCollect,
+      totalRevenue,
+      totalExpenses,
+      completedOrders,
     };
   }
 

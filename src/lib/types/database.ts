@@ -275,6 +275,12 @@ export interface DashboardMetrics {
   totalClientsChange: number;
   /** Suma del saldo pendiente de cobro en todos los pedidos (total - abonos) */
   pendingToCollect: number;
+  /** Suma de todos los pagos registrados desde el inicio del sistema */
+  totalRevenue?: number;
+  /** Suma de todos los gastos registrados desde el inicio del sistema */
+  totalExpenses?: number;
+  /** Cantidad total de pedidos entregados (histórico) */
+  completedOrders?: number;
 }
 
 export interface OrdersByMonth {

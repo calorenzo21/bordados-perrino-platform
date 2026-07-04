@@ -243,6 +243,17 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
     [metrics]
   );
 
+  // Acumulados históricos desde el inicio del sistema
+  const lifetimeMetrics = useMemo(
+    () => ({
+      totalRevenue: metrics?.totalRevenue || 0,
+      totalExpenses: metrics?.totalExpenses || 0,
+      totalBalance: (metrics?.totalRevenue || 0) - (metrics?.totalExpenses || 0),
+      completedOrders: metrics?.completedOrders || 0,
+    }),
+    [metrics]
+  );
+
   // Formato de moneda con signo (los negativos se muestran como -$1.234)
   const formatSignedCurrency = (value: number) =>
     `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString()}`;
@@ -319,6 +330,10 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           description="En proceso actualmente"
           icon={Package}
           iconColor="blue"
+          footer={{
+            label: 'Completados',
+            value: lifetimeMetrics.completedOrders.toLocaleString(),
+          }}
         />
         <MetricCard
           title="Ingresos del Mes"
@@ -326,6 +341,10 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           description={`vs. $${revenueMetrics.lastMonth.toLocaleString()} mes anterior`}
           icon={TrendingUp}
           iconColor="green"
+          footer={{
+            label: 'Histórico',
+            value: `$${lifetimeMetrics.totalRevenue.toLocaleString()}`,
+          }}
         />
         <MetricCard
           title="Gastos del Mes"
@@ -333,6 +352,10 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           description={`vs. $${expenseMetrics.lastMonthExpenses.toLocaleString()} mes anterior`}
           icon={TrendingDown}
           iconColor="rose"
+          footer={{
+            label: 'Histórico',
+            value: `$${lifetimeMetrics.totalExpenses.toLocaleString()}`,
+          }}
         />
         <MetricCard
           title="Pendiente por Cobrar"
@@ -347,6 +370,10 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           description={`vs. ${formatSignedCurrency(balanceMetrics.lastMonth)} mes anterior`}
           icon={Scale}
           iconColor={balanceMetrics.thisMonth >= 0 ? 'green' : 'rose'}
+          footer={{
+            label: 'Histórico',
+            value: formatSignedCurrency(lifetimeMetrics.totalBalance),
+          }}
         />
       </div>
 
