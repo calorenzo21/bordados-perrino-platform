@@ -20,6 +20,7 @@ import {
 
 import type { Expense, ExpenseType } from '@/lib/services/expenses.server';
 import { createClient } from '@/lib/supabase/browser';
+import { EXPENSE_MIN_DATE, todayISODate, validateExpenseDate } from '@/lib/validations/expenses';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,12 @@ export function ExpenseDetailClient({
 
   const handleSave = async () => {
     if (!formData.typeId || !formData.amount || !formData.date) return;
+
+    const dateError = validateExpenseDate(formData.date);
+    if (dateError) {
+      setError(dateError);
+      return;
+    }
 
     setIsSaving(true);
     setError(null);
@@ -395,6 +402,8 @@ export function ExpenseDetailClient({
                   <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <Input
                     type="date"
+                    min={EXPENSE_MIN_DATE}
+                    max={todayISODate()}
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     className="h-11 rounded-xl border-slate-200 pl-10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
