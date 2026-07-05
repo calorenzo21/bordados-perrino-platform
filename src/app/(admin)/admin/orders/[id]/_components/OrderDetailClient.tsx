@@ -26,6 +26,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  MoreHorizontal,
   Package,
   PackageCheck,
   Phone,
@@ -71,6 +72,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -749,36 +751,43 @@ export function OrderDetailClient({
               </Button>
             </>
           ) : (
-            <>
-              {order.status !== OrderStatus.CANCELADO && order.status !== OrderStatus.ENTREGADO && (
-                <Button
-                  variant="outline"
-                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
-                  onClick={() => handleStatusChange(OrderStatus.CANCELADO)}
-                >
-                  <XCircle className="h-4 w-4" />
-                  Cancelar Pedido
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl">
+                  <MoreHorizontal className="h-5 w-5" />
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                className="h-10 gap-2 rounded-xl"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit3 className="h-4 w-4" />
-                Editar Pedido
-              </Button>
-              {isSuperAdmin && (
-                <Button
-                  variant="outline"
-                  className="h-10 gap-2 rounded-xl border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:border-rose-800/50 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/20"
-                  onClick={() => setIsDeleteOrderDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar Pedido
-                </Button>
-              )}
-            </>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                <DropdownMenuItem className="rounded-lg" onSelect={() => setIsEditing(true)}>
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  Editar Pedido
+                </DropdownMenuItem>
+                {(order.status !== OrderStatus.CANCELADO &&
+                  order.status !== OrderStatus.ENTREGADO) ||
+                isSuperAdmin ? (
+                  <DropdownMenuSeparator />
+                ) : null}
+                {order.status !== OrderStatus.CANCELADO &&
+                  order.status !== OrderStatus.ENTREGADO && (
+                    <DropdownMenuItem
+                      className="rounded-lg text-rose-600 dark:text-rose-400"
+                      onSelect={() => handleStatusChange(OrderStatus.CANCELADO)}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Cancelar Pedido
+                    </DropdownMenuItem>
+                  )}
+                {isSuperAdmin && (
+                  <DropdownMenuItem
+                    className="rounded-lg text-rose-600 dark:text-rose-400"
+                    onSelect={() => setIsDeleteOrderDialogOpen(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar Pedido
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
