@@ -10,7 +10,6 @@ import {
   Check,
   ChevronDown,
   DollarSign,
-  Download,
   Edit2,
   Loader2,
   MoreHorizontal,
@@ -477,15 +476,6 @@ export function ExpensesContent({ initialExpenses, initialExpenseTypes }: Expens
           >
             <Settings className="h-4 w-4" />
             Tipos de Gasto
-          </Button>
-          <Button
-            variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-            disabled
-            title="Próximamente"
-          >
-            <Download className="h-4 w-4" />
-            Exportar
           </Button>
           <Button
             className="h-10 gap-2 rounded-full bg-blue-500 px-5 hover:bg-blue-600"

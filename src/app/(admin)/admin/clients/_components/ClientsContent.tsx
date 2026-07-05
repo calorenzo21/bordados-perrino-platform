@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { adminClientFetcher, getAdminClientSwrKey } from '@/hooks/use-clients';
-import { Calendar, Download, Loader2, Mail, Phone, Plus, Search, User } from 'lucide-react';
+import { Calendar, Loader2, Mail, Phone, Plus, Search, User } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 
 import { ITEMS_PER_PAGE } from '@/lib/constants';
@@ -171,15 +171,6 @@ export function ClientsContent({ initialClients }: ClientsContentProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-            disabled
-            title="Próximamente"
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
           <Button
             className="h-10 gap-2 rounded-full bg-blue-500 px-5 hover:bg-blue-600"
             onClick={() => setIsCreateDialogOpen(true)}

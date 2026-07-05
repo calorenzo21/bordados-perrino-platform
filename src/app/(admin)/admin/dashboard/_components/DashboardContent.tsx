@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
-  Download,
   Loader2,
   MoreHorizontal,
   Package,
@@ -307,16 +306,6 @@ export function DashboardContent({ initialData }: DashboardContentProps) {
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Resumen general del negocio • Actualizado {timeAgoText}
           </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            className="h-10 gap-2 rounded-full bg-blue-500 px-5 text-white hover:bg-blue-600"
-            disabled
-            title="Próximamente"
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
         </div>
       </div>
 

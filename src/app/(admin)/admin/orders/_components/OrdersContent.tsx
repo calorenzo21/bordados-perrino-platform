@@ -5,17 +5,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { adminOrderFetcher, getAdminOrderSwrKey } from '@/hooks/use-orders';
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  Download,
-  Plus,
-  Search,
-  User,
-  X,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, DollarSign, Plus, Search, User, X } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 
 import { ITEMS_PER_PAGE } from '@/lib/constants';
@@ -187,15 +177,6 @@ export function OrdersContent({ initialOrders }: OrdersContentProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50"
-            disabled
-            title="Próximamente"
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
           <Link href="/admin/orders/new">
             <Button className="h-10 gap-2 rounded-full bg-blue-500 px-5 text-white hover:bg-blue-600">
               <Plus className="h-4 w-4" />
